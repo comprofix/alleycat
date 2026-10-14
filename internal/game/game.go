@@ -1,18 +1,24 @@
-// Package game implements ebiten.Game: it renders the 320×200 logical
-// screen offscreen and presents it with the selected aspect mode.
+// Package game implements ebiten.Game: it runs the scenes on the master
+// clock, handles the window keys, and presents the 320×200 logical screen
+// with the selected aspect mode.
 package game
 
 import (
 	"fmt"
 	"image/color"
+	"math/rand/v2"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
-	"github.com/hajimehoshi/ebiten/v2/inpututil"
 
+	"github.com/comprofix/alleycat/assets"
+	"github.com/comprofix/alleycat/internal/clock"
 	"github.com/comprofix/alleycat/internal/gfx"
-	"github.com/comprofix/alleycat/internal/testcard"
+	"github.com/comprofix/alleycat/internal/input"
+	"github.com/comprofix/alleycat/internal/scene"
 )
+
+// TPS is the game-loop rate.
+const TPS = 60
 
 // Game is the top-level ebiten.Game.
 type Game struct {
@@ -21,68 +27,103 @@ type Game struct {
 	aspect   gfx.Aspect
 	outW     int
 	outH     int
+
+	clock  *clock.Clock
+	ctx    *scene.Context
+	scenes *scene.Manager
 }
 
-// New returns a Game showing the M0 palette test card.
-func New() *Game {
+// New loads the assets and starts at the title screen. seed initialises the
+// game's random number generator.
+func New(seed uint64) (*Game, error) {
+	f, err := assets.FS.Open("font/font8x8.txt")
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	glyphs, err := gfx.ParseFont(f)
+	if err != nil {
+		return nil, fmt.Errorf("font: %w", err)
+	}
+	ui, err := gfx.LoadSheet(assets.FS, "gen/ui")
+	if err != nil {
+		return nil, fmt.Errorf("ui sheet: %w", err)
+	}
+
 	g := &Game{
 		screen: ebiten.NewImage(gfx.ScreenWidth, gfx.ScreenHeight),
 		aspect: gfx.AspectSquare,
+		clock:  clock.New(TPS),
+		ctx: &scene.Context{
+			Input:   input.New(input.Ebiten{}),
+			RNG:     rand.New(rand.NewPCG(seed, seed^0x9e3779b97f4a7c15)),
+			Font:    gfx.NewFont(glyphs),
+			UI:      ui,
+			SoundOn: true,
+		},
 	}
-	g.screen.WritePixels(testcard.Build().Pix)
-	return g
+	g.scenes = scene.NewManager(scene.NewTitle())
+	return g, nil
 }
 
-// Update handles the window keys. Alt+Enter or F11 toggles fullscreen;
-// A toggles the aspect mode (test card only, until the options menu exists).
+// Update reads input, handles the window keys, advances the master clock
+// and runs the current scene.
 func (g *Game) Update() error {
-	alt := ebiten.IsKeyPressed(ebiten.KeyAlt)
-	if inpututil.IsKeyJustPressed(ebiten.KeyF11) || (alt && inpututil.IsKeyJustPressed(ebiten.KeyEnter)) {
+	in := g.ctx.Input
+	in.Update()
+
+	if in.JustPressed(input.Quit) {
+		return ebiten.Termination
+	}
+	if in.JustPressed(input.Fullscreen) {
 		ebiten.SetFullscreen(!ebiten.IsFullscreen())
 	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyA) {
+	if in.JustPressed(input.Aspect) {
 		g.aspect = g.aspect.Next()
 	}
-	return nil
+	if in.JustPressed(input.Sound) {
+		g.ctx.SoundOn = !g.ctx.SoundOn
+	}
+
+	g.ctx.Ticks, g.ctx.FreddySteps = g.clock.Advance()
+	return g.scenes.Update(g.ctx)
 }
 
-// Draw presents the logical screen on the output surface.
+// Draw renders the scene to the logical screen and presents it.
 func (g *Game) Draw(out *ebiten.Image) {
+	g.scenes.Draw(g.ctx, g.screen)
+
 	out.Fill(color.Black)
 	r := gfx.Fit(g.aspect, g.outW, g.outH)
-
 	if g.aspect == gfx.AspectSquare {
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Scale(r.W/gfx.ScreenWidth, r.H/gfx.ScreenHeight)
 		op.GeoM.Translate(r.X, r.Y)
 		op.Filter = ebiten.FilterNearest
 		out.DrawImage(g.screen, op)
-	} else {
-		// Upscale by an integer factor with nearest-neighbour, then resample
-		// linearly to the non-integer 4:3 size so rows stay even and sharp.
-		k := gfx.PrescaleFactor(r)
-		w, h := gfx.ScreenWidth*k, gfx.ScreenHeight*k
-		if g.prescale == nil || g.prescale.Bounds().Dx() != w || g.prescale.Bounds().Dy() != h {
-			if g.prescale != nil {
-				g.prescale.Deallocate()
-			}
-			g.prescale = ebiten.NewImage(w, h)
-		}
-		op := &ebiten.DrawImageOptions{}
-		op.GeoM.Scale(float64(k), float64(k))
-		op.Filter = ebiten.FilterNearest
-		g.prescale.DrawImage(g.screen, op)
-
-		op = &ebiten.DrawImageOptions{}
-		op.GeoM.Scale(r.W/float64(w), r.H/float64(h))
-		op.GeoM.Translate(r.X, r.Y)
-		op.Filter = ebiten.FilterLinear
-		out.DrawImage(g.prescale, op)
+		return
 	}
 
-	ebitenutil.DebugPrint(out, fmt.Sprintf(
-		"Aspect: %s (A to toggle)   Fullscreen: Alt+Enter / F11   Output: %dx%d",
-		g.aspect, g.outW, g.outH))
+	// Upscale by an integer factor with nearest-neighbour, then resample
+	// linearly to the non-integer 4:3 size so rows stay even and sharp.
+	k := gfx.PrescaleFactor(r)
+	w, h := gfx.ScreenWidth*k, gfx.ScreenHeight*k
+	if g.prescale == nil || g.prescale.Bounds().Dx() != w || g.prescale.Bounds().Dy() != h {
+		if g.prescale != nil {
+			g.prescale.Deallocate()
+		}
+		g.prescale = ebiten.NewImage(w, h)
+	}
+	op := &ebiten.DrawImageOptions{}
+	op.GeoM.Scale(float64(k), float64(k))
+	op.Filter = ebiten.FilterNearest
+	g.prescale.DrawImage(g.screen, op)
+
+	op = &ebiten.DrawImageOptions{}
+	op.GeoM.Scale(r.W/float64(w), r.H/float64(h))
+	op.GeoM.Translate(r.X, r.Y)
+	op.Filter = ebiten.FilterLinear
+	out.DrawImage(g.prescale, op)
 }
 
 // LayoutF makes the output surface match the window in device pixels, so

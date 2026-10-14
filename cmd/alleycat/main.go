@@ -3,6 +3,7 @@ package main
 
 import (
 	"log"
+	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 
@@ -13,9 +14,13 @@ func main() {
 	ebiten.SetWindowTitle("Alley Cat")
 	ebiten.SetWindowSize(1280, 800)
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
-	ebiten.SetTPS(60)
+	ebiten.SetTPS(game.TPS)
 
-	if err := ebiten.RunGame(game.New()); err != nil {
+	g, err := game.New(uint64(time.Now().UnixNano()))
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := ebiten.RunGame(g); err != nil {
 		log.Fatal(err)
 	}
 }
