@@ -1,0 +1,52 @@
+// Package gfx holds the palette, screen geometry and presentation helpers.
+package gfx
+
+import "image/color"
+
+// Logical screen size. All game logic and art use this grid (DESIGN §2.1).
+const (
+	ScreenWidth  = 320
+	ScreenHeight = 200
+)
+
+// Palette indices for Sweetie 16 (DESIGN §2.2).
+const (
+	Night = iota
+	Plum
+	Red
+	Orange
+	Yellow
+	Lime
+	Green
+	Teal
+	Navy
+	Blue
+	Sky
+	Cyan
+	White
+	Silver
+	Slate
+	Charcoal
+)
+
+// Palette is Sweetie 16 by GrafxKid (lospec.com/palette-list/sweetie-16).
+// It is the only source of colour in the game: art and code reference these
+// entries, never hex literals elsewhere.
+var Palette = [16]color.RGBA{
+	Night:    {0x1a, 0x1c, 0x2c, 0xff},
+	Plum:     {0x5d, 0x27, 0x5d, 0xff},
+	Red:      {0xb1, 0x3e, 0x53, 0xff},
+	Orange:   {0xef, 0x7d, 0x57, 0xff},
+	Yellow:   {0xff, 0xcd, 0x75, 0xff},
+	Lime:     {0xa7, 0xf0, 0x70, 0xff},
+	Green:    {0x38, 0xb7, 0x64, 0xff},
+	Teal:     {0x25, 0x71, 0x79, 0xff},
+	Navy:     {0x29, 0x36, 0x6f, 0xff},
+	Blue:     {0x3b, 0x5d, 0xc9, 0xff},
+	Sky:      {0x41, 0xa6, 0xf6, 0xff},
+	Cyan:     {0x73, 0xef, 0xf7, 0xff},
+	White:    {0xf4, 0xf4, 0xf4, 0xff},
+	Silver:   {0x94, 0xb0, 0xc2, 0xff},
+	Slate:    {0x56, 0x6c, 0x86, 0xff},
+	Charcoal: {0x33, 0x3c, 0x57, 0xff},
+}
