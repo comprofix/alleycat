@@ -24,9 +24,8 @@ const (
 	fenceTop    = 104 // highest point of the ragged board tops
 	fenceBottom = 175
 	groundTop   = 176
-	canFloorY   = 185 // can bodies stand on the ground here
-	canInset    = 3   // body starts this far right of the can's X
-	canW        = 27
+	canSpriteDX = 1 // can sprites sit this far right of the can's X
+	canSpriteDY = 5 // and this far below the Y Freddy stands at
 )
 
 // clutter is the litter along the ground: sprite name and position.
@@ -43,32 +42,41 @@ var clutter = []struct {
 // change with the can layout; it holds no game state.
 type Renderer struct {
 	sheet       *gfx.Sheet
+	font        *gfx.Font
 	scheme      gfx.Scheme
 	back, front *ebiten.Image
 	builtFor    []config.Can
 }
 
-// NewRenderer returns a renderer using the alley sprite sheet.
-func NewRenderer(sheet *gfx.Sheet) *Renderer {
-	return &Renderer{sheet: sheet, scheme: gfx.AlleyScheme}
+// NewRenderer returns a renderer using the alley sprite sheet and the font.
+func NewRenderer(sheet *gfx.Sheet, font *gfx.Font) *Renderer {
+	return &Renderer{sheet: sheet, font: font, scheme: gfx.AlleyScheme}
 }
 
-// Draw renders the alley. Freddy is drawn behind the fence or in front of
-// it according to his depth (DESIGN §3.8, "Fence depth").
-func (r *Renderer) Draw(dst *ebiten.Image, a *Alley) {
+// Draw renders the alley with the fence HUD showing the high score. Freddy
+// is drawn behind the fence or in front of it according to his depth
+// (DESIGN §3.8, "Fence depth"); thrown objects sink behind it.
+func (r *Renderer) Draw(dst *ebiten.Image, a *Alley, high int) {
 	r.build(a.Cans)
 	dst.DrawImage(r.back, nil)
+	r.drawWindow(dst, &a.Window)
 	for i := range a.Lines {
 		r.drawLine(dst, &a.Lines[i])
 	}
+	r.drawMice(dst, a)
+	r.drawThrown(dst, &a.Thrown)
 	f := a.Freddy
 	if f.Depth == entity.Behind {
 		r.drawFreddy(dst, f)
 	}
 	dst.DrawImage(r.front, nil)
+	r.drawHUD(dst, a, high)
+	r.drawTrashCat(dst, &a.TrashCat)
+	r.drawDog(dst, &a.Dog)
 	if f.Depth != entity.Behind {
 		r.drawFreddy(dst, f)
 	}
+	r.drawImpact(dst, a.Impact)
 }
 
 func fill(dst *ebiten.Image, x, y, w, h, idx int) {
@@ -128,6 +136,7 @@ func (r *Renderer) buildFront(cans []config.Can) {
 	fill(f, 0, groundTop, gfx.ScreenWidth, gfx.ScreenHeight-groundTop, s.Ground)
 	fill(f, 0, groundTop, gfx.ScreenWidth, 1, s.Shade)
 
+	r.drawGraffiti(f)
 	for _, c := range clutter {
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(float64(c.x), float64(c.y))
@@ -138,25 +147,15 @@ func (r *Renderer) buildFront(cans []config.Can) {
 	}
 }
 
-// drawCan draws a lidded trash can whose lid lines up with Freddy's feet
-// when he stands on it.
+// drawCan draws an open trash can. Its rim lines up with Freddy's feet when
+// he stands on it, and the front of the rim with the bottom of the trash
+// cat rising out of it (DESIGN §3.8, "Alley systems").
 func (r *Renderer) drawCan(dst *ebiten.Image, c config.Can) {
-	s := r.scheme
-	x := c.X + canInset
-	lid := CanTop(c) + config.FreddyH             // top row of the lid
-	fill(dst, x+canW/2-3, lid-2, 7, 1, s.Outline) // handle
-	fill(dst, x+canW/2-3, lid-1, 1, 1, s.Outline)
-	fill(dst, x+canW/2+3, lid-1, 1, 1, s.Outline)
-	fill(dst, x-1, lid, canW+2, 3, s.Outline)
-	fill(dst, x, lid, canW, 2, s.Metal)
-	fill(dst, x, lid+3, canW, canFloorY-lid-3, s.Outline)
-	fill(dst, x+1, lid+3, canW-2, canFloorY-lid-4, s.Metal)
-	for y := lid + 7; y < canFloorY-2; y += 8 {
-		fill(dst, x+1, y, canW-2, 2, s.Shade) // hoops
+	name := "can_short"
+	if c.Tall {
+		name = "can_tall"
 	}
-	for sx := x + 5; sx < x+canW-2; sx += 6 {
-		fill(dst, sx, lid+3, 1, canFloorY-lid-4, s.Shade) // ribs
-	}
+	at(dst, r.sheet.Sprite(name).Frame(0), c.X+canSpriteDX, CanTop(c)+canSpriteDY, false)
 }
 
 // drawLine draws a clothesline and its laundry.

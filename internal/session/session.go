@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/comprofix/alleycat/internal/config"
+	"github.com/comprofix/alleycat/internal/rooms"
 )
 
 // FormatScore renders a score as the fence shows it: 7 digits, "000-0000".
@@ -23,6 +24,13 @@ type Session struct {
 	Lives        int
 	Score        int
 	RoomsCleared int // since the last kiss; sets the heart-room gift count
+
+	// FeliciaWaiting is set when a room is cleared: the next window to open
+	// is Felicia's (DESIGN §3.3). Entering it clears the flag.
+	FeliciaWaiting bool
+
+	// Rooms picks the room behind each ordinary window (DESIGN §3.8).
+	Rooms rooms.Picker
 }
 
 // New starts a game at the skill's starting difficulty with 3 lives.

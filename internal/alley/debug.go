@@ -41,8 +41,31 @@ func (r *Renderer) DrawDebug(dst *ebiten.Image, a *Alley) {
 		}
 	}
 
+	// Alley systems (DESIGN §3.8, "Alley systems").
+	if a.Window.Phase > 0 {
+		r := WindowRect(a.Window.Index)
+		box(r.X, r.Y, r.W, r.H, gfx.Sky)
+	}
+	if t := &a.Thrown; t.Active {
+		r := t.rect()
+		box(r.X, r.Y, r.W, r.H, gfx.Yellow)
+	}
+	for i, m := range a.Mice {
+		r := mouseRect(i, m.X)
+		box(r.X, r.Y, r.W, r.H, gfx.Silver)
+	}
+	if c := &a.TrashCat; c.Phase > 0 && c.H > 0 {
+		r := c.rect()
+		box(r.X, r.Y, r.W, r.H, gfx.Orange)
+	}
+	if d := &a.Dog; d.Out() && d.Capture == 0 {
+		// The zone Freddy's X must be in to be caught, at catching height.
+		x := max(d.X-config.DogCatchBefore, 0)
+		box(x, config.DogCatchY, d.X+config.DogCatchAfter-x+1, config.FloorY-config.DogCatchY+1, gfx.Red)
+	}
+
 	if !f.Hidden() {
-		b := f.Box()
+		b := f.HitBox()
 		box(b.X, b.Y, b.W, b.H, gfx.Lime)
 		vector.FillRect(dst, float32(f.X), float32(f.Y), 1, 1, gfx.Palette[gfx.White], false)
 	}

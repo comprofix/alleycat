@@ -6,13 +6,21 @@ import (
 
 	"github.com/comprofix/alleycat/internal/config"
 	"github.com/comprofix/alleycat/internal/entity"
+	"github.com/comprofix/alleycat/internal/session"
 )
 
 func newRNG() *rand.Rand { return rand.New(rand.NewPCG(1, 2)) }
 
+// newSession is a game at the given difficulty.
+func newSession(difficulty int) *session.Session {
+	s := session.New(config.Kitten)
+	s.Difficulty = difficulty
+	return s
+}
+
 // standing returns an alley with Freddy fully walked in.
 func standing(difficulty int) *Alley {
-	a := New(difficulty, newRNG())
+	a := New(newSession(difficulty), newRNG())
 	for a.Freddy.Hidden() || entering(a.Freddy) {
 		a.Freddy.Update(entity.Controls{}, a)
 	}
