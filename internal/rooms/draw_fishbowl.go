@@ -29,8 +29,8 @@ const (
 // The bowl itself is drawn each frame.
 func (r *Renderer) buildFishbowl() {
 	b := r.back
-	r.buildWalls()
-	r.buildWindow(fishOpeningX, "curtain_teal")
+	r.buildWalls(wallY0, wallY1)
+	r.buildWindow(fishOpeningX, openingY, "curtain_teal")
 	chair := r.sheet.Sprite("chair_teal").Frame(0)
 	entity.DrawAt(b, chair, fishChairLX, furnitureY, false)
 	entity.DrawAt(b, r.sheet.Sprite("table_teal").Frame(0), fishTableX, tableY, false)
