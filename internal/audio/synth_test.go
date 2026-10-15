@@ -319,3 +319,40 @@ func TestNoNoteRateBuzz(t *testing.T) {
 		t.Errorf("250 Hz %.5f against %.5f nearby: the 4 ms notes buzz", buzz, near)
 	}
 }
+
+// Paws mode holds the sound: silence while paused, then the same note carries
+// on where it was, not from the start.
+func TestPauseHoldsSound(t *testing.T) {
+	s := NewSynth()
+	s.SetSoften(false)
+	s.PlaySFX([]Note{{800, ms(100)}, {1600, ms(500)}})
+	render(t, s, ms(60))
+	s.SetPaused(true)
+	if !toneless(render(t, s, ms(500))[samples(ms(5)):]) {
+		t.Error("tone while paused")
+	}
+	s.SetPaused(false)
+	// 40 ms of the first note were left when it paused.
+	if got := pitch(render(t, s, ms(35))[samples(ms(5)):]); !near(got, 800, 30) {
+		t.Errorf("after resuming pitch = %.0f, want the paused note at 800", got)
+	}
+	render(t, s, ms(15))
+	if got := pitch(render(t, s, ms(100))); !near(got, 1600, 30) {
+		t.Errorf("then pitch = %.0f, want the next note at 1600", got)
+	}
+}
+
+// Stop acts at once, dropping queued commands.
+func TestStopIsImmediate(t *testing.T) {
+	s := NewSynth()
+	s.SetSoften(false)
+	s.Now(0)
+	s.PlaySFX([]Note{{2000, time.Second}})
+	render(t, s, ms(100)) // it is playing now
+	s.Now(2)
+	s.PlayMusic([]Note{{500, time.Second}}, false) // queued
+	s.Stop()
+	if !toneless(render(t, s, ms(300))[samples(ms(5)):]) {
+		t.Error("sound after Stop: the effect went on, or the queued tune still played")
+	}
+}

@@ -32,6 +32,7 @@ type Synth struct {
 	offset  int64
 
 	enabled bool
+	paused  bool // paws mode: silent, and the tracks stand still
 	volume  float64
 	soften  bool
 
@@ -68,9 +69,19 @@ func (s *Synth) PlaySFX(notes []Note) { s.send(command{kind: playSFX, notes: not
 // StopSFX ends the effect early, letting the music resume.
 func (s *Synth) StopSFX() { s.send(command{kind: stopSFX}) }
 
-// Stop ends the tune and the effect. The game calls it at every scene change,
-// as the original silences the speaker at each transition (DESIGN §7.1).
-func (s *Synth) Stop() { s.send(command{kind: stopAll}) }
+// Stop ends the tune and the effect at once, and drops anything still
+// queued. The game calls it at every scene change, as the original silences
+// the speaker at each transition (DESIGN §7.1).
+func (s *Synth) Stop() {
+	if s == nil {
+		return
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.queue = s.queue[:0]
+	s.music.stop()
+	s.sfx.stop()
+}
 
 // Now sets the game time, in master ticks, that the commands sent after it
 // belong to. Once it has been called, each command plays at its own time
@@ -139,9 +150,6 @@ func (s *Synth) apply(c command) {
 		s.sfx.start(c.notes, false)
 	case stopSFX:
 		s.sfx.stop()
-	case stopAll:
-		s.music.stop()
-		s.sfx.stop()
 	}
 }
 
@@ -160,8 +168,19 @@ const (
 	stopMusic
 	playSFX
 	stopSFX
-	stopAll
 )
+
+// SetPaused holds every sound in paws mode: silence, with the tune and the
+// effect standing still until play resumes, so they carry on where they
+// were (DESIGN §7). It takes effect at once.
+func (s *Synth) SetPaused(on bool) {
+	if s == nil {
+		return
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.paused = on
+}
 
 // SetEnabled turns sound on or off (Ctrl+S). Tracks keep their timing while
 // sound is off, as in the original (DESIGN §7.1).
@@ -221,6 +240,7 @@ func (s *Synth) Read(p []byte) (int, error) {
 		var length int // samples in the sounding note
 		var fresh bool // the note starts on this sample
 		switch {
+		case s.paused:
 		case s.sfx.active():
 			hz, length, fresh = s.sfx.hz(), s.sfx.length(), s.sfx.take()
 			s.sfx.step()

@@ -48,6 +48,7 @@ func (m *Manager) Update(ctx *Context) error {
 			// Every sound ends with its scene, as the original silences
 			// the speaker at each transition (DESIGN §7.1).
 			ctx.Audio.Stop()
+			ctx.Audio.SetPaused(false)
 		}
 	case fadingOut:
 		m.frame++

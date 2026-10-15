@@ -124,6 +124,7 @@ func handleGameKeys(ctx *Context, paused *bool) bool {
 		return true
 	case in.JustPressed(input.Pause):
 		*paused = !*paused
+		ctx.Audio.SetPaused(*paused)
 	}
 	return false
 }
