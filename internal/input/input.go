@@ -108,8 +108,14 @@ func (in *Input) KeyJustPressed(k ebiten.Key) bool { return in.keyJustPressed(k)
 func (in *Input) keyJustPressed(k ebiten.Key) bool { return in.keys[k] && !in.prev[k] }
 
 // AnyKeyJustPressed reports whether any key other than a modifier or a
-// window key (F9–F11) went down this frame.
+// window key (F9–F11) went down this frame. Keys pressed with Ctrl held are
+// commands (Ctrl+S, Ctrl+R, Ctrl+M), and Enter with Alt held is fullscreen,
+// so neither counts.
 func (in *Input) AnyKeyJustPressed() bool {
+	if in.keys[ebiten.KeyControl] || in.keys[ebiten.KeyControlLeft] || in.keys[ebiten.KeyControlRight] {
+		return false
+	}
+	alt := in.keys[ebiten.KeyAlt] || in.keys[ebiten.KeyAltLeft] || in.keys[ebiten.KeyAltRight]
 	for k := ebiten.Key(0); k <= ebiten.KeyMax; k++ {
 		if !in.keyJustPressed(k) {
 			continue
@@ -120,6 +126,9 @@ func (in *Input) AnyKeyJustPressed() bool {
 			ebiten.KeyShift, ebiten.KeyShiftLeft, ebiten.KeyShiftRight,
 			ebiten.KeyMeta, ebiten.KeyMetaLeft, ebiten.KeyMetaRight,
 			ebiten.KeyF9, ebiten.KeyF10, ebiten.KeyF11:
+			continue
+		}
+		if alt && (k == ebiten.KeyEnter || k == ebiten.KeyNumpadEnter) {
 			continue
 		}
 		return true
