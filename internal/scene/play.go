@@ -5,21 +5,29 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 
+	"github.com/comprofix/alleycat/internal/alley"
+	"github.com/comprofix/alleycat/internal/debug"
+	"github.com/comprofix/alleycat/internal/entity"
 	"github.com/comprofix/alleycat/internal/gfx"
 	"github.com/comprofix/alleycat/internal/input"
 	"github.com/comprofix/alleycat/internal/session"
 )
 
-// Play is the placeholder game scene for M1. It shows the session and the
-// master clock running, and handles paws mode, restart and menu.
+// Play is the game scene. In M2 it is the alley with Freddy moving around
+// it; it also handles paws mode, restart and menu.
 type Play struct {
-	paused      bool
-	ticks       int
-	freddySteps int
+	paused bool
+	alley  *alley.Alley
+	view   *alley.Renderer
 }
 
-// NewPlay returns the placeholder game scene.
-func NewPlay() *Play { return &Play{} }
+// NewPlay starts the alley at the session's difficulty.
+func NewPlay(ctx *Context) *Play {
+	return &Play{
+		alley: alley.New(ctx.Session.Difficulty, ctx.RNG),
+		view:  alley.NewRenderer(ctx.Alley),
+	}
+}
 
 // Update implements Scene.
 func (p *Play) Update(ctx *Context) error {
@@ -30,7 +38,7 @@ func (p *Play) Update(ctx *Context) error {
 		return nil
 	case in.JustPressed(input.Restart):
 		ctx.Session = session.New(ctx.Session.Skill)
-		ctx.Switch(NewPlay())
+		ctx.Switch(NewPlay(ctx))
 		return nil
 	case in.JustPressed(input.Pause):
 		p.paused = !p.paused
@@ -38,32 +46,34 @@ func (p *Play) Update(ctx *Context) error {
 	if p.paused {
 		return nil
 	}
-	p.ticks += ctx.Ticks
-	p.freddySteps += ctx.FreddySteps
+	p.alley.Update(ctx.Ticks, ctx.FreddySteps, controls(in), ctx.RNG)
 	return nil
+}
+
+// controls reads the arrow keys. Opposite arrows held together cancel.
+func controls(in *input.Input) entity.Controls {
+	axis := func(neg, pos input.Action) int {
+		switch {
+		case in.Held(neg) && !in.Held(pos):
+			return -1
+		case in.Held(pos) && !in.Held(neg):
+			return 1
+		}
+		return 0
+	}
+	return entity.Controls{H: axis(input.Left, input.Right), V: axis(input.Up, input.Down)}
 }
 
 // Draw implements Scene.
 func (p *Play) Draw(ctx *Context, dst *ebiten.Image) {
-	dst.Fill(gfx.Palette[gfx.Navy])
-	f := ctx.Font
-	s := ctx.Session
-	f.DrawCentred(dst, "GAME PLACEHOLDER", 24, gfx.Yellow, 1)
-	f.Draw(dst, fmt.Sprintf("Skill: %s (%c)", s.Skill, s.Skill.Letter()), 24, 52, gfx.White, 1)
-	f.Draw(dst, fmt.Sprintf("Difficulty: %d   Lives: %d", s.Difficulty, s.Lives), 24, 64, gfx.White, 1)
-	f.Draw(dst, fmt.Sprintf("Score: %s", session.FormatScore(s.Score)), 24, 76, gfx.White, 1)
-
-	f.Draw(dst, fmt.Sprintf("Master ticks: %d", p.ticks), 24, 100, gfx.Cyan, 1)
-	f.Draw(dst, fmt.Sprintf("Freddy steps: %d", p.freddySteps), 24, 112, gfx.Cyan, 1)
-	sound := "off"
-	if ctx.SoundOn {
-		sound = "on"
+	p.view.Draw(dst, p.alley)
+	if debug.Enabled {
+		p.view.DrawDebug(dst, p.alley)
+		ctx.Font.Draw(dst, fmt.Sprintf("TPS %.1f FPS %.1f", ebiten.ActualTPS(), ebiten.ActualFPS()), 4, 190, gfx.White, 1)
 	}
-	f.Draw(dst, "Sound: "+sound, 24, 124, gfx.Cyan, 1)
-
-	f.Draw(dst, "Esc paws  Ctrl+R restart  Ctrl+M menu", 8, 176, gfx.Silver, 1)
 
 	if p.paused {
+		f := ctx.Font
 		dst.Fill(gfx.Palette[gfx.Night])
 		f.DrawCentred(dst, "PAWS MODE", 84, gfx.Yellow, 2)
 		f.DrawCentred(dst, "Esc to continue", 112, gfx.Silver, 1)

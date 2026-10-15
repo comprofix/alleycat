@@ -39,6 +39,8 @@ type Difficulty struct {
 	RivalHideTicks   int // §3.5, after taking a gift (doubled for the bottom-row cat)
 
 	Multiplier int // §3.6, 2d+1 (doubled when carrying a gift)
+
+	LaundryGapChance int // §3.8, /256 chance a new laundry piece is empty
 }
 
 var (
@@ -50,14 +52,14 @@ var (
 
 // Difficulties is indexed by difficulty level 0–7.
 var Difficulties = [MaxDifficulty + 1]Difficulty{
-	{cans0, 2, 16, 45, 6, 1, 18, 40, 2, 288, 360, 4, 3, 20, 16, 540, 1},
-	{cans1, 4, 32, 36, 6, 2, 16, 50, 4, 216, 288, 6, 3, 80, 32, 360, 3},
-	{cansEven, 8, 48, 27, 7, 3, 15, 60, 6, 192, 264, 8, 4, 100, 48, 270, 5},
-	{cansOdd, 12, 64, 18, 7, 4, 14, 70, 8, 192, 264, 10, 4, 120, 64, 180, 7},
-	{cansEven, 16, 80, 15, 8, 4, 13, 85, 9, 192, 264, 12, 4, 120, 96, 175, 9},
-	{cansOdd, 24, 96, 12, 8, 4, 12, 80, 10, 192, 264, 12, 4, 140, 128, 170, 11},
-	{cansEven, 32, 112, 10, 9, 4, 11, 85, 10, 184, 256, 12, 4, 140, 192, 160, 13},
-	{cansOdd, 64, 128, 8, 9, 4, 10, 90, 11, 176, 248, 12, 4, 140, 192, 140, 15},
+	{cans0, 2, 16, 45, 6, 1, 18, 40, 2, 288, 360, 4, 3, 20, 16, 540, 1, 6},
+	{cans1, 4, 32, 36, 6, 2, 16, 50, 4, 216, 288, 6, 3, 80, 32, 360, 3, 20},
+	{cansEven, 8, 48, 27, 7, 3, 15, 60, 6, 192, 264, 8, 4, 100, 48, 270, 5, 32},
+	{cansOdd, 12, 64, 18, 7, 4, 14, 70, 8, 192, 264, 10, 4, 120, 64, 180, 7, 46},
+	{cansEven, 16, 80, 15, 8, 4, 13, 85, 9, 192, 264, 12, 4, 120, 96, 175, 9, 46},
+	{cansOdd, 24, 96, 12, 8, 4, 12, 80, 10, 192, 264, 12, 4, 140, 128, 170, 11, 52},
+	{cansEven, 32, 112, 10, 9, 4, 11, 85, 10, 184, 256, 12, 4, 140, 192, 160, 13, 58},
+	{cansOdd, 64, 128, 8, 9, 4, 10, 90, 11, 176, 248, 12, 4, 140, 192, 140, 15, 64},
 }
 
 // ForLevel returns the table for a difficulty level, clamped to 0–7.

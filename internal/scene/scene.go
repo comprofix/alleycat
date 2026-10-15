@@ -27,6 +27,7 @@ type Context struct {
 	Session *session.Session // nil outside a game
 	Font    *gfx.Font
 	UI      *gfx.Sheet
+	Alley   *gfx.Sheet // alley sprites: Freddy, laundry, litter
 	SoundOn bool
 
 	// Clock output for the current frame (DESIGN §3.8).

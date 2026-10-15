@@ -32,7 +32,7 @@ func (s *SkillSelect) Update(ctx *Context) error {
 	for k, skill := range skillKeys {
 		if ctx.Input.KeyJustPressed(k) {
 			ctx.Session = session.New(skill)
-			ctx.Switch(NewPlay())
+			ctx.Switch(NewPlay(ctx))
 			return nil
 		}
 	}
