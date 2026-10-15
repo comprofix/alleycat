@@ -132,7 +132,7 @@ func (r *Renderer) Draw(dst *ebiten.Image, room Room) {
 	feet := r.sheet.Sprite("footprint")
 	for col, n := range b.Broom.Marks {
 		if n > 0 {
-			entity.DrawAt(dst, feet.Frame(n-1), col*8, config.FootprintY, false)
+			drawTinted(dst, feet.Frame(n-1), col*8, config.FootprintY, false, r.scheme.Prints)
 		}
 	}
 	switch rm := room.(type) {

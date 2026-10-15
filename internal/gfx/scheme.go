@@ -17,6 +17,7 @@ type Scheme struct {
 	Cheese    int // the cheese room's wedge
 	Hole      int // its holes and pits
 	Water     int // the underwater scene's water
+	Prints    int // Freddy's footprints on a room's floor, darker than Ground
 }
 
 // AlleyScheme is the alley at night (DESIGN §8): a cool magenta-plum
@@ -49,6 +50,7 @@ var BirdcageScheme = Scheme{
 	Metal:     Silver,
 	Shade:     Plum,
 	Outline:   Night,
+	Prints:    Plum,
 }
 
 // CheeseScheme is the cheese room: the birdcage room's red walls and green
@@ -66,6 +68,7 @@ var CheeseScheme = Scheme{
 	Metal:     Silver,
 	Shade:     Plum,
 	Outline:   Night,
+	Prints:    Plum,
 	Cheese:    Yellow,
 	Hole:      Orange,
 }
@@ -85,6 +88,7 @@ var FishbowlScheme = Scheme{
 	Metal:     Silver,
 	Shade:     Charcoal,
 	Outline:   Night,
+	Prints:    Night, // Plum prints vanished on the Plum floor
 }
 
 // UnderwaterScheme is the underwater scene: teal water under a plum
