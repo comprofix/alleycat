@@ -295,3 +295,27 @@ func TestToneCentres(t *testing.T) {
 		t.Errorf("mean %.4f after 400 ms: want the tone centred", m)
 	}
 }
+
+// A fast run of notes without rests, like the dog-fight warble, must not
+// buzz at the note rate: the wave restarts only after silence.
+func TestNoNoteRateBuzz(t *testing.T) {
+	s := NewSynth()
+	var n []Note
+	for i := range 250 {
+		n = append(n, Note{Hz: 2900 + float64(i%7)*15, Dur: ms(4)})
+	}
+	s.PlaySFX(n)
+	x := render(t, s, ms(1000))[samples(ms(200)):]
+	power := func(f float64) float64 {
+		re, im := 0.0, 0.0
+		for i, v := range x {
+			a := 2 * math.Pi * f * float64(i) / config.AudioSampleRate
+			re += v * math.Cos(a)
+			im += v * math.Sin(a)
+		}
+		return math.Hypot(re, im) / float64(len(x))
+	}
+	if buzz, near := power(250), (power(200)+power(300))/2; buzz > 4*near+1e-4 {
+		t.Errorf("250 Hz %.5f against %.5f nearby: the 4 ms notes buzz", buzz, near)
+	}
+}

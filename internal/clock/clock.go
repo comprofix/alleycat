@@ -22,6 +22,7 @@ type Clock struct {
 	period    int64 // accumulator units per game-loop frame threshold
 	tickAcc   int64
 	freddyAcc int64
+	total     int64 // master ticks so far
 }
 
 // New returns a clock for a game loop running at tps frames per second.
@@ -38,10 +39,20 @@ func (c *Clock) Advance() (ticks, freddySteps int) {
 		c.tickAcc -= c.period
 		ticks++
 	}
+	c.total += int64(ticks)
 	c.freddyAcc += timerHz * FreddyStepsPerTick
 	for c.freddyAcc >= c.period {
 		c.freddyAcc -= c.period
 		freddySteps++
 	}
 	return ticks, freddySteps
+}
+
+// Total is the number of master ticks so far.
+func (c *Clock) Total() int64 { return c.total }
+
+// Time is the game time in master ticks, including how far the clock is
+// towards the next tick. The audio uses it to place sounds exactly.
+func (c *Clock) Time() float64 {
+	return float64(c.total) + float64(c.tickAcc)/float64(c.period)
 }

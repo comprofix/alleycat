@@ -32,6 +32,7 @@ type Context struct {
 	Rooms   *gfx.Sheet    // room sprites: furniture, broom, cage, bird
 	Audio   *audio.Synth  // nil in headless tests; every call is then ignored
 	Patter  *audio.Patter // the background patter (DESIGN §7.2); nil in tests too
+	FX      *audio.FX     // the sound effects (DESIGN §7.3); nil in tests too
 	SoundOn bool
 
 	// HighScore is the best score this run; it updates when a game ends
@@ -39,8 +40,9 @@ type Context struct {
 	HighScore int
 
 	// Clock output for the current frame (DESIGN §3.8).
-	Ticks       int // master ticks (18.2 Hz)
-	FreddySteps int // Freddy updates (2 per tick)
+	Ticks       int   // master ticks (18.2 Hz)
+	TickCount   int64 // master ticks so far, this frame's included
+	FreddySteps int   // Freddy updates (2 per tick)
 
 	next Scene
 }

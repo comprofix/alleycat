@@ -22,6 +22,8 @@ type Play struct {
 	paused bool
 	alley  *alley.Alley
 	view   *alley.Renderer
+
+	fighting bool // the dog-fight sound is playing
 }
 
 // NewPlay starts the alley at the session's difficulty, with Freddy walking
@@ -60,6 +62,8 @@ func (p *Play) Update(ctx *Context) error {
 
 	if a.Exit == alley.NoExit {
 		runPatter(ctx, alleyPatter(a))
+		playAlleySounds(ctx, a)
+		followFight(ctx, &a.Dog, &p.fighting)
 	} else {
 		s := ctx.Session
 		room := rooms.Heart

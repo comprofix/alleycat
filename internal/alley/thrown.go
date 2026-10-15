@@ -84,6 +84,7 @@ func (a *Alley) checkThrownHit() {
 	t.hit = true
 	a.Freeze = config.BonkTicks
 	a.Impact = Impact{Kind: Bonk, X: min(max(f.X-config.BonkOffsetX, 0), config.BonkMaxX), Y: f.Y}
+	a.sound(SoundBonk)
 	a.loseLife()
 	if t.Dir == -1 {
 		t.Dir = 1

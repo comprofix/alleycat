@@ -82,8 +82,13 @@ type Freddy struct {
 	Bouncing bool
 
 	// Sank reports that he sank out of sight behind the fence and was reset.
-	// It stays set until the alley clears it, so it can pause (DESIGN §12).
+	// It stays set until the alley clears it, so it can pause and play the
+	// crackle (DESIGN §7.3, §12).
 	Sank bool
+
+	// Leapt reports that he started a jump or a drop. It stays set until the
+	// alley clears it, for the trash-can step-off click (DESIGN §7.3).
+	Leapt bool
 
 	// Swim is his state underwater (DESIGN §3.4, "Underwater").
 	Swim Swim
@@ -272,6 +277,7 @@ func (f *Freddy) takeInput(in Controls) {
 }
 
 func (f *Freddy) startJump() {
+	f.Leapt = true
 	step := uint8((15 - f.RunSpeed) * 16)
 	if f.RunSpeed > config.FreddyWalkStartSpeed {
 		f.RunSpeed -= config.FreddyJumpSpeedCost
@@ -285,6 +291,7 @@ func (f *Freddy) startJump() {
 }
 
 func (f *Freddy) startDrop() {
+	f.Leapt = true
 	f.noLand = config.FreddyDropNoLand
 	if f.Depth == OnFence {
 		f.Depth = InFront

@@ -50,3 +50,25 @@ func TestFreddyStepsAreEvenlySpaced(t *testing.T) {
 		last = i
 	}
 }
+
+// Total counts master ticks, and Time runs smoothly between them.
+func TestTotalAndTime(t *testing.T) {
+	c := New(60)
+	prev := c.Time()
+	sum := 0
+	for range 600 {
+		ticks, _ := c.Advance()
+		sum += ticks
+		if now := c.Time(); now <= prev {
+			t.Fatalf("Time went from %v to %v: want it always moving on", prev, now)
+		} else {
+			prev = now
+		}
+	}
+	if c.Total() != int64(sum) {
+		t.Errorf("Total %d, want %d", c.Total(), sum)
+	}
+	if got := c.Time(); got < float64(sum) || got >= float64(sum)+1 {
+		t.Errorf("Time %v, want between %d and %d", got, sum, sum+1)
+	}
+}
