@@ -82,6 +82,11 @@ func (b *Base) Support(f *entity.Freddy) bool {
 		b.end(LeftEarly)
 		return false
 	}
+	if y, ok := b.ShelfAt(f); ok {
+		f.Y, f.X = y, f.X&^3
+		f.Seat = entity.JustSeated
+		return true
+	}
 	if i := b.SurfaceAt(f); i >= 0 {
 		s := b.Layout.Surfaces[i]
 		f.Y = s.Band
@@ -92,6 +97,20 @@ func (b *Base) Support(f *entity.Freddy) bool {
 		return true
 	}
 	return false
+}
+
+// ShelfAt reports whether Freddy is on one of the layout's ladder shelves,
+// and the Y he sits at there (DESIGN §3.4, "Bookshelf room in detail").
+func (b *Base) ShelfAt(f *entity.Freddy) (y int, ok bool) {
+	l := b.Layout.Ladder
+	if l == nil || f.X&^3 < l.MinX || f.X&^3 > l.MaxX || f.Y < l.Snap {
+		return 0, false
+	}
+	shelf := (f.Y - l.Snap) &^ 7
+	if shelf < l.TopY || shelf > l.BottomY || (shelf-l.TopY)%l.Gap != 0 {
+		return 0, false
+	}
+	return shelf + l.Snap, true
 }
 
 // SurfaceAt is the index of the first surface Freddy is on at his current
@@ -184,6 +203,8 @@ func New(k Kind, difficulty int, rng *rand.Rand) Room {
 		return newFishbowl(difficulty, rng)
 	case Dogs:
 		return newDogs(difficulty, rng)
+	case Bookshelf:
+		return newBookshelf(difficulty, rng)
 	}
 	return nil
 }

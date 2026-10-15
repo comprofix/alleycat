@@ -105,3 +105,7 @@ var AirColours = [4]int{Night, Navy, Plum, Red}
 // DogsScheme is the sleeping dogs room: the fishbowl room's plum walls and
 // teal furniture (DESIGN §3.4, "Sleeping dogs room layout").
 var DogsScheme = FishbowlScheme
+
+// BookshelfScheme is the bookshelf room: the other magenta rooms' plum walls
+// and teal furniture (DESIGN §3.4, "Bookshelf room layout").
+var BookshelfScheme = FishbowlScheme

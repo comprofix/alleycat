@@ -30,7 +30,18 @@ type RoomLayout struct {
 	StartX, StartY   int
 	WindowX, WindowY int
 	Surfaces         []Surface
-	BroomEvery       int // ticks between broom steps
+	BroomEvery       int     // ticks between broom steps
+	Ladder           *Ladder // shelves checked before the surfaces, or nil
+}
+
+// Ladder is a stack of perches, like the bookcase's shelves (DESIGN §3.4,
+// "Bookshelf room in detail"): Freddy is on one when his X, rounded down to
+// 4, is within MinX–MaxX, and his Y − Snap, rounded down to 8, is a shelf
+// from TopY to BottomY, Gap apart. He sits at that shelf + Snap.
+type Ladder struct {
+	MinX, MaxX    int
+	TopY, BottomY int
+	Gap, Snap     int
 }
 
 // Birdcage is the birdcage room (DESIGN §3.4).

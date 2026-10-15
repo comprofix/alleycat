@@ -114,6 +114,9 @@ func (r *Renderer) Draw(dst *ebiten.Image, room Room) {
 		case Dogs:
 			r.scheme = gfx.DogsScheme
 			r.buildDogs()
+		case Bookshelf:
+			r.scheme = gfx.BookshelfScheme
+			r.buildBookshelf(room.(*BookshelfRoom))
 		default:
 			r.buildBirdcage()
 		}
@@ -136,6 +139,8 @@ func (r *Renderer) Draw(dst *ebiten.Image, room Room) {
 		r.drawBowl(dst, rm)
 	case *DogsRoom:
 		r.drawDogs(dst, rm)
+	case *BookshelfRoom:
+		r.drawBookshelf(dst, rm)
 	}
 	entity.DrawDog(dst, r.actors, &b.Dog, "dog_run_orange")
 	entity.DrawAt(dst, r.sheet.Sprite("broom").Frame(broomPoses[b.Broom.Frame]), b.Broom.X, b.Broom.Y, false)
@@ -143,6 +148,9 @@ func (r *Renderer) Draw(dst *ebiten.Image, room Room) {
 		r.drawEating(dst, dr)
 	} else {
 		entity.DrawFreddy(dst, r.actors, b.Freddy)
+	}
+	if br, ok := room.(*BookshelfRoom); ok {
+		r.drawBite(dst, br)
 	}
 }
 
@@ -199,6 +207,20 @@ func (r *Renderer) DrawDebug(dst *ebiten.Image, room Room) {
 	case *FishbowlRoom:
 		br := rm.BowlRect()
 		box(br.X, br.Y, br.W, br.H, gfx.White)
+	case *BookshelfRoom:
+		if l := b.Layout.Ladder; l != nil {
+			for y := l.TopY; y <= l.BottomY; y += l.Gap {
+				box(l.MinX, y+l.Snap, l.MaxX-l.MinX+4, 8, gfx.Cyan)
+			}
+		}
+		for i := range rm.Ferns {
+			if !rm.Ferns[i] {
+				fr := FernRect(i)
+				box(fr.X, fr.Y, fr.W, fr.H, gfx.Lime)
+			}
+		}
+		sr := rm.SpiderRect()
+		box(sr.X, sr.Y, sr.W, sr.H, gfx.White)
 	case *DogsRoom:
 		for i, sd := range rm.Sleepers {
 			if sd.On {
