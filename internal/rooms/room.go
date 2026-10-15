@@ -85,7 +85,6 @@ func (b *Base) Support(f *entity.Freddy) bool {
 	if y, ok := b.ShelfAt(f); ok {
 		f.Y, f.X = y, f.X&^3
 		f.Seat = entity.JustSeated
-		f.OnLine = true
 		return true
 	}
 	if i := b.SurfaceAt(f); i >= 0 {

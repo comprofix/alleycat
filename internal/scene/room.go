@@ -18,7 +18,6 @@ type RoomScene struct {
 	room   rooms.Room
 	view   *rooms.Renderer
 	x, y   int // where Freddy went in, in the alley
-	hold   int // ticks the room stands still after a floor thump
 }
 
 func newRoomScene(ctx *Context, room rooms.Room, x, y int) *RoomScene {
@@ -32,21 +31,9 @@ func (r *RoomScene) Update(ctx *Context) error {
 	}
 	s := ctx.Session
 	s.LevelTicks += ctx.Ticks
-	if r.hold > 0 {
-		r.hold = max(r.hold-ctx.Ticks, 0)
-		return nil
-	}
 	r.room.Update(ctx.Ticks, ctx.FreddySteps, controls(ctx.Input), ctx.RNG)
+	runPatter(ctx, roomPatter(r.room))
 	b := r.room.Shared()
-	// A floor thump holds the room still, as the original's sound routine
-	// does (DESIGN §7.1, §12).
-	if f := b.Freddy; f.Thumped {
-		f.Thumped = false
-		r.hold = config.FloorThumpTicks
-	}
-	if r.hold == 0 {
-		runPatter(ctx, roomPatter(r.room))
-	}
 	if hr, ok := r.room.(*rooms.HeartRoom); ok {
 		r.heartEnds(ctx, hr)
 		return nil

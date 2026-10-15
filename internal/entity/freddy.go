@@ -81,15 +81,9 @@ type Freddy struct {
 	// bounced again meanwhile (DESIGN §3.4, "The broom in detail").
 	Bouncing bool
 
-	// OnLine is set when he sits on a clothesline or a bookshelf shelf, and
-	// only a knock, riding off a line's end, a bounce or a reset clears it.
-	// Landing on the floor while it is set is a floor thump (DESIGN §7.3).
-	OnLine bool
-
-	// Thumped and Sank report a floor thump and his sinking out of sight
-	// behind the fence. They stay set until the world clears them, so it can
-	// pause for them (DESIGN §12).
-	Thumped, Sank bool
+	// Sank reports that he sank out of sight behind the fence and was reset.
+	// It stays set until the alley clears it, so it can pause (DESIGN §12).
+	Sank bool
 
 	// Swim is his state underwater (DESIGN §3.4, "Underwater").
 	Swim Swim
@@ -227,9 +221,6 @@ func (f *Freddy) updateAirborne(w World) {
 			f.Y = config.FloorY
 			f.Depth = InFront
 			f.land()
-			if f.OnLine {
-				f.Thumped = true
-			}
 			return
 		}
 	}
@@ -304,7 +295,6 @@ func (f *Freddy) startDrop() {
 
 // FallOffLine drops him off the end of a clothesline he was riding.
 func (f *Freddy) FallOffLine() {
-	f.OnLine = false
 	f.Seat = NotSeated
 	f.RunSpeed = config.FreddyLineFallRunSpeed
 	f.noLand = config.FreddyLineFallNoLand
@@ -354,7 +344,6 @@ func (f *Freddy) moveH() bool {
 // fence at a steady speed, unable to land, and walks back in (DESIGN §3.8,
 // "Alley systems").
 func (f *Freddy) KnockDown() {
-	f.OnLine = false
 	f.Seat = NotSeated
 	f.Dir = 0
 	f.Depth = Behind
@@ -365,7 +354,6 @@ func (f *Freddy) KnockDown() {
 // KnockOffLine is a mouse knocking him off a clothesline: he falls and
 // cannot land for a while.
 func (f *Freddy) KnockOffLine() {
-	f.OnLine = false
 	f.Seat = NotSeated
 	f.Dir = 0
 	f.noLand = config.MouseKnockNoLand
@@ -391,7 +379,6 @@ func (f *Freddy) Bounce(wx, wy int) {
 		return
 	}
 	f.Bouncing = true
-	f.OnLine = false
 	f.Seat = NotSeated
 	dir := physics.Falling
 	if f.Y >= wy {

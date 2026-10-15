@@ -131,18 +131,13 @@ func (a *Alley) Update(ticks, freddySteps int, in entity.Controls, rng *rand.Ran
 	}
 }
 
-// checkPauses holds the game still after Freddy sinks behind the fence or
-// thumps onto the floor, as the original's sound routines do (DESIGN §7.1,
-// §12).
+// checkPauses holds the game still after Freddy sinks behind the fence, as
+// the original's sound routine does (DESIGN §7.1, §12).
 func (a *Alley) checkPauses() {
 	f := a.Freddy
 	if f.Sank {
 		f.Sank = false
 		a.Freeze = max(a.Freeze, config.FenceDropTicks)
-	}
-	if f.Thumped {
-		f.Thumped = false
-		a.Freeze = max(a.Freeze, config.FloorThumpTicks)
 	}
 }
 
@@ -240,7 +235,6 @@ func (a *Alley) Support(f *entity.Freddy) bool {
 			f.Y = y
 			f.X = physics.Band(f.X)
 			f.Seat = entity.JustSeated
-			f.OnLine = true
 			return true
 		}
 	}

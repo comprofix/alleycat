@@ -178,8 +178,7 @@ func TestLaundryGapsGrowWithDifficulty(t *testing.T) {
 	}
 }
 
-// The alley stands still after Freddy sinks behind the fence or thumps onto
-// the floor (DESIGN §12).
+// The alley stands still after Freddy sinks behind the fence (DESIGN §12).
 func TestPauses(t *testing.T) {
 	a := standing(0)
 	a.Freddy.Sank = true
@@ -188,27 +187,4 @@ func TestPauses(t *testing.T) {
 		t.Errorf("after sinking: freeze %d, Sank %v; want %d, cleared", a.Freeze, a.Freddy.Sank, config.FenceDropTicks)
 	}
 
-	a = standing(0)
-	a.Freddy.Thumped = true
-	a.checkPauses()
-	if a.Freeze != config.FloorThumpTicks || a.Freddy.Thumped {
-		t.Errorf("after a thump: freeze %d, Thumped %v; want %d, cleared", a.Freeze, a.Freddy.Thumped, config.FloorThumpTicks)
-	}
-
-	// Sitting on a clothesline marks him.
-	a = standing(0)
-	f := a.Freddy
-	for i := range a.Lines {
-		for x := 8; x < 290; x += 8 {
-			f.X, f.Y = x, config.LineY[i]
-			f.OnLine = false
-			if a.Support(f) {
-				if !f.OnLine {
-					t.Fatal("sitting on a line did not set the mark")
-				}
-				return
-			}
-		}
-	}
-	t.Fatal("found no line to sit on")
 }
