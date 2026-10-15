@@ -7,6 +7,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 
+	"github.com/comprofix/alleycat/internal/audio"
 	"github.com/comprofix/alleycat/internal/gfx"
 	"github.com/comprofix/alleycat/internal/input"
 	"github.com/comprofix/alleycat/internal/session"
@@ -27,8 +28,9 @@ type Context struct {
 	Session *session.Session // nil outside a game
 	Font    *gfx.Font
 	UI      *gfx.Sheet
-	Alley   *gfx.Sheet // alley sprites: Freddy, laundry, litter
-	Rooms   *gfx.Sheet // room sprites: furniture, broom, cage, bird
+	Alley   *gfx.Sheet   // alley sprites: Freddy, laundry, litter
+	Rooms   *gfx.Sheet   // room sprites: furniture, broom, cage, bird
+	Audio   *audio.Synth // nil in headless tests; every call is then ignored
 	SoundOn bool
 
 	// HighScore is the best score this run; it updates when a game ends

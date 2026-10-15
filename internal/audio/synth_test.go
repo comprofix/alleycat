@@ -1,0 +1,231 @@
+package audio
+
+import (
+	"encoding/binary"
+	"math"
+	"testing"
+	"time"
+
+	"github.com/comprofix/alleycat/internal/config"
+)
+
+// render pulls d of mono samples from s.
+func render(t *testing.T, s *Synth, d time.Duration) []float64 {
+	t.Helper()
+	n := samples(d)
+	buf := make([]byte, 4*n)
+	if got, err := s.Read(buf); err != nil || got != len(buf) {
+		t.Fatalf("Read = %d, %v; want %d, nil", got, err, len(buf))
+	}
+	out := make([]float64, n)
+	for i := range out {
+		l := int16(binary.LittleEndian.Uint16(buf[4*i:]))
+		r := int16(binary.LittleEndian.Uint16(buf[4*i+2:]))
+		if l != r {
+			t.Fatalf("sample %d: left %d != right %d", i, l, r)
+		}
+		out[i] = float64(l) / math.MaxInt16
+	}
+	return out
+}
+
+// pitch estimates the frequency of x from its rising zero crossings.
+func pitch(x []float64) float64 {
+	first, last, n := -1, -1, 0
+	for i := 1; i < len(x); i++ {
+		if x[i-1] < 0 && x[i] >= 0 {
+			if first < 0 {
+				first = i
+			} else {
+				n++
+			}
+			last = i
+		}
+	}
+	if n == 0 {
+		return 0
+	}
+	return float64(n) * config.AudioSampleRate / float64(last-first)
+}
+
+func peak(x []float64) float64 {
+	p := 0.0
+	for _, v := range x {
+		p = max(p, math.Abs(v))
+	}
+	return p
+}
+
+func ms(n int) time.Duration { return time.Duration(n) * time.Millisecond }
+
+func near(got, want, tol float64) bool { return math.Abs(got-want) <= tol }
+
+func TestTicks(t *testing.T) {
+	if got := Ticks(1); !near(got.Seconds(), 0.05493, 0.0001) {
+		t.Errorf("Ticks(1) = %v, want about 54.9ms", got)
+	}
+}
+
+func TestPitch(t *testing.T) {
+	for _, soften := range []bool{false, true} {
+		s := NewSynth()
+		s.SetSoften(soften)
+		s.PlayMusic([]Note{{440, time.Second}}, false)
+		x := render(t, s, time.Second)
+		if got := pitch(x[1000:]); !near(got, 440, 1) {
+			t.Errorf("soften %v: pitch = %.1f Hz, want 440", soften, got)
+		}
+		if p := peak(x); p > config.BeeperAmplitude*config.DefaultVolume*1.15 {
+			t.Errorf("soften %v: peak %.3f is above the configured level", soften, p)
+		}
+	}
+}
+
+func TestNoClickAtStart(t *testing.T) {
+	s := NewSynth()
+	s.SetSoften(false)
+	s.PlaySFX([]Note{{1000, ms(100)}})
+	x := render(t, s, ms(100))
+	full := config.BeeperAmplitude * config.DefaultVolume
+	if math.Abs(x[0]) > full*0.05 {
+		t.Errorf("first sample %.3f: want a ramp from silence", x[0])
+	}
+	if p := peak(x[samples(ms(5)):]); !near(p, full, full*0.1) {
+		t.Errorf("peak after attack = %.3f, want about %.3f", p, full)
+	}
+}
+
+func TestRestAndEndAreSilent(t *testing.T) {
+	s := NewSynth()
+	s.PlaySFX([]Note{{800, ms(50)}, {0, ms(50)}})
+	x := render(t, s, ms(200))
+	if p := peak(x[samples(ms(70)):samples(ms(100))]); p > 0.001 {
+		t.Errorf("rest peak = %.4f, want silence", p)
+	}
+	if p := peak(x[samples(ms(120)):]); p > 0.001 {
+		t.Errorf("after the end peak = %.4f, want silence", p)
+	}
+}
+
+// An effect pre-empts the music, which then resumes where it paused.
+func TestSFXPreemptsAndMusicResumes(t *testing.T) {
+	s := NewSynth()
+	s.SetSoften(false)
+	s.PlayMusic([]Note{{500, ms(100)}, {1500, ms(100)}}, false)
+	render(t, s, ms(50))
+
+	s.PlaySFX([]Note{{3000, ms(100)}})
+	during := render(t, s, ms(100))
+	if got := pitch(during[100:]); !near(got, 3000, 15) {
+		t.Errorf("during the effect pitch = %.0f, want 3000", got)
+	}
+
+	// 50 ms of the first note were left.
+	rest := render(t, s, ms(40))
+	if got := pitch(rest[100:]); !near(got, 500, 10) {
+		t.Errorf("after the effect pitch = %.0f, want the paused note at 500", got)
+	}
+	render(t, s, ms(20))
+	second := render(t, s, ms(80))
+	if got := pitch(second); !near(got, 1500, 15) {
+		t.Errorf("then pitch = %.0f, want the second note at 1500", got)
+	}
+}
+
+func TestLoop(t *testing.T) {
+	s := NewSynth()
+	s.SetSoften(false)
+	s.PlayMusic([]Note{{400, ms(30)}, {1200, ms(30)}}, true)
+	render(t, s, ms(65)) // into the second pass
+	if got := pitch(render(t, s, ms(20))); !near(got, 400, 20) {
+		t.Errorf("looped pitch = %.0f, want 400", got)
+	}
+	s.StopMusic()
+	render(t, s, ms(10))
+	if p := peak(render(t, s, ms(20))); p > 0.001 {
+		t.Errorf("after StopMusic peak = %.4f, want silence", p)
+	}
+}
+
+// Sound off silences the output but keeps the timing (DESIGN §7.1).
+func TestDisabledKeepsTiming(t *testing.T) {
+	s := NewSynth()
+	s.SetSoften(false)
+	s.PlayMusic([]Note{{600, time.Second}}, false)
+	s.SetEnabled(false)
+	s.PlaySFX([]Note{{2000, ms(100)}})
+	if p := peak(render(t, s, ms(150))); p > 0.001 {
+		t.Errorf("sound off peak = %.4f, want silence", p)
+	}
+	s.SetEnabled(true)
+	if got := pitch(render(t, s, ms(100))[200:]); !near(got, 600, 10) {
+		t.Errorf("after sound on pitch = %.0f, want the music (the effect ran out while off)", got)
+	}
+}
+
+func TestVolume(t *testing.T) {
+	s := NewSynth()
+	s.SetSoften(false)
+	s.SetVolume(0.5)
+	s.PlayMusic([]Note{{500, time.Second}}, false)
+	want := config.BeeperAmplitude * 0.5
+	if p := peak(render(t, s, ms(100))[500:]); !near(p, want, want*0.1) {
+		t.Errorf("peak at volume 0.5 = %.3f, want %.3f", p, want)
+	}
+	s.SetVolume(0)
+	render(t, s, ms(10))
+	if p := peak(render(t, s, ms(20))); p > 0.001 {
+		t.Errorf("volume 0 peak = %.4f, want silence", p)
+	}
+}
+
+// "Soften beeper" takes the edge off: less energy in the sample-to-sample
+// steps, at the same pitch.
+func TestSoftenSmooths(t *testing.T) {
+	rough := func(soften bool) float64 {
+		s := NewSynth()
+		s.SetSoften(soften)
+		s.PlayMusic([]Note{{1000, time.Second}}, false)
+		x := render(t, s, ms(200))[1000:]
+		sum := 0.0
+		for i := 1; i < len(x); i++ {
+			d := x[i] - x[i-1]
+			sum += d * d
+		}
+		return sum
+	}
+	if hard, soft := rough(false), rough(true); soft > hard*0.6 {
+		t.Errorf("soften roughness %.3f vs %.3f: want a clear reduction", soft, hard)
+	}
+}
+
+// Very short notes, as in the background clicks (DESIGN §7.2), still sound.
+func TestShortClick(t *testing.T) {
+	s := NewSynth()
+	s.SetSoften(false)
+	s.PlaySFX([]Note{{2000, ms(4)}, {0, ms(20)}})
+	if p := peak(render(t, s, ms(10))); p < config.BeeperAmplitude*config.DefaultVolume*0.5 {
+		t.Errorf("4 ms click peak = %.3f, want it audible", p)
+	}
+}
+
+func TestEmptyTables(t *testing.T) {
+	s := NewSynth()
+	s.PlayMusic(nil, true)
+	s.PlaySFX([]Note{})
+	s.PlayMusic([]Note{{440, 0}}, true) // no length at all: stops, doesn't hang
+	if p := peak(render(t, s, ms(20))); p > 0.001 {
+		t.Errorf("peak = %.4f, want silence", p)
+	}
+}
+
+func TestNilSynth(t *testing.T) {
+	var s *Synth
+	s.PlayMusic([]Note{{440, ms(10)}}, false)
+	s.PlaySFX([]Note{{440, ms(10)}})
+	s.StopMusic()
+	s.StopSFX()
+	s.SetEnabled(false)
+	s.SetVolume(1)
+	s.SetSoften(false)
+}

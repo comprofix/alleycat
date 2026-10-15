@@ -9,8 +9,10 @@ import (
 	"math/rand/v2"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	eaudio "github.com/hajimehoshi/ebiten/v2/audio"
 
 	"github.com/comprofix/alleycat/assets"
+	"github.com/comprofix/alleycat/internal/audio"
 	"github.com/comprofix/alleycat/internal/clock"
 	"github.com/comprofix/alleycat/internal/gfx"
 	"github.com/comprofix/alleycat/internal/input"
@@ -31,6 +33,8 @@ type Game struct {
 	clock  *clock.Clock
 	ctx    *scene.Context
 	scenes *scene.Manager
+
+	speaker *eaudio.Player // kept alive while the game runs
 }
 
 // New loads the assets and starts at the title screen. seed initialises the
@@ -58,10 +62,17 @@ func New(seed uint64) (*Game, error) {
 		return nil, fmt.Errorf("rooms sheet: %w", err)
 	}
 
+	synth := audio.NewSynth()
+	speaker, err := audio.Start(synth)
+	if err != nil {
+		return nil, fmt.Errorf("audio: %w", err)
+	}
+
 	g := &Game{
-		screen: ebiten.NewImage(gfx.ScreenWidth, gfx.ScreenHeight),
-		aspect: gfx.AspectSquare,
-		clock:  clock.New(TPS),
+		screen:  ebiten.NewImage(gfx.ScreenWidth, gfx.ScreenHeight),
+		aspect:  gfx.AspectSquare,
+		clock:   clock.New(TPS),
+		speaker: speaker,
 		ctx: &scene.Context{
 			Input:   input.New(input.Ebiten{}),
 			RNG:     rand.New(rand.NewPCG(seed, seed^0x9e3779b97f4a7c15)),
@@ -69,6 +80,7 @@ func New(seed uint64) (*Game, error) {
 			UI:      ui,
 			Alley:   alleySheet,
 			Rooms:   roomSheet,
+			Audio:   synth,
 			SoundOn: true,
 		},
 	}
@@ -93,6 +105,7 @@ func (g *Game) Update() error {
 	}
 	if in.JustPressed(input.Sound) {
 		g.ctx.SoundOn = !g.ctx.SoundOn
+		g.ctx.Audio.SetEnabled(g.ctx.SoundOn)
 	}
 
 	g.ctx.Ticks, g.ctx.FreddySteps = g.clock.Advance()
