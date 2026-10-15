@@ -43,23 +43,11 @@ func newReturnPlay(ctx *Context, x, y int) *Play {
 
 // Update implements Scene.
 func (p *Play) Update(ctx *Context) error {
-	in := ctx.Input
-	switch {
-	case in.JustPressed(input.Menu):
-		ctx.Switch(NewSkillSelect())
-		return nil
-	case in.JustPressed(input.Restart):
-		ctx.Session = session.New(ctx.Session.Skill)
-		ctx.Switch(NewPlay(ctx))
-		return nil
-	case in.JustPressed(input.Pause):
-		p.paused = !p.paused
-	}
-	if p.paused {
+	if handleGameKeys(ctx, &p.paused) || p.paused {
 		return nil
 	}
 	a := p.alley
-	a.Update(ctx.Ticks, ctx.FreddySteps, controls(in), ctx.RNG)
+	a.Update(ctx.Ticks, ctx.FreddySteps, controls(ctx.Input), ctx.RNG)
 
 	// At 0 lives the game ends at once, straight back to the title (DESIGN
 	// §3.8, "Lives and game over").
@@ -77,7 +65,17 @@ func (p *Play) Update(ctx *Context) error {
 		} else {
 			room = s.Rooms.Pick(s.Difficulty, ctx.RNG)
 		}
-		ctx.Switch(newStubRoom(room, a.Freddy.X, a.Freddy.Y))
+		r := rooms.New(room, s.Difficulty, ctx.RNG)
+		if r == nil && room != rooms.Heart {
+			// For testing, every ordinary window leads to the birdcage
+			// until all the rooms are built (owner request, 2026-10-15).
+			r = rooms.New(rooms.Birdcage, s.Difficulty, ctx.RNG)
+		}
+		if r != nil {
+			ctx.Switch(newRoomScene(ctx, r, a.Freddy.X, a.Freddy.Y))
+		} else {
+			ctx.Switch(newStubRoom(room, a.Freddy.X, a.Freddy.Y))
+		}
 	}
 	return nil
 }
@@ -105,13 +103,34 @@ func (p *Play) Draw(ctx *Context, dst *ebiten.Image) {
 	}
 
 	if p.paused {
-		// The alley stays in view, frozen, under a small banner (owner
-		// request, 2026-10-15).
-		f := ctx.Font
-		const msg = "PAWS MODE - Esc to continue"
-		w := gfx.Width(msg)
-		x := (gfx.ScreenWidth - w) / 2
-		dst.SubImage(image.Rect(x-4, 0, x+w+4, 12)).(*ebiten.Image).Fill(gfx.Palette[gfx.Night])
-		f.Draw(dst, msg, x, 2, gfx.Yellow, 1)
+		drawPaws(ctx, dst)
 	}
+}
+
+// handleGameKeys handles the in-game keys: Ctrl+M (menu), Ctrl+R (restart)
+// and Esc (paws). It reports whether the scene is being switched.
+func handleGameKeys(ctx *Context, paused *bool) bool {
+	in := ctx.Input
+	switch {
+	case in.JustPressed(input.Menu):
+		ctx.Switch(NewSkillSelect())
+		return true
+	case in.JustPressed(input.Restart):
+		ctx.Session = session.New(ctx.Session.Skill)
+		ctx.Switch(NewPlay(ctx))
+		return true
+	case in.JustPressed(input.Pause):
+		*paused = !*paused
+	}
+	return false
+}
+
+// drawPaws: the scene stays in view, frozen, under a small banner (owner
+// request, DESIGN §4).
+func drawPaws(ctx *Context, dst *ebiten.Image) {
+	const msg = "PAWS MODE - Esc to continue"
+	w := gfx.Width(msg)
+	x := (gfx.ScreenWidth - w) / 2
+	dst.SubImage(image.Rect(x-4, 0, x+w+4, 12)).(*ebiten.Image).Fill(gfx.Palette[gfx.Night])
+	ctx.Font.Draw(dst, msg, x, 2, gfx.Yellow, 1)
 }

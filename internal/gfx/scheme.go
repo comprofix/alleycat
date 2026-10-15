@@ -31,3 +31,19 @@ var AlleyScheme = Scheme{
 	Shade:     Slate,
 	Outline:   Night,
 }
+
+// BirdcageScheme is the birdcage room: a red room with green furniture,
+// after the original's red/green set (DESIGN §2.3, §3.4).
+var BirdcageScheme = Scheme{
+	Wall:      Red,
+	WallShade: Plum,
+	Glass:     Night,
+	Glint:     Sky,
+	Trim:      Yellow,
+	Fence:     Green,
+	Gap:       Teal,
+	Ground:    Red,
+	Metal:     Silver,
+	Shade:     Plum,
+	Outline:   Night,
+}
