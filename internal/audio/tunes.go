@@ -73,10 +73,18 @@ const (
 		E6:1 C6:1 G5:1 E5:1 C5:2 r:2`
 )
 
+// titleTempo stretches the title theme: 1.25 makes a beat 5 ticks, not 4
+// (owner: a little slower, 2026-10-15).
+const titleTempo = 1.25
+
 // Title is the title theme, played once.
 func Title() []Note {
-	return tune(titleIntro, titleA, titleAEnd1, titleA, titleAEnd2, titleB,
+	n := tune(titleIntro, titleA, titleAEnd1, titleA, titleAEnd2, titleB,
 		titleA, titleAEnd1, titleB, titleA, titleAEnd2, titleCoda)
+	for i := range n {
+		n[i].Dur = time.Duration(float64(n[i].Dur) * titleTempo)
+	}
+	return n
 }
 
 // RoomLeft is the tune after leaving a room without losing a life.

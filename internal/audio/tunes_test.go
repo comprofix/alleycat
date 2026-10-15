@@ -40,7 +40,7 @@ func TestTuneLengths(t *testing.T) {
 		n      []Note
 		lo, hi float64 // ticks
 	}{
-		{"title", Title(), 780, 900},      // about 43–49 s, played once
+		{"title", Title(), 1050, 1150},    // about 60 s, played once
 		{"room left", RoomLeft(), 28, 28}, // 14 notes of 2 ticks
 		{"failure", Failure(), 28, 28},
 		{"kiss", Kiss(), 120, 140}, // a pass of the loop
