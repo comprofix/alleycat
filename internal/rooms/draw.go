@@ -18,7 +18,7 @@ const (
 	pictureX, pictureY             = 88, 88
 	openingX, openingY             = 232, 88
 	openingW, openingH             = 32, 16
-	curtainLX, curtainRX, curtainY = 216, 264, 86
+	curtainW, curtainY             = 16, 86
 	lampX, lampY                   = 16, 112
 	furnitureY                     = 128 // chair tops
 	tableX, tableY                 = 128, 144
@@ -53,10 +53,9 @@ func line(dst *ebiten.Image, x0, y0, x1, y1, idx int) {
 	vector.StrokeLine(dst, float32(x0)+0.5, float32(y0)+0.5, float32(x1)+0.5, float32(y1)+0.5, 1, gfx.Palette[idx], false)
 }
 
-// buildBirdcage draws the birdcage room's backdrop: the walls in
-// perspective, the picture, the window with its curtains, the lamp, the
-// chairs and the table.
-func (r *Renderer) buildBirdcage() {
+// buildWalls fills the backdrop and draws the walls in perspective, shared
+// by the red rooms.
+func (r *Renderer) buildWalls() {
 	s, b := r.scheme, r.back
 	b.Fill(gfx.Palette[s.Wall])
 	ink := s.Outline
@@ -68,13 +67,26 @@ func (r *Renderer) buildBirdcage() {
 	line(b, gfx.ScreenWidth-1, wallY0-16, wallX1, wallY0, ink)
 	line(b, 0, wallY1+16, wallX0, wallY1, ink)
 	line(b, gfx.ScreenWidth-1, wallY1+16, wallX1, wallY1, ink)
+}
 
-	entity.DrawAt(b, r.sheet.Sprite("picture").Frame(0), pictureX, pictureY, false)
-	fill(b, openingX-1, openingY-1, openingW+2, openingH+2, s.Trim)
-	fill(b, openingX, openingY, openingW, openingH, s.Glass)
+// buildWindow draws the window opening at x with a curtain either side.
+func (r *Renderer) buildWindow(x int) {
+	s, b := r.scheme, r.back
+	fill(b, x-1, openingY-1, openingW+2, openingH+2, s.Trim)
+	fill(b, x, openingY, openingW, openingH, s.Glass)
 	curtain := r.sheet.Sprite("curtain").Frame(0)
-	entity.DrawAt(b, curtain, curtainLX, curtainY, false)
-	entity.DrawAt(b, curtain, curtainRX, curtainY, true)
+	entity.DrawAt(b, curtain, x-curtainW, curtainY, false)
+	entity.DrawAt(b, curtain, x+openingW, curtainY, true)
+}
+
+// buildBirdcage draws the birdcage room's backdrop: the walls in
+// perspective, the picture, the window with its curtains, the lamp, the
+// chairs and the table.
+func (r *Renderer) buildBirdcage() {
+	b := r.back
+	r.buildWalls()
+	entity.DrawAt(b, r.sheet.Sprite("picture").Frame(0), pictureX, pictureY, false)
+	r.buildWindow(openingX)
 	entity.DrawAt(b, r.sheet.Sprite("lamp").Frame(0), lampX, lampY, false)
 	for _, c := range chairs {
 		entity.DrawAt(b, r.sheet.Sprite("chair").Frame(0), c.x, furnitureY, c.left)
@@ -86,7 +98,13 @@ func (r *Renderer) buildBirdcage() {
 func (r *Renderer) Draw(dst *ebiten.Image, room Room) {
 	if r.back == nil {
 		r.back = ebiten.NewImage(gfx.ScreenWidth, gfx.ScreenHeight)
-		r.buildBirdcage()
+		switch room.Kind() {
+		case Cheese:
+			r.scheme = gfx.CheeseScheme
+			r.buildCheese()
+		default:
+			r.buildBirdcage()
+		}
 	}
 	dst.DrawImage(r.back, nil)
 	b := room.Shared()
@@ -97,8 +115,11 @@ func (r *Renderer) Draw(dst *ebiten.Image, room Room) {
 			entity.DrawAt(dst, feet.Frame(n-1), col*8, config.FootprintY, false)
 		}
 	}
-	if bc, ok := room.(*BirdcageRoom); ok {
-		r.drawBirdcage(dst, bc)
+	switch rm := room.(type) {
+	case *BirdcageRoom:
+		r.drawBirdcage(dst, rm)
+	case *CheeseRoom:
+		r.drawCheese(dst, rm)
 	}
 	entity.DrawDog(dst, r.actors, &b.Dog, "dog_run_orange")
 	entity.DrawAt(dst, r.sheet.Sprite("broom").Frame(broomPoses[b.Broom.Frame]), b.Broom.X, b.Broom.Y, false)
@@ -135,13 +156,21 @@ func (r *Renderer) DrawDebug(dst *ebiten.Image, room Room) {
 	box(e.X, e.Y, e.W, e.H, gfx.Sky)
 	br := b.Broom.Rect()
 	box(br.X, br.Y, br.W, br.H, gfx.Orange)
-	if bc, ok := room.(*BirdcageRoom); ok {
-		if bc.Cage.Broken {
-			br := bc.birdRect()
+	switch rm := room.(type) {
+	case *BirdcageRoom:
+		if rm.Cage.Broken {
+			br := rm.birdRect()
 			box(br.X, br.Y, br.W, br.H, gfx.White)
 		} else {
-			cr := bc.cageRect()
+			cr := rm.cageRect()
 			box(cr.X, cr.Y, cr.W, cr.H, gfx.White)
+		}
+	case *CheeseRoom:
+		for i := range rm.Mice {
+			if rm.Mice[i].Visible() {
+				mr := rm.MouseRect(i)
+				box(mr.X, mr.Y, mr.W, mr.H, gfx.White)
+			}
 		}
 	}
 	if f := b.Freddy; !f.Gone {

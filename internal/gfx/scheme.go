@@ -14,6 +14,8 @@ type Scheme struct {
 	Metal     int // trash cans
 	Shade     int // shading on props
 	Outline   int
+	Cheese    int // the cheese room's wedge
+	Hole      int // its holes and pits
 }
 
 // AlleyScheme is the alley at night (DESIGN §8): a cool magenta-plum
@@ -46,4 +48,23 @@ var BirdcageScheme = Scheme{
 	Metal:     Silver,
 	Shade:     Plum,
 	Outline:   Night,
+}
+
+// CheeseScheme is the cheese room: the birdcage room's red walls and green
+// furniture, with a yellow wedge and orange holes (DESIGN §3.4, "Cheese room
+// layout").
+var CheeseScheme = Scheme{
+	Wall:      Red,
+	WallShade: Plum,
+	Glass:     Night,
+	Glint:     Sky,
+	Trim:      Yellow,
+	Fence:     Green,
+	Gap:       Teal,
+	Ground:    Red,
+	Metal:     Silver,
+	Shade:     Plum,
+	Outline:   Night,
+	Cheese:    Yellow,
+	Hole:      Orange,
 }
