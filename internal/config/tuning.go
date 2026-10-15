@@ -4,6 +4,8 @@ package config
 const (
 	StartLives = 3
 	MaxLives   = 9
+	KissBase   = 4000 // the kiss bonus is 4000 + max(0, 10800 − T) ÷ 2 (DESIGN §3.6)
+	KissWindow = 10800
 )
 
 // Timing results from the R1 reference check (DESIGN §11.1.1). All agree

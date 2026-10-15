@@ -27,6 +27,9 @@ func freddyFrame(sheet *gfx.Sheet, f *Freddy) *ebiten.Image {
 	return sheet.Sprite("freddy_stand").Frame(0)
 }
 
+// FreddyImage is the sprite frame for Freddy's current pose.
+func FreddyImage(sheet *gfx.Sheet, f *Freddy) *ebiten.Image { return freddyFrame(sheet, f) }
+
 // DrawFreddy draws Freddy. While he walks in he shows at the screen edge;
 // behind the alley fence, rows from config.FenceHideY down are hidden.
 func DrawFreddy(dst *ebiten.Image, sheet *gfx.Sheet, f *Freddy) {

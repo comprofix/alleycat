@@ -46,8 +46,6 @@ func TestWindowLeadsToRoomAndBack(t *testing.T) {
 
 	var next Scene
 	switch room := step(ctx, p).(type) {
-	case *StubRoom:
-		next = runUntil(t, ctx, room)
 	case *RoomScene:
 		room.room.Shared().Out = rooms.LeftEarly
 		next = step(ctx, room)
@@ -80,9 +78,9 @@ func TestFeliciaWindowLeadsToHeartRoom(t *testing.T) {
 	ctx.Session.FeliciaWaiting = true
 	p := &Play{alley: alley.New(ctx.Session, ctx.RNG)}
 	p.alley.Exit = alley.ToHeart
-	room, ok := step(ctx, p).(*StubRoom)
-	if !ok || room.room.String() != "FELICIA" || ctx.Session.FeliciaWaiting {
-		t.Fatalf("Felicia's window: got %T, waiting=%v", room, ctx.Session.FeliciaWaiting)
+	rs, ok := step(ctx, p).(*RoomScene)
+	if !ok || rs.room.Kind() != rooms.Heart || ctx.Session.FeliciaWaiting {
+		t.Fatalf("Felicia's window: got %T, waiting=%v", rs, ctx.Session.FeliciaWaiting)
 	}
 }
 
@@ -176,5 +174,137 @@ func TestLeavingARoomEarlyIsOops(t *testing.T) {
 	}
 	if _, ok := runUntil(t, ctx, res).(*Play); !ok {
 		t.Error("after OOPS!: want the alley")
+	}
+}
+
+// heartScene enters Felicia's window and returns the heart room scene.
+func heartScene(t *testing.T, ctx *Context) *RoomScene {
+	t.Helper()
+	p := &Play{alley: alley.New(ctx.Session, ctx.RNG)}
+	p.alley.Exit = alley.ToHeart
+	p.alley.Freddy.X, p.alley.Freddy.Y = 104, 50
+	rs, ok := step(ctx, p).(*RoomScene)
+	if !ok {
+		t.Fatal("Felicia's window should lead to a room scene")
+	}
+	if _, ok := rs.room.(*rooms.HeartRoom); !ok {
+		t.Fatalf("Felicia's window should lead to the heart room, got %T", rs.room)
+	}
+	return rs
+}
+
+func TestFallingOffTheHeartsCostsNoLife(t *testing.T) {
+	ctx := playContext()
+	rs := heartScene(t, ctx)
+	rs.room.Shared().Out = rooms.Failed
+	rej, ok := step(ctx, rs).(*Reject)
+	if !ok {
+		t.Fatal("falling off the hearts should play the rejection scene")
+	}
+	if _, ok := runUntil(t, ctx, rej).(*Play); !ok {
+		t.Fatal("after the rejection Freddy should be back in the alley")
+	}
+	if ctx.Session.Lives != config.StartLives {
+		t.Error("failing the heart room must not cost a life")
+	}
+}
+
+func TestKissingFeliciaLevelsUp(t *testing.T) {
+	ctx := playContext()
+	s := ctx.Session
+	s.RoomsCleared, s.LevelTicks = 3, 800
+	d := s.Difficulty
+	rs := heartScene(t, ctx)
+	hr := rs.room.(*rooms.HeartRoom)
+	hr.Out, hr.WithGift = rooms.Cleared, true
+	kiss, ok := step(ctx, rs).(*Kiss)
+	if !ok {
+		t.Fatal("reaching Felicia should lead to the kiss")
+	}
+	if kiss.multiplier != 2*(2*d+1) {
+		t.Errorf("multiplier %d, want %d (doubled with a gift)", kiss.multiplier, 2*(2*d+1))
+	}
+	if _, ok := runUntil(t, ctx, kiss).(*Play); !ok {
+		t.Fatal("after the kiss Freddy should be back in the alley")
+	}
+	if want := kiss.bonus * kiss.multiplier; s.Score != want {
+		t.Errorf("score %d, want the kiss bonus %d × %d", s.Score, kiss.bonus, kiss.multiplier)
+	}
+	if s.Difficulty != d+1 || s.Lives != config.StartLives+1 || s.RoomsCleared != 0 || s.LevelTicks != 0 {
+		t.Errorf("after the kiss: difficulty %d, lives %d, rooms %d, level ticks %d", s.Difficulty, s.Lives, s.RoomsCleared, s.LevelTicks)
+	}
+	// The big heart dropped to the middle in 8 steps, and three bursts
+	// followed, each of 8 hearts.
+	hearts, small := 0, 0
+	for _, st := range kiss.stamps {
+		if st.cats {
+			hearts++
+		}
+		if st.sprite == "heart_small" {
+			small++
+		}
+	}
+	if hearts != 8 || kiss.y != config.KissHeartStopY {
+		t.Errorf("the big heart left %d copies and stopped at Y %d", hearts, kiss.y)
+	}
+	if small == 0 || (small-1)%8 != 0 {
+		t.Errorf("the first burst left %d small hearts: one, then 8 a step", small)
+	}
+	if kiss.ticks < config.KissOpenTicks+config.KissTextTicks {
+		t.Errorf("the kiss took %d ticks, too short", kiss.ticks)
+	}
+}
+
+func TestDancingCatsByDifficulty(t *testing.T) {
+	want := []int{0, 0, 4, 8, 16, 24, 26, 34}
+	for d, n := range want {
+		dance := newDance(d, func(*Context) Scene { return nil })
+		switch {
+		case n == 0 && dance != nil:
+			t.Errorf("difficulty %d: no dancing below 2", d)
+		case n > 0 && (dance == nil || len(dance.dancers) != n):
+			t.Errorf("difficulty %d: want %d dancing cats", d, n)
+		}
+	}
+}
+
+func TestDanceLastsFortyTicks(t *testing.T) {
+	ctx := playContext()
+	dance := newDance(2, func(ctx *Context) Scene { return NewPlay(ctx) })
+	for tick := 1; tick <= config.DanceTicks; tick++ {
+		next := step(ctx, dance)
+		if (next != nil) != (tick == config.DanceTicks) {
+			t.Fatalf("tick %d: next %T", tick, next)
+		}
+	}
+}
+
+func TestKissToDifficultyTwoDances(t *testing.T) {
+	ctx := playContext()
+	ctx.Session.Difficulty = 1
+	rs := heartScene(t, ctx)
+	rs.room.Shared().Out = rooms.Cleared
+	kiss := step(ctx, rs).(*Kiss)
+	dance, ok := runUntil(t, ctx, kiss).(*Dance)
+	if !ok {
+		t.Fatal("a kiss up to difficulty 2 should lead to the dancing cats")
+	}
+	if _, ok := runUntil(t, ctx, dance).(*Play); !ok {
+		t.Fatal("after the dancing cats Freddy should be back in the alley")
+	}
+}
+
+func TestRejectionFallsThenHolds(t *testing.T) {
+	ctx := playContext()
+	rej := newReject(func(ctx *Context) Scene { return NewPlay(ctx) })
+	fall := (config.RejectLandY + config.RejectFallStep - 1) / config.RejectFallStep
+	for tick := 1; tick <= fall+config.RejectHoldTicks; tick++ {
+		next := step(ctx, rej)
+		if landed := tick >= fall; rej.landed != landed {
+			t.Fatalf("tick %d: landed %v", tick, rej.landed)
+		}
+		if (next != nil) != (tick == fall+config.RejectHoldTicks) {
+			t.Fatalf("tick %d: next %T", tick, next)
+		}
 	}
 }

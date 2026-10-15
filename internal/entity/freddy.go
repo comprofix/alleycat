@@ -83,6 +83,10 @@ type Freddy struct {
 
 	// Swim is his state underwater (DESIGN §3.4, "Underwater").
 	Swim Swim
+
+	// NoFloor is set in the heart room: there is no floor to land on, and
+	// the bottom row is held up by its hearts like any other (DESIGN §3.5).
+	NoFloor bool
 }
 
 // NewFreddy returns Freddy about to walk into the alley from the left.
@@ -209,7 +213,7 @@ func (f *Freddy) updateAirborne(w World) {
 		}
 	} else {
 		f.Y += f.Arc.Speed
-		if f.Y >= config.FloorY {
+		if f.Y >= config.FloorY && !f.NoFloor {
 			f.Y = config.FloorY
 			f.Depth = InFront
 			f.land()
@@ -236,7 +240,7 @@ func (f *Freddy) land() {
 }
 
 func (f *Freddy) updateStanding(in Controls, w World) {
-	if f.Y < config.FloorY && !w.Support(f) {
+	if (f.Y < config.FloorY || f.NoFloor) && !w.Support(f) {
 		// Walked off a can or the fence.
 		f.Dir = 0
 		f.startDrop()
@@ -255,7 +259,7 @@ func (f *Freddy) takeInput(in Controls) {
 	switch {
 	case in.V < 0:
 		f.startJump()
-	case in.V > 0 && f.Y < config.FloorY:
+	case in.V > 0 && (f.Y < config.FloorY || f.NoFloor):
 		f.startDrop()
 	default:
 		f.walk()
@@ -404,6 +408,15 @@ func (f *Freddy) Topple(noLand int) {
 	f.noLand = noLand
 	f.Arc.Dir = physics.Falling
 	f.Arc.Speed = max(f.Arc.Speed, 1)
+}
+
+// Knock drives him downward at speed with gravity step, unable to land for
+// noLand updates; his sideways motion is unchanged (DESIGN §3.5: an arrow
+// or a rival cat in the heart room).
+func (f *Freddy) Knock(speed int, step uint8, noLand int) {
+	f.Seat = NotSeated
+	f.Arc.Dir, f.Arc.Speed, f.Arc.Step = physics.Falling, speed, step
+	f.noLand = noLand
 }
 
 // Standing reports whether he is standing on a walkable surface or the

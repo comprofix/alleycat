@@ -47,6 +47,7 @@ func (p *Play) Update(ctx *Context) error {
 		return nil
 	}
 	a := p.alley
+	ctx.Session.LevelTicks += ctx.Ticks
 	a.Update(ctx.Ticks, ctx.FreddySteps, controls(ctx.Input), ctx.RNG)
 
 	// At 0 lives the game ends at once, straight back to the title (DESIGN
@@ -65,12 +66,13 @@ func (p *Play) Update(ctx *Context) error {
 		} else {
 			room = s.Rooms.Pick(s.Difficulty, ctx.RNG)
 		}
-		r := rooms.New(room, s.Difficulty, ctx.RNG)
-		if r != nil {
-			ctx.Switch(newRoomScene(ctx, r, a.Freddy.X, a.Freddy.Y))
+		var r rooms.Room
+		if room == rooms.Heart {
+			r = rooms.NewHeart(s.Difficulty, s.RoomsCleared, ctx.RNG)
 		} else {
-			ctx.Switch(newStubRoom(room, a.Freddy.X, a.Freddy.Y))
+			r = rooms.New(room, s.Difficulty, ctx.RNG)
 		}
+		ctx.Switch(newRoomScene(ctx, r, a.Freddy.X, a.Freddy.Y))
 	}
 	return nil
 }

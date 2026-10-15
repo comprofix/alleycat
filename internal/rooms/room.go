@@ -209,5 +209,11 @@ func New(k Kind, difficulty int, rng *rand.Rand) Room {
 	return nil
 }
 
+// NewHeart returns the heart room: its gifts are the rooms cleared since
+// the last kiss, 1 to 8 (DESIGN §3.5).
+func NewHeart(difficulty, roomsCleared int, rng *rand.Rand) *HeartRoom {
+	return newHeart(difficulty, roomsCleared, rng)
+}
+
 // TimeBonus is the time part of the room bonus.
 func TimeBonus(k Kind, t int) int { return Bonus(k, t) - baseBonus[k] }
