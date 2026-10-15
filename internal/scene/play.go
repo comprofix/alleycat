@@ -15,10 +15,6 @@ import (
 	"github.com/comprofix/alleycat/internal/session"
 )
 
-// testRoom is the room every ordinary window leads to while it is being
-// checked (PLAN M5).
-const testRoom = rooms.Dogs
-
 // Play is the alley scene. It runs the alley, sends Freddy into a room when
 // he goes in through a window, and ends the game when the lives run out. It
 // also handles paws mode, restart and menu.
@@ -68,9 +64,6 @@ func (p *Play) Update(ctx *Context) error {
 			s.FeliciaWaiting = false
 		} else {
 			room = s.Rooms.Pick(s.Difficulty, ctx.RNG)
-			// For testing, every ordinary window leads to the room being
-			// checked until all the rooms are built (owner request, M4).
-			room = testRoom
 		}
 		r := rooms.New(room, s.Difficulty, ctx.RNG)
 		if r != nil {
