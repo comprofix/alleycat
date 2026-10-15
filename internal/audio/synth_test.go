@@ -60,6 +60,29 @@ func ms(n int) time.Duration { return time.Duration(n) * time.Millisecond }
 
 func near(got, want, tol float64) bool { return math.Abs(got-want) <= tol }
 
+// swing is half the peak-to-peak range: a centred tone's amplitude.
+func swing(x []float64) float64 {
+	lo, hi := 0.0, 0.0
+	for _, v := range x {
+		lo, hi = min(lo, v), max(hi, v)
+	}
+	return (hi - lo) / 2
+}
+
+// toneless reports whether x holds no tone: at most the speaker's slow
+// settling, with no sample-to-sample jumps.
+func toneless(x []float64) bool {
+	for i := 1; i < len(x); i++ {
+		if math.Abs(x[i]-x[i-1]) > 0.003 {
+			return false
+		}
+	}
+	return true
+}
+
+// full is a tone's amplitude at the default volume once it has settled.
+const full = config.BeeperAmplitude * config.DefaultVolume
+
 func TestTicks(t *testing.T) {
 	if got := Ticks(1); !near(got.Seconds(), 0.05493, 0.0001) {
 		t.Errorf("Ticks(1) = %v, want about 54.9ms", got)
@@ -72,11 +95,15 @@ func TestPitch(t *testing.T) {
 		s.SetSoften(soften)
 		s.PlayMusic([]Note{{440, time.Second}}, false)
 		x := render(t, s, time.Second)
-		if got := pitch(x[1000:]); !near(got, 440, 1) {
+		settled := x[samples(ms(300)):]
+		if got := pitch(settled); !near(got, 440, 1) {
 			t.Errorf("soften %v: pitch = %.1f Hz, want 440", soften, got)
 		}
-		if p := peak(x); p > config.BeeperAmplitude*config.DefaultVolume*1.15 {
-			t.Errorf("soften %v: peak %.3f is above the configured level", soften, p)
+		if a := swing(settled); a > full*1.15 {
+			t.Errorf("soften %v: amplitude %.3f is above the configured level", soften, a)
+		}
+		if p := peak(x); p > 2*full*1.05 {
+			t.Errorf("soften %v: onset peak %.3f is above the one-sided maximum", soften, p)
 		}
 	}
 }
@@ -86,12 +113,12 @@ func TestNoClickAtStart(t *testing.T) {
 	s.SetSoften(false)
 	s.PlaySFX([]Note{{1000, ms(100)}})
 	x := render(t, s, ms(100))
-	full := config.BeeperAmplitude * config.DefaultVolume
 	if math.Abs(x[0]) > full*0.05 {
 		t.Errorf("first sample %.3f: want a ramp from silence", x[0])
 	}
-	if p := peak(x[samples(ms(5)):]); !near(p, full, full*0.1) {
-		t.Errorf("peak after attack = %.3f, want about %.3f", p, full)
+	// One-sided at first: the wave runs from 0 up to twice the settled level.
+	if p := peak(x[samples(ms(5)):samples(ms(20))]); !near(p, 2*full, 2*full*0.15) {
+		t.Errorf("peak after attack = %.3f, want about %.3f", p, 2*full)
 	}
 }
 
@@ -99,11 +126,11 @@ func TestRestAndEndAreSilent(t *testing.T) {
 	s := NewSynth()
 	s.PlaySFX([]Note{{800, ms(50)}, {0, ms(50)}})
 	x := render(t, s, ms(200))
-	if p := peak(x[samples(ms(70)):samples(ms(100))]); p > 0.001 {
-		t.Errorf("rest peak = %.4f, want silence", p)
+	if !toneless(x[samples(ms(55)):samples(ms(100))]) {
+		t.Error("tone in the rest")
 	}
-	if p := peak(x[samples(ms(120)):]); p > 0.001 {
-		t.Errorf("after the end peak = %.4f, want silence", p)
+	if !toneless(x[samples(ms(105)):]) {
+		t.Error("tone after the end")
 	}
 }
 
@@ -142,8 +169,8 @@ func TestLoop(t *testing.T) {
 	}
 	s.StopMusic()
 	render(t, s, ms(10))
-	if p := peak(render(t, s, ms(20))); p > 0.001 {
-		t.Errorf("after StopMusic peak = %.4f, want silence", p)
+	if !toneless(render(t, s, ms(20))) {
+		t.Error("tone after StopMusic")
 	}
 }
 
@@ -158,7 +185,7 @@ func TestDisabledKeepsTiming(t *testing.T) {
 		t.Errorf("sound off peak = %.4f, want silence", p)
 	}
 	s.SetEnabled(true)
-	if got := pitch(render(t, s, ms(100))[200:]); !near(got, 600, 10) {
+	if got := pitch(render(t, s, ms(400))[samples(ms(300)):]); !near(got, 600, 10) {
 		t.Errorf("after sound on pitch = %.0f, want the music (the effect ran out while off)", got)
 	}
 }
@@ -169,13 +196,13 @@ func TestVolume(t *testing.T) {
 	s.SetVolume(0.5)
 	s.PlayMusic([]Note{{500, time.Second}}, false)
 	want := config.BeeperAmplitude * 0.5
-	if p := peak(render(t, s, ms(100))[500:]); !near(p, want, want*0.1) {
-		t.Errorf("peak at volume 0.5 = %.3f, want %.3f", p, want)
+	if a := swing(render(t, s, ms(400))[samples(ms(300)):]); !near(a, want, want*0.1) {
+		t.Errorf("amplitude at volume 0.5 = %.3f, want %.3f", a, want)
 	}
 	s.SetVolume(0)
 	render(t, s, ms(10))
-	if p := peak(render(t, s, ms(20))); p > 0.001 {
-		t.Errorf("volume 0 peak = %.4f, want silence", p)
+	if !toneless(render(t, s, ms(20))) {
+		t.Error("tone at volume 0")
 	}
 }
 
@@ -230,18 +257,41 @@ func TestNilSynth(t *testing.T) {
 	s.SetSoften(false)
 }
 
-// A patter tick of a fifth of a millisecond still reaches full level: very
-// short notes ramp in a quarter of their length (DESIGN §7).
+// A patter tick of a fifth of a millisecond is a sharp one-sided pulse at
+// full height, like the original speaker's (DESIGN §7): no ramp, starting at
+// the top of the wave, nothing below zero.
 func TestTinyClickIsSharp(t *testing.T) {
 	s := NewSynth()
 	s.SetSoften(false)
 	s.PlaySFX([]Note{{3000, 210 * time.Microsecond}})
 	x := render(t, s, ms(2))
-	full := config.BeeperAmplitude * config.DefaultVolume
-	if p := peak(x); p < full*0.8 {
-		t.Errorf("0.21 ms click peak = %.3f, want near %.3f", p, full)
+	if x[1] < full {
+		t.Errorf("second sample %.3f: want the click at full height at once", x[1])
 	}
-	if p := peak(x[samples(ms(1)):]); p > 0.001 {
-		t.Errorf("click rings on after it ends: peak %.4f", p)
+	if p := peak(x); !near(p, 2*full, 2*full*0.1) {
+		t.Errorf("0.21 ms click peak = %.3f, want about %.3f", p, 2*full)
+	}
+	for i, v := range x {
+		if v < -0.01 {
+			t.Fatalf("sample %d = %.3f: a click should not swing below zero", i, v)
+		}
+	}
+	if !toneless(x[samples(ms(1)):]) {
+		t.Error("click rings on after it ends")
+	}
+}
+
+// A long tone settles around zero, as in the original capture.
+func TestToneCentres(t *testing.T) {
+	s := NewSynth()
+	s.SetSoften(false)
+	s.PlayMusic([]Note{{500, time.Second}}, false)
+	x := render(t, s, ms(600))[samples(ms(400)):]
+	sum := 0.0
+	for _, v := range x {
+		sum += v
+	}
+	if m := sum / float64(len(x)); math.Abs(m) > full*0.05 {
+		t.Errorf("mean %.4f after 400 ms: want the tone centred", m)
 	}
 }
