@@ -122,6 +122,5 @@ const (
 // Pauses held by the original's sound routines (DESIGN §7.1, §12; owner:
 // added to be faithful).
 const (
-	FenceDropTicks  = 7 // Freddy sinks behind the fence and is reset
-	FloorThumpTicks = 2 // a floor landing while still marked as on a line
+	FenceDropTicks = 7 // Freddy sinks behind the fence and is reset
 )
