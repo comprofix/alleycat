@@ -1,0 +1,72 @@
+{
+  "bone": {
+    "x": 0,
+    "y": 79,
+    "w": 12,
+    "h": 5,
+    "frames": 1
+  },
+  "fishbones": {
+    "x": 0,
+    "y": 84,
+    "w": 14,
+    "h": 5,
+    "frames": 1
+  },
+  "freddy_jump": {
+    "x": 0,
+    "y": 22,
+    "w": 24,
+    "h": 11,
+    "frames": 2
+  },
+  "freddy_sit": {
+    "x": 0,
+    "y": 33,
+    "w": 24,
+    "h": 14,
+    "frames": 1
+  },
+  "freddy_stand": {
+    "x": 0,
+    "y": 11,
+    "w": 24,
+    "h": 11,
+    "frames": 1
+  },
+  "freddy_walk": {
+    "x": 0,
+    "y": 0,
+    "w": 24,
+    "h": 11,
+    "frames": 6
+  },
+  "laundry_big": {
+    "x": 0,
+    "y": 47,
+    "w": 16,
+    "h": 16,
+    "frames": 1
+  },
+  "laundry_medium": {
+    "x": 0,
+    "y": 63,
+    "w": 16,
+    "h": 8,
+    "frames": 1
+  },
+  "laundry_small": {
+    "x": 0,
+    "y": 71,
+    "w": 8,
+    "h": 8,
+    "frames": 3
+  },
+  "tincan": {
+    "x": 0,
+    "y": 89,
+    "w": 10,
+    "h": 5,
+    "frames": 1
+  }
+}

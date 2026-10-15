@@ -1,0 +1,49 @@
+package alley
+
+import (
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/vector"
+
+	"github.com/comprofix/alleycat/internal/config"
+	"github.com/comprofix/alleycat/internal/gfx"
+)
+
+// DrawDebug outlines the collision boxes for debug builds. Surfaces are
+// shown as the zone Freddy's top-left corner must fall in to stand on them
+// (DESIGN §3.8, "Alley surfaces"); Freddy's own box is outlined, with his
+// top-left corner marked.
+func (r *Renderer) DrawDebug(dst *ebiten.Image, a *Alley) {
+	box := func(x, y, w, h, idx int) {
+		vector.StrokeRect(dst, float32(x)+0.5, float32(y)+0.5, float32(w)-1, float32(h)-1, 1, gfx.Palette[idx], false)
+	}
+	f := a.Freddy
+
+	// Floor and fence top span the alley.
+	box(f.MinX, config.FloorY, f.MaxX-f.MinX+1, 1, gfx.Cyan)
+	box(0, config.FenceTopY, gfx.ScreenWidth, 8, gfx.Yellow)
+
+	// Cans: X from the can's X to X + 22, Y within the can's 8-px band.
+	for _, c := range a.Cans {
+		box(c.X, CanTop(c), config.CanReach+8, 8, gfx.Orange)
+	}
+
+	// Laundry: each supporting 8-px half, offset by the X + 10 probe.
+	for i := range a.Lines {
+		l := &a.Lines[i]
+		for p, piece := range l.Pieces {
+			for h, k := range piece {
+				if k == NoLaundry {
+					continue
+				}
+				x := l.Offset + p*config.LinePiecePx + h*config.LinePiecePx/2 - config.LineProbeX
+				box(x, config.LineY[i], 8, 8, gfx.Red)
+			}
+		}
+	}
+
+	if !f.Hidden() {
+		b := f.Box()
+		box(b.X, b.Y, b.W, b.H, gfx.Lime)
+		vector.FillRect(dst, float32(f.X), float32(f.Y), 1, 1, gfx.Palette[gfx.White], false)
+	}
+}

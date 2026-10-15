@@ -49,6 +49,10 @@ func New(seed uint64) (*Game, error) {
 	if err != nil {
 		return nil, fmt.Errorf("ui sheet: %w", err)
 	}
+	alleySheet, err := gfx.LoadSheet(assets.FS, "gen/alley")
+	if err != nil {
+		return nil, fmt.Errorf("alley sheet: %w", err)
+	}
 
 	g := &Game{
 		screen: ebiten.NewImage(gfx.ScreenWidth, gfx.ScreenHeight),
@@ -59,6 +63,7 @@ func New(seed uint64) (*Game, error) {
 			RNG:     rand.New(rand.NewPCG(seed, seed^0x9e3779b97f4a7c15)),
 			Font:    gfx.NewFont(glyphs),
 			UI:      ui,
+			Alley:   alleySheet,
 			SoundOn: true,
 		},
 	}
