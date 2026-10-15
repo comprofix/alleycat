@@ -8,6 +8,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 
 	"github.com/comprofix/alleycat/internal/audio"
+	"github.com/comprofix/alleycat/internal/config"
 	"github.com/comprofix/alleycat/internal/gfx"
 	"github.com/comprofix/alleycat/internal/input"
 	"github.com/comprofix/alleycat/internal/session"
@@ -33,7 +34,7 @@ type Context struct {
 	Audio   *audio.Synth  // nil in headless tests; every call is then ignored
 	Patter  *audio.Patter // the background patter (DESIGN §7.2); nil in tests too
 	FX      *audio.FX     // the sound effects (DESIGN §7.3); nil in tests too
-	SoundOn bool
+	Sound   SoundSettings // applied to Audio by ApplySound
 
 	// HighScore is the best score this run; it updates when a game ends
 	// (DESIGN §3.8, "Lives and game over"). Saving it is M9 work.
@@ -49,3 +50,27 @@ type Context struct {
 
 // Switch asks the manager to fade to s at the end of this frame.
 func (c *Context) Switch(s Scene) { c.next = s }
+
+// SoundSettings are the player's sound settings (DESIGN §9). Ctrl+S flips
+// On, as in the original; the options menu (M9) sets the rest. Sound plays
+// only when it is on and not muted, and keeps its timing either way.
+type SoundSettings struct {
+	On     bool    // sound on or off (Ctrl+S)
+	Muted  bool    // the master mute
+	Volume float64 // the master volume, 0–1
+	Soften bool    // "Soften beeper"
+}
+
+// DefaultSound is sound on, unmuted, at the default volume, softened.
+func DefaultSound() SoundSettings {
+	return SoundSettings{On: true, Volume: config.DefaultVolume, Soften: true}
+}
+
+// ApplySound sends the sound settings to the synth. Call it after changing
+// them.
+func (c *Context) ApplySound() {
+	s := c.Sound
+	c.Audio.SetEnabled(s.On && !s.Muted)
+	c.Audio.SetVolume(s.Volume)
+	c.Audio.SetSoften(s.Soften)
+}

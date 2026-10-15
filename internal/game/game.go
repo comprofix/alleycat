@@ -83,11 +83,12 @@ func New(seed uint64) (*Game, error) {
 			Audio: synth,
 			// The patter and the effects have their own RNGs so audio never
 			// shifts the game's random sequence (DESIGN §7.2).
-			Patter:  audio.NewPatter(rand.New(rand.NewPCG(seed^0x5eed0a0d10, seed))),
-			FX:      audio.NewFX(rand.New(rand.NewPCG(seed^0xeffec75, seed+1))),
-			SoundOn: true,
+			Patter: audio.NewPatter(rand.New(rand.NewPCG(seed^0x5eed0a0d10, seed))),
+			FX:     audio.NewFX(rand.New(rand.NewPCG(seed^0xeffec75, seed+1))),
+			Sound:  scene.DefaultSound(),
 		},
 	}
+	g.ctx.ApplySound()
 	g.scenes = scene.NewManager(scene.NewTitle())
 	return g, nil
 }
@@ -108,8 +109,8 @@ func (g *Game) Update() error {
 		g.aspect = g.aspect.Next()
 	}
 	if in.JustPressed(input.Sound) {
-		g.ctx.SoundOn = !g.ctx.SoundOn
-		g.ctx.Audio.SetEnabled(g.ctx.SoundOn)
+		g.ctx.Sound.On = !g.ctx.Sound.On
+		g.ctx.ApplySound()
 	}
 
 	g.ctx.Ticks, g.ctx.FreddySteps = g.clock.Advance()
