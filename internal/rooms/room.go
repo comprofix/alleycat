@@ -82,14 +82,8 @@ func (b *Base) Support(f *entity.Freddy) bool {
 		b.end(LeftEarly)
 		return false
 	}
-	if f.Y < 0 {
-		return false
-	}
-	band := physics.Band(f.Y)
-	for _, s := range b.Layout.Surfaces {
-		if band != s.Band || physics.Band(f.X) < s.X || max(f.X-s.Reach, 0)&^3 > s.X {
-			continue
-		}
+	if i := b.SurfaceAt(f); i >= 0 {
+		s := b.Layout.Surfaces[i]
 		f.Y = s.Band
 		if s.Perch {
 			f.Seat = entity.JustSeated
@@ -98,6 +92,21 @@ func (b *Base) Support(f *entity.Freddy) bool {
 		return true
 	}
 	return false
+}
+
+// SurfaceAt is the index of the first surface Freddy is on at his current
+// position, or −1 (DESIGN §3.4, "Surfaces").
+func (b *Base) SurfaceAt(f *entity.Freddy) int {
+	if f.Y < 0 {
+		return -1
+	}
+	band := physics.Band(f.Y)
+	for i, s := range b.Layout.Surfaces {
+		if band == s.Band && physics.Band(f.X) >= s.X && max(f.X-s.Reach, 0)&^3 <= s.X {
+			return i
+		}
+	}
+	return -1
 }
 
 func (b *Base) end(o Outcome) {
@@ -169,6 +178,8 @@ func New(k Kind, difficulty int, rng *rand.Rand) Room {
 	switch k {
 	case Birdcage:
 		return newBirdcage(difficulty, rng)
+	case Cheese:
+		return newCheese(difficulty, rng)
 	}
 	return nil
 }

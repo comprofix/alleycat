@@ -6,10 +6,11 @@ import (
 	"github.com/comprofix/alleycat/internal/physics"
 )
 
-// Controls is the arrow-key state for one Freddy update: H is −1 (left),
-// 0 or 1 (right); V is −1 (Up), 0 or 1 (Down).
+// Controls is the input for one Freddy update: H is −1 (left), 0 or 1
+// (right); V is −1 (Up), 0 or 1 (Down); Act is Action (Alt) held.
 type Controls struct {
 	H, V int
+	Act  bool
 }
 
 // World is what Freddy stands on.

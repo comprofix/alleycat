@@ -117,6 +117,82 @@ var BirdWaypoints = [11][2]int{
 	{260, 158}, {268, 122}, {248, 98}, {248, 80}, {224, 80},
 }
 
+// CheeseHoles are the cheese room's 16 holes, which are surfaces too
+// (DESIGN §3.4, "Cheese room in detail"): 0–2 in the wedge's top are
+// walkable, 3–15 in its face are perches.
+var CheeseHoles = [CheeseHoleCount]Surface{
+	{32, 80, 12, false}, {32, 104, 12, false}, {40, 120, 12, false},
+	{72, 16, 12, true}, {64, 64, 12, true}, {80, 112, 12, true},
+	{104, 32, 12, true}, {96, 72, 12, true}, {104, 192, 12, true},
+	{120, 88, 12, true}, {136, 144, 12, true}, {128, 128, 12, true},
+	{144, 40, 12, true}, {152, 96, 12, true}, {160, 24, 12, true},
+	{160, 184, 12, true},
+}
+
+// Cheese is the cheese room (DESIGN §3.4): the furniture, then the holes
+// from CheeseFirstHole on, then the wedge top. The holes come before the
+// wedge top so that holes 0–2 are found first where the two overlap.
+var Cheese = RoomLayout{
+	StartX: 256, StartY: 96,
+	WindowX: 264, WindowY: 96,
+	BroomEvery: 1,
+	Surfaces: append(append([]Surface{
+		{120, 228, 8, false}, {152, 228, 16, false}, // chair back, seat
+		{136, 256, 24, false},                                       // table top
+		{88, 232, 4, true}, {96, 232, 4, true}, {104, 232, 4, true}, // curtains, left
+		{88, 280, 4, true}, {96, 280, 4, true}, {104, 280, 4, true}, // curtains, right
+	}, CheeseHoles[:]...),
+		Surface{24, 24, 104, false}, Surface{32, 56, 88, false}, Surface{40, 88, 72, false}, // wedge top steps
+		Surface{48, 120, 56, false}, Surface{56, 152, 40, false}, Surface{64, 184, 24, false},
+	),
+}
+
+// CheeseFirstHole is the index of hole 0 in Cheese.Surfaces.
+const CheeseFirstHole = 9
+
+// The cheese room's mice and holes (DESIGN §3.4, "Cheese room in detail";
+// §3.8, "Cheese room mice").
+const (
+	CheeseHoleCount   = 16
+	CheeseTopHoles    = 3 // holes 0–2 are in the wedge's top
+	CheeseMice        = 4
+	CheeseMouseW      = 16
+	CheeseMouseH      = 12
+	CheeseMouseDX     = 8  // mouse X = hole left X + 8
+	CheeseMouseDY     = -7 // mouse Y = band − 7 ...
+	CheeseTopMouseDY  = 3  // ... or band + 3 in the top holes
+	CheeseMouseShift  = 1  // emerging or ducking, it sits 1 px lower ...
+	CheeseTopShift    = 3  // ... or 3 px in the top holes
+	CheeseCycleTicks  = 3  // each mouse steps once every 3 ticks
+	MouseHidden       = 20 // countdown ≥ 20: hidden in its hole
+	MouseEmerge       = 18 // 19–18: emerging
+	MouseOutMin       = 2  // 17–2: out; 1–0: ducking
+	MouseStartRoll    = 16 // first countdown: 20 + 0–15
+	MouseRestartRoll  = 8  // later countdowns: 20 + 0–7
+	HoleAwayDist      = 50 // a new hole is re-rolled if this near Freddy ...
+	HoleRerolls       = 32 // ... up to 32 times
+	TransferLockout   = 12 // ticks from one transfer's start to the next
+	TransferFrames    = 7  // one per tick
+	TransferSwapAfter = 3  // Freddy moves to the far hole after the 3rd frame
+	HoleArriveDX      = 8  // he arrives at the hole's left X + 8
+	MouseIconX        = 20 // the first caught-mouse icon ...
+	MouseIconY        = 2
+	MouseIconStep     = 16 // ... and the next ones every 16 px
+)
+
+// CheeseRetreat is, by difficulty, how near Freddy (|dx| + |dy|) sends a
+// mouse back into its hole.
+var CheeseRetreat = [8]int{20, 80, 100, 120, 120, 140, 140, 140}
+
+// CheesePairs are the two-way hole pairs by difficulty mod 4: going through
+// one hole of a pair comes out of the other.
+var CheesePairs = [4][8][2]int{
+	{{0, 15}, {1, 6}, {2, 9}, {3, 11}, {4, 10}, {5, 12}, {7, 14}, {8, 13}},
+	{{0, 14}, {1, 11}, {2, 6}, {3, 15}, {4, 12}, {5, 10}, {7, 9}, {8, 13}},
+	{{0, 7}, {1, 9}, {2, 12}, {3, 13}, {4, 11}, {5, 15}, {6, 10}, {8, 14}},
+	{{0, 2}, {1, 13}, {3, 14}, {4, 15}, {5, 6}, {7, 11}, {8, 12}, {9, 10}},
+}
+
 // The tally (DESIGN §3.6).
 const (
 	TallyTimeWindow     = 1350 // time bonus is 2 × max(0, 1350 − t) ...
