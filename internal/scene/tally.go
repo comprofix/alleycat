@@ -5,6 +5,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 
+	"github.com/comprofix/alleycat/internal/audio"
 	"github.com/comprofix/alleycat/internal/config"
 	"github.com/comprofix/alleycat/internal/entity"
 	"github.com/comprofix/alleycat/internal/gfx"
@@ -45,8 +46,14 @@ func (t *Tally) Update(ctx *Context) error {
 		if t.lit < t.rows() {
 			if t.ticks++; t.ticks%config.TallyRowTicks == 0 {
 				t.lit++
+				// Each row plays the next note of a rising series (DESIGN §7.4).
+				ctx.Audio.PlayMusic(audio.TallyNote(t.lit-1, config.TallyRowTicks), false)
 			}
 			continue
+		}
+		if t.held == 0 {
+			// Then a trill while the screen flashes.
+			ctx.Audio.PlayMusic(audio.TallyTrill(t.lit-1, config.TallyHoldTicks), false)
 		}
 		if t.held++; t.held >= config.TallyHoldTicks {
 			ctx.Switch(newReturnPlay(ctx, t.x, t.y))
@@ -82,14 +89,19 @@ func (t *Tally) Draw(ctx *Context, dst *ebiten.Image) {
 // leg beckons, and the words appear, slanting (DESIGN §3.4, "HERE KITTY").
 // Our own art.
 type HereKitty struct {
-	ticks int
-	next  func(*Context) Scene
+	ticks  int
+	played bool
+	next   func(*Context) Scene
 }
 
 func newHereKitty(next func(*Context) Scene) *HereKitty { return &HereKitty{next: next} }
 
 // Update implements Scene.
 func (h *HereKitty) Update(ctx *Context) error {
+	if !h.played {
+		h.played = true
+		ctx.Audio.PlayMusic(audio.Failure(), false) // DESIGN §7.4
+	}
 	if h.ticks += ctx.Ticks; h.ticks >= config.HereKittyTicks {
 		ctx.Switch(h.next(ctx))
 	}

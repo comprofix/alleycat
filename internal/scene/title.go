@@ -3,12 +3,14 @@ package scene
 import (
 	"github.com/hajimehoshi/ebiten/v2"
 
+	"github.com/comprofix/alleycat/internal/audio"
 	"github.com/comprofix/alleycat/internal/gfx"
 )
 
 // Title is the placeholder title screen. Any key goes to skill select.
 type Title struct {
-	blink gfx.Animator
+	blink  gfx.Animator
+	played bool // the title theme has started
 }
 
 // NewTitle returns the title scene.
@@ -19,6 +21,11 @@ func NewTitle() *Title {
 
 // Update implements Scene.
 func (t *Title) Update(ctx *Context) error {
+	// The theme plays once each time the title shows (DESIGN §7.4).
+	if !t.played {
+		t.played = true
+		ctx.Audio.PlayMusic(audio.Title(), false)
+	}
 	t.blink.Advance(ctx.Ticks)
 	if ctx.Input.AnyKeyJustPressed() {
 		ctx.Switch(NewSkillSelect())

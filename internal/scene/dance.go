@@ -3,6 +3,7 @@ package scene
 import (
 	"github.com/hajimehoshi/ebiten/v2"
 
+	"github.com/comprofix/alleycat/internal/audio"
 	"github.com/comprofix/alleycat/internal/config"
 	"github.com/comprofix/alleycat/internal/entity"
 	"github.com/comprofix/alleycat/internal/gfx"
@@ -14,6 +15,7 @@ import (
 type Dance struct {
 	dancers []config.Dancer
 	ticks   int
+	played  bool
 	next    func(*Context) Scene
 }
 
@@ -28,6 +30,10 @@ func newDance(difficulty int, next func(*Context) Scene) *Dance {
 
 // Update implements Scene.
 func (d *Dance) Update(ctx *Context) error {
+	if !d.played {
+		d.played = true
+		ctx.Audio.PlayMusic(audio.Dance(), false) // DESIGN §7.4
+	}
 	if d.ticks += ctx.Ticks; d.ticks >= config.DanceTicks {
 		ctx.Switch(d.next(ctx))
 	}

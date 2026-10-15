@@ -76,7 +76,8 @@ func TestManagerSwitchFadesOutAndIn(t *testing.T) {
 }
 
 // A scene change silences every sound, so nothing carries over, such as a
-// dog fight into the title after the last life (DESIGN §7.1).
+// dog fight into the title after the last life (DESIGN §7.1). Only the
+// screen-change figure plays through the fade, then all is quiet (§7.4).
 func TestManagerSwitchStopsSound(t *testing.T) {
 	a := &stub{next: &stub{}}
 	m := NewManager(a)
@@ -88,8 +89,12 @@ func TestManagerSwitchStopsSound(t *testing.T) {
 	ctx.Audio.PlaySFX([]audio.Note{{Hz: 2000, Dur: 10 * time.Second}})
 	m.Update(ctx) // a requests the switch
 
-	buf := make([]byte, 4*4410) // 100 ms
-	ctx.Audio.Read(buf)
+	figure := make([]byte, 4*4410*6) // the 0.5 s figure, and a little more
+	ctx.Audio.Read(figure)
+	if peak := maxJump(figure); peak < 1000 {
+		t.Error("no screen-change figure during the fade")
+	}
+	buf := make([]byte, 4*4410) // the next 100 ms
 	ctx.Audio.Read(buf)
 	for i := 4; i+4 <= len(buf); i += 4 {
 		prev := int16(binary.LittleEndian.Uint16(buf[i-4:]))
@@ -98,4 +103,14 @@ func TestManagerSwitchStopsSound(t *testing.T) {
 			t.Fatalf("sample %d jumps by %d: a tone is still playing after the switch", i/4, d)
 		}
 	}
+}
+
+// maxJump is the largest sample-to-sample step in 16-bit stereo audio.
+func maxJump(buf []byte) int {
+	best := 0
+	for i := 4; i+4 <= len(buf); i += 4 {
+		d := int(int16(binary.LittleEndian.Uint16(buf[i:]))) - int(int16(binary.LittleEndian.Uint16(buf[i-4:])))
+		best = max(best, d, -d)
+	}
+	return best
 }
