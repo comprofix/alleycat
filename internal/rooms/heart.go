@@ -86,6 +86,7 @@ func (r *HeartRoom) Kind() Kind { return Heart }
 
 // Update implements Room.
 func (r *HeartRoom) Update(ticks, freddySteps int, in entity.Controls, rng *rand.Rand) {
+	r.Sounds = r.Sounds[:0]
 	for range ticks {
 		if r.Out != Playing {
 			return
@@ -147,6 +148,7 @@ func (r *HeartRoom) arrowHits() bool {
 		return false
 	}
 	r.Freddy.Knock(config.ArrowHitSpeed, config.ArrowHitStep, config.ArrowHitNoLand)
+	r.sound(SoundArrowHit)
 	r.Arrow.Active = false
 	return true
 }
@@ -345,6 +347,7 @@ func (r *HeartRoom) catTouch(i int) bool {
 		return true
 	}
 	f.Knock(config.CatKnockSpeed, config.CatKnockStep, config.CatKnockNoLand)
+	r.sound(SoundRivalBump)
 	c.Bump = config.CatBumpSteps
 	c.Dir = -1
 	if c.X > f.X {
@@ -389,6 +392,7 @@ func (r *HeartRoom) giftTick(in entity.Controls) {
 		if g != r.justDropped {
 			r.Gifts[g].On = false
 			r.Carrying = g
+			r.sound(SoundGiftPick)
 		}
 		return
 	}
@@ -415,4 +419,5 @@ func (r *HeartRoom) putDown() {
 	}
 	r.Gifts[g] = place
 	r.Carrying, r.justDropped = -1, g
+	r.sound(SoundGiftDrop)
 }

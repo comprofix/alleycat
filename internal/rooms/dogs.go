@@ -52,6 +52,7 @@ func (r *DogsRoom) Kind() Kind { return Dogs }
 
 // Update implements Room.
 func (r *DogsRoom) Update(ticks, freddySteps int, in entity.Controls, rng *rand.Rand) {
+	r.Sounds = r.Sounds[:0]
 	for range ticks {
 		if r.Out != Playing {
 			return
@@ -114,6 +115,7 @@ func (r *DogsRoom) wakeTick(rng *rand.Rand) {
 		case r.near(i):
 			if s.Alert++; s.Alert == config.DogAlertMax {
 				r.Woke = true
+				r.sound(SoundDogWake)
 			}
 		case s.Alert > 0 && rng.IntN(256) < config.DogCalmChance:
 			s.Alert--
@@ -172,6 +174,7 @@ func (r *DogsRoom) eatTick(in entity.Controls) {
 	if r.Portions[bowl]--; r.Portions[bowl] > 0 {
 		return
 	}
+	r.sound(SoundBowlEmpty)
 	f.Dir, r.walk = 0, 0
 	if r.BowlsLeft--; r.BowlsLeft == 0 {
 		r.end(Cleared)

@@ -36,6 +36,7 @@ func (r *RoomScene) Update(ctx *Context) error {
 	r.room.Update(ctx.Ticks, ctx.FreddySteps, controls(ctx.Input), ctx.RNG)
 	runPatter(ctx, roomPatter(r.room))
 	b := r.room.Shared()
+	playRoomSounds(ctx, r.room)
 	followFight(ctx, &b.Dog, &r.fighting)
 	if hr, ok := r.room.(*rooms.HeartRoom); ok {
 		r.heartEnds(ctx, hr)

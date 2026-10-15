@@ -82,6 +82,7 @@ func (r *BookshelfRoom) Kind() Kind { return Bookshelf }
 
 // Update implements Room.
 func (r *BookshelfRoom) Update(ticks, freddySteps int, in entity.Controls, rng *rand.Rand) {
+	r.Sounds = r.Sounds[:0]
 	for range ticks {
 		if r.Out != Playing {
 			return
@@ -118,6 +119,7 @@ func (r *BookshelfRoom) fernTick() {
 			continue
 		}
 		r.Ferns[i] = true
+		r.sound(SoundFernEaten)
 		if r.FernsLeft--; r.FernsLeft == 0 {
 			r.end(Cleared)
 		}
@@ -202,6 +204,7 @@ func (r *BookshelfRoom) spiderMoved(ox, oy int) {
 
 // bite: "BYTE!" by Freddy, then the room fails.
 func (r *BookshelfRoom) bite() {
+	r.sound(SoundByte)
 	f := r.Freddy
 	r.Bite = config.ByteTicks
 	r.ByteX = min(max(f.X-config.ByteDX, 0), config.ByteMaxX)

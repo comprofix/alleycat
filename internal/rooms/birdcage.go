@@ -47,6 +47,7 @@ func (r *BirdcageRoom) Kind() Kind { return Birdcage }
 // Update implements Room. While the cage falls the rest of the room waits,
 // unless the dog is out, in which case the cage waits for it to go.
 func (r *BirdcageRoom) Update(ticks, freddySteps int, in entity.Controls, rng *rand.Rand) {
+	r.Sounds = r.Sounds[:0]
 	frozen := false
 	for range ticks {
 		if r.Out != Playing {
@@ -104,6 +105,7 @@ func (r *BirdcageRoom) cageTick() {
 	}
 	if !f.Gone && r.cageRect().Overlaps(f.HitBox()) {
 		if !c.Pending {
+			r.sound(SoundCagePush)
 			c.PushDir = f.Dir
 			if c.PushDir == 0 {
 				c.PushDir = -1
@@ -150,6 +152,7 @@ func (r *BirdcageRoom) separate() {
 // fall drops the cage 5 px; on landing it breaks and frees the bird.
 func (r *BirdcageRoom) fall(rng *rand.Rand) {
 	c := &r.Cage
+	r.soundArg(SoundCageFall, c.Y)
 	if c.Y += config.CageFallStep; c.Y < config.CageFloorY {
 		return
 	}
@@ -203,6 +206,7 @@ func (r *BirdcageRoom) birdStep(rng *rand.Rand) {
 		}
 		if dx+2*dy <= config.BirdFlee[r.Difficulty] {
 			bd.waypoint = 0xff
+			r.sound(SoundBirdChirp)
 			bd.VX, bd.VY = ax, ay
 			steer = false
 		}
@@ -242,6 +246,7 @@ func (r *BirdcageRoom) birdSteer(rng *rand.Rand) {
 		bd.VX, bd.VY = entity.RandDir(rng), entity.RandDir(rng)
 	}
 	bd.waypoint = rng.IntN(config.BirdWaypointRoll)
+	r.sound(SoundBirdChirp)
 }
 
 func sign(v int) int {

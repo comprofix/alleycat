@@ -11,12 +11,14 @@ import (
 // Reject is the heart room's rejection scene (DESIGN §3.5, "Failing"): on
 // a black screen Freddy's head falls from the top to the bottom, then
 // becomes his face with a speech bubble of cartoon symbols. No life is
-// lost. The falling and closing tones come in M7.
+// lost. A falling tone plays as the head drops, then two tones alternate
+// under the bubble (DESIGN §7.3).
 type Reject struct {
-	y      int
-	held   int
-	landed bool
-	next   func(*Context) Scene
+	y       int
+	held    int
+	landed  bool
+	sounded bool // the falling tone has started
+	next    func(*Context) Scene
 }
 
 func newReject(next func(*Context) Scene) *Reject {
@@ -25,11 +27,21 @@ func newReject(next func(*Context) Scene) *Reject {
 
 // Update implements Scene.
 func (r *Reject) Update(ctx *Context) error {
+	if !r.sounded {
+		r.sounded = true
+		steps := (config.RejectLandY + config.RejectFallStep - 1) / config.RejectFallStep
+		if n := ctx.FX.RejectFall(steps); n != nil {
+			ctx.Audio.PlaySFX(n)
+		}
+	}
 	for range ctx.Ticks {
 		switch {
 		case !r.landed:
 			if r.y += config.RejectFallStep; r.y >= config.RejectLandY {
 				r.landed = true
+				if n := ctx.FX.Hi(config.RejectHoldTicks); n != nil {
+					ctx.Audio.PlaySFX(n)
+				}
 			}
 		default:
 			if r.held++; r.held >= config.RejectHoldTicks {

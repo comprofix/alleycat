@@ -110,3 +110,70 @@ func TestNilFX(t *testing.T) {
 		}
 	}
 }
+
+// The room and heart-room effects last as long as the original's and move
+// the right way (DESIGN §7.3).
+func TestRoomFX(t *testing.T) {
+	fx := newTestFX()
+	for _, c := range []struct {
+		name  string
+		notes []Note
+		ticks float64
+	}{
+		{"ZAP", fx.Zap(), config.ZapTicks},
+		{"BYTE", fx.Byte(), config.ByteTicks},
+		{"dog wake", fx.DogWake(), 2},
+		{"reject fall", fx.RejectFall(14), 14},
+		{"Hi?", fx.Hi(18), 18},
+	} {
+		if d := total(c.notes); math.Abs(d.Seconds()-Ticks(c.ticks).Seconds()) > 0.004 {
+			t.Errorf("%s lasts %v, want %v ticks (%v)", c.name, d, c.ticks, Ticks(c.ticks))
+		}
+	}
+	if d := total(fx.Smooch()); math.Abs(d.Seconds()-0.555) > 0.01 {
+		t.Errorf("smooch lasts %v, want about 0.55 s", d)
+	}
+
+	for _, c := range []struct {
+		name string
+		n    []Note
+		up   bool
+	}{
+		{"cage push", fx.CagePush(), true},
+		{"fish eaten", fx.FishEaten(), true},
+		{"fern eaten", fx.FernEaten(), true},
+		{"bowl empty", fx.BowlEmpty(), true},
+		{"gift pick", fx.GiftPick(), true},
+		{"bird chirp", fx.BirdChirp(), false},
+		{"rival bump", fx.RivalBump(), false},
+		{"arrow hit", fx.ArrowHit(), false},
+		{"gift drop", fx.GiftDrop(), false},
+	} {
+		if len(c.n) != 2 || (c.n[1].Hz > c.n[0].Hz) != c.up {
+			t.Errorf("%s %v: want a two-tone blip, up %v", c.name, c.n, c.up)
+		}
+	}
+
+	if hi, lo := fx.CageFall(134)[0].Hz, fx.CageFall(164)[0].Hz; lo >= hi || math.Abs(lo-1819) > 2 {
+		t.Errorf("cage fall %.0f Hz at the top, %.0f at the floor: want falling to about 1819", hi, lo)
+	}
+	if a, b := fx.AirWarning(0)[0].Hz, fx.AirWarning(3)[0].Hz; b >= a {
+		t.Error("each air warning should be lower than the last")
+	}
+	r := fx.RejectFall(14)
+	for i := 1; i < len(r); i++ {
+		if r[i].Hz >= r[i-1].Hz {
+			t.Fatalf("reject fall %v: want it falling every tick", r)
+		}
+	}
+	h := fx.Hi(4)
+	if h[0].Hz == h[1].Hz || h[0].Hz != h[2].Hz {
+		t.Errorf("Hi? %v: want two tones alternating every tick", h)
+	}
+	// The buzzes are speaker pushes, never tones.
+	for _, n := range append(fx.Zap(), append(fx.Byte(), fx.DogWake()...)...) {
+		if n.Hz != 0 && n.Hz != 1 {
+			t.Fatalf("buzz note %+v: want pushes and rests only", n)
+		}
+	}
+}

@@ -52,6 +52,7 @@ type FishbowlRoom struct {
 	slot        int // the next swimmer slot to move
 	lastSurface int // room tick he last surfaced
 	bubbleWait  int
+	bubbles     int // drowning bubbles so far, for the air warning's falling pitch
 	bubbleDist  int
 	surfaceCol  int
 	surfaceWait int
@@ -66,6 +67,7 @@ func (r *FishbowlRoom) Kind() Kind { return Fishbowl }
 
 // Update implements Room.
 func (r *FishbowlRoom) Update(ticks, freddySteps int, in entity.Controls, rng *rand.Rand) {
+	r.Sounds = r.Sounds[:0]
 	for range ticks {
 		if r.Out != Playing {
 			return
@@ -262,6 +264,8 @@ func (r *FishbowlRoom) bubble() {
 	if f.Y >= config.SwimMaxY && r.bubbleDist < config.BubbleMax {
 		r.bubbleDist += config.BubbleRise
 	}
+	r.soundArg(SoundAirWarning, r.bubbles)
+	r.bubbles++
 	r.Bubbles = append(r.Bubbles, Bubble{X: f.X, Y: max(f.Y-r.bubbleDist, 0) &^ 7})
 }
 
@@ -282,6 +286,7 @@ func (r *FishbowlRoom) contacts() {
 		eaten++
 		s.Off = true
 		if !IsEel(i) {
+			r.sound(SoundFishEaten)
 			if r.FishLeft--; r.FishLeft == 0 && !r.Drowning {
 				r.end(Cleared)
 			}
@@ -309,6 +314,7 @@ func (r *FishbowlRoom) wakeEel() {
 }
 
 func (r *FishbowlRoom) zap() {
+	r.sound(SoundZap)
 	f := r.Freddy
 	r.Phase = Zapped
 	r.Zap = config.ZapTicks
