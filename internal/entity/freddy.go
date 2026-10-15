@@ -80,6 +80,9 @@ type Freddy struct {
 	// Bouncing is set by the broom's bounce until he lands; he cannot be
 	// bounced again meanwhile (DESIGN §3.4, "The broom in detail").
 	Bouncing bool
+
+	// Swim is his state underwater (DESIGN §3.4, "Underwater").
+	Swim Swim
 }
 
 // NewFreddy returns Freddy about to walk into the alley from the left.

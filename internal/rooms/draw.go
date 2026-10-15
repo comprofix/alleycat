@@ -38,6 +38,7 @@ type Renderer struct {
 	actors *gfx.Sheet // Freddy and the dog
 	scheme gfx.Scheme
 	back   *ebiten.Image
+	water  *ebiten.Image // the underwater backdrop
 }
 
 // NewRenderer returns a renderer using the room and actor sheets.
@@ -70,11 +71,11 @@ func (r *Renderer) buildWalls() {
 }
 
 // buildWindow draws the window opening at x with a curtain either side.
-func (r *Renderer) buildWindow(x int) {
+func (r *Renderer) buildWindow(x int, curtainName string) {
 	s, b := r.scheme, r.back
 	fill(b, x-1, openingY-1, openingW+2, openingH+2, s.Trim)
 	fill(b, x, openingY, openingW, openingH, s.Glass)
-	curtain := r.sheet.Sprite("curtain").Frame(0)
+	curtain := r.sheet.Sprite(curtainName).Frame(0)
 	entity.DrawAt(b, curtain, x-curtainW, curtainY, false)
 	entity.DrawAt(b, curtain, x+openingW, curtainY, true)
 }
@@ -86,7 +87,7 @@ func (r *Renderer) buildBirdcage() {
 	b := r.back
 	r.buildWalls()
 	entity.DrawAt(b, r.sheet.Sprite("picture").Frame(0), pictureX, pictureY, false)
-	r.buildWindow(openingX)
+	r.buildWindow(openingX, "curtain")
 	entity.DrawAt(b, r.sheet.Sprite("lamp").Frame(0), lampX, lampY, false)
 	for _, c := range chairs {
 		entity.DrawAt(b, r.sheet.Sprite("chair").Frame(0), c.x, furnitureY, c.left)
@@ -96,12 +97,19 @@ func (r *Renderer) buildBirdcage() {
 
 // Draw renders the room.
 func (r *Renderer) Draw(dst *ebiten.Image, room Room) {
+	if fb, ok := room.(*FishbowlRoom); ok && fb.Phase != InRoom {
+		r.drawUnderwater(dst, fb)
+		return
+	}
 	if r.back == nil {
 		r.back = ebiten.NewImage(gfx.ScreenWidth, gfx.ScreenHeight)
 		switch room.Kind() {
 		case Cheese:
 			r.scheme = gfx.CheeseScheme
 			r.buildCheese()
+		case Fishbowl:
+			r.scheme = gfx.FishbowlScheme
+			r.buildFishbowl()
 		default:
 			r.buildBirdcage()
 		}
@@ -120,6 +128,8 @@ func (r *Renderer) Draw(dst *ebiten.Image, room Room) {
 		r.drawBirdcage(dst, rm)
 	case *CheeseRoom:
 		r.drawCheese(dst, rm)
+	case *FishbowlRoom:
+		r.drawBowl(dst, rm)
 	}
 	entity.DrawDog(dst, r.actors, &b.Dog, "dog_run_orange")
 	entity.DrawAt(dst, r.sheet.Sprite("broom").Frame(broomPoses[b.Broom.Frame]), b.Broom.X, b.Broom.Y, false)
@@ -145,6 +155,17 @@ func (r *Renderer) DrawDebug(dst *ebiten.Image, room Room) {
 		vector.StrokeRect(dst, float32(x)+0.5, float32(y)+0.5, float32(w)-1, float32(h)-1, 1, gfx.Palette[idx], false)
 	}
 	b := room.Shared()
+	if fb, ok := room.(*FishbowlRoom); ok && fb.Phase != InRoom {
+		for i := range fb.Swimmers {
+			if !fb.Swimmers[i].Off {
+				sr := fb.SwimmerRect(i)
+				box(sr.X, sr.Y, sr.W, sr.H, gfx.White)
+			}
+		}
+		h := b.Freddy.HitBox()
+		box(h.X, h.Y, h.W, h.H, gfx.Lime)
+		return
+	}
 	for _, s := range b.Layout.Surfaces {
 		idx := gfx.Yellow
 		if s.Perch {
@@ -165,6 +186,9 @@ func (r *Renderer) DrawDebug(dst *ebiten.Image, room Room) {
 			cr := rm.cageRect()
 			box(cr.X, cr.Y, cr.W, cr.H, gfx.White)
 		}
+	case *FishbowlRoom:
+		br := rm.BowlRect()
+		box(br.X, br.Y, br.W, br.H, gfx.White)
 	case *CheeseRoom:
 		for i := range rm.Mice {
 			if rm.Mice[i].Visible() {

@@ -180,6 +180,8 @@ func New(k Kind, difficulty int, rng *rand.Rand) Room {
 		return newBirdcage(difficulty, rng)
 	case Cheese:
 		return newCheese(difficulty, rng)
+	case Fishbowl:
+		return newFishbowl(difficulty, rng)
 	}
 	return nil
 }
