@@ -59,3 +59,11 @@ const (
 	SpeakerHighPassHz = 3.3
 	SharpNoteMs       = 10 // notes shorter than this switch on and off at once
 )
+
+// AudioScheduleMs is the fixed delay between a sound's game time and when it
+// plays, so every sound can start on its exact sample (DESIGN §7). It must
+// cover the time between the audio buffer's fills.
+const (
+	AudioScheduleMs    = 60
+	AudioScheduleMaxMs = 250 // the delay widens up to this to cover the device's read-ahead
+)

@@ -138,9 +138,11 @@ func (a *Alley) mouseTouch(i int) bool {
 			x -= 4
 		}
 		a.Impact = Impact{Kind: Squeak, X: x, Y: config.MouseY[i]}
+		a.sound(SoundSqueak)
 		return true
 	}
 	m.Caught, m.caught, m.Dir = true, a.Tick, 1
 	a.Session.AddScore(config.MousePoints[i])
+	a.sound(SoundMouseCaught)
 	return true
 }

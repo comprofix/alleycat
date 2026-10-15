@@ -178,13 +178,132 @@ func TestLaundryGapsGrowWithDifficulty(t *testing.T) {
 	}
 }
 
-// The alley stands still after Freddy sinks behind the fence (DESIGN §12).
-func TestPauses(t *testing.T) {
+// has reports whether the last update made sound s.
+func has(a *Alley, s Sound) bool {
+	for _, got := range a.Sounds {
+		if got == s {
+			return true
+		}
+	}
+	return false
+}
+
+// Sinking behind the fence holds the alley still for 7 ticks and crackles
+// (DESIGN §7.3, §12).
+func TestFenceDrop(t *testing.T) {
 	a := standing(0)
 	a.Freddy.Sank = true
-	a.checkPauses()
-	if a.Freeze != config.FenceDropTicks || a.Freddy.Sank {
-		t.Errorf("after sinking: freeze %d, Sank %v; want %d, cleared", a.Freeze, a.Freddy.Sank, config.FenceDropTicks)
+	a.Sounds = a.Sounds[:0]
+	a.checkFreddy()
+	if a.Freeze != config.FenceDropTicks || a.Freddy.Sank || !has(a, SoundFenceDrop) {
+		t.Errorf("freeze %d, Sank %v, sounds %v; want %d, cleared, the crackle",
+			a.Freeze, a.Freddy.Sank, a.Sounds, config.FenceDropTicks)
+	}
+}
+
+// Landing on a can clicks once; leaping off clicks and clears the mark. With
+// the dog out neither clicks and the mark stays (DESIGN §7.3).
+func TestCanClicks(t *testing.T) {
+	a := standing(0) // a tall can at X 64
+	f := a.Freddy
+	f.X, f.Y = 64, 136
+	if !a.Support(f) || !has(a, SoundCanOn) {
+		t.Fatalf("landing on a can: sounds %v, want the click", a.Sounds)
+	}
+	a.Sounds = a.Sounds[:0]
+	a.Support(f)
+	if has(a, SoundCanOn) {
+		t.Error("the landing click repeated while standing on the can")
+	}
+	f.Leapt = true
+	a.checkFreddy()
+	if !has(a, SoundCanOff) || a.canMark {
+		t.Errorf("leaping off: sounds %v, mark %v; want the click and the mark cleared", a.Sounds, a.canMark)
 	}
 
+	a = standing(0)
+	f = a.Freddy
+	a.Dog.Active = true
+	f.X, f.Y = 64, 136
+	a.Support(f)
+	f.Leapt = true
+	a.checkFreddy()
+	if len(a.Sounds) != 0 || !a.canMark {
+		t.Errorf("with the dog out: sounds %v, mark %v; want silence and the mark kept", a.Sounds, a.canMark)
+	}
+}
+
+// Each Update starts the sound list afresh.
+func TestSoundsReset(t *testing.T) {
+	a := standing(0)
+	a.Sounds = append(a.Sounds, SoundBonk)
+	a.Update(1, 0, entity.Controls{}, newRNG())
+	if has(a, SoundBonk) {
+		t.Error("sounds carried over from the last update")
+	}
+}
+
+// Catching a mouse in the air blips; a mouse touching a seated Freddy
+// squeaks (DESIGN §7.3).
+func TestMouseSounds(t *testing.T) {
+	a := standing(0)
+	f := a.Freddy
+	f.X, f.Y = a.Mice[1].X, config.MouseY[1]
+	a.Mice[1].Caught = false
+	a.Sounds = a.Sounds[:0]
+	if !a.mouseTouch(1) || !has(a, SoundMouseCaught) {
+		t.Errorf("catching a mouse: sounds %v, want the blip", a.Sounds)
+	}
+
+	a = standing(0)
+	f = a.Freddy
+	f.X, f.Y = a.Mice[1].X, config.MouseY[1]
+	f.Seat = entity.Seated
+	a.Mice[1].Caught = false
+	a.Sounds = a.Sounds[:0]
+	if !a.mouseTouch(1) || !has(a, SoundSqueak) {
+		t.Errorf("knocked off a line: sounds %v, want the squeak", a.Sounds)
+	}
+}
+
+// A thrown object's hit BONKs once (DESIGN §7.3).
+func TestBonkSound(t *testing.T) {
+	a := standing(0)
+	f := a.Freddy
+	a.Thrown = Thrown{Active: true, X: f.X, Y: f.Y, Dir: 1}
+	a.checkThrownHit()
+	if !has(a, SoundBonk) {
+		t.Fatalf("hit: sounds %v, want BONK", a.Sounds)
+	}
+	a.Sounds = a.Sounds[:0]
+	a.checkThrownHit()
+	if has(a, SoundBonk) {
+		t.Error("BONK repeated for the same object")
+	}
+}
+
+// The trash cat's notes play once per touch.
+func TestTrashCatSound(t *testing.T) {
+	a := standing(0)
+	f := a.Freddy
+	f.X, f.Y = 64, config.TallCanY
+	a.TrashCat = TrashCat{Phase: 10, X: f.X, Top: f.Y, H: 8}
+	a.controls(entity.Controls{}, newRNG())
+	a.controls(entity.Controls{}, newRNG())
+	n := 0
+	for _, s := range a.Sounds {
+		if s == SoundTrashCat {
+			n++
+		}
+	}
+	if n != 1 {
+		t.Errorf("trash cat notes played %d times for one touch, want 1", n)
+	}
+	a.TrashCat = TrashCat{}
+	a.controls(entity.Controls{}, newRNG())
+	a.TrashCat = TrashCat{Phase: 10, X: f.X, Top: f.Y, H: 8}
+	a.controls(entity.Controls{}, newRNG())
+	if a.Sounds[len(a.Sounds)-1] != SoundTrashCat {
+		t.Error("a new touch did not play the notes again")
+	}
 }

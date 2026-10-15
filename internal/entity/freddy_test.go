@@ -228,6 +228,27 @@ func TestBehindFenceReenters(t *testing.T) {
 	}
 }
 
+// A jump or a drop is reported, for the trash-can step-off click (DESIGN
+// §7.3).
+func TestLeapt(t *testing.T) {
+	f := inAlley()
+	run(f, Controls{V: -1}, floorOnly{}, 1)
+	if !f.Leapt {
+		t.Error("a jump was not reported")
+	}
+	f = inAlley()
+	f.Y = 96
+	run(f, Controls{V: 1}, ledge{96}, 1)
+	if !f.Leapt {
+		t.Error("a drop was not reported")
+	}
+	f = inAlley()
+	run(f, Controls{H: 1}, floorOnly{}, 5)
+	if f.Leapt {
+		t.Error("walking was reported as a leap")
+	}
+}
+
 // Sinking out of sight behind the fence is reported for the pause.
 func TestSankBehindFence(t *testing.T) {
 	f := inAlley()

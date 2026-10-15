@@ -18,6 +18,8 @@ type RoomScene struct {
 	room   rooms.Room
 	view   *rooms.Renderer
 	x, y   int // where Freddy went in, in the alley
+
+	fighting bool // the dog-fight sound is playing
 }
 
 func newRoomScene(ctx *Context, room rooms.Room, x, y int) *RoomScene {
@@ -34,6 +36,7 @@ func (r *RoomScene) Update(ctx *Context) error {
 	r.room.Update(ctx.Ticks, ctx.FreddySteps, controls(ctx.Input), ctx.RNG)
 	runPatter(ctx, roomPatter(r.room))
 	b := r.room.Shared()
+	followFight(ctx, &b.Dog, &r.fighting)
 	if hr, ok := r.room.(*rooms.HeartRoom); ok {
 		r.heartEnds(ctx, hr)
 		return nil

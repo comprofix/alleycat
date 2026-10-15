@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/comprofix/alleycat/internal/clock"
 	"github.com/comprofix/alleycat/internal/config"
 )
 
@@ -20,6 +21,15 @@ type Synth struct {
 	mu sync.Mutex
 
 	music, sfx track
+
+	// Scheduling (see Now): commands wait in queue until the sample count
+	// pos reaches their time. offset maps game time onto samples.
+	queue   []command
+	pos     int64
+	timed   bool
+	latency int64 // the current delay, in samples: it widens to cover the device's read-ahead
+	stamp   int64
+	offset  int64
 
 	enabled bool
 	volume  float64
@@ -45,44 +55,113 @@ func NewSynth() *Synth {
 // A looping tune repeats until stopped. The table must not be modified
 // while it plays.
 func (s *Synth) PlayMusic(notes []Note, loop bool) {
-	if s == nil {
-		return
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.music.start(notes, loop)
+	s.send(command{kind: playMusic, notes: notes, loop: loop})
 }
 
 // StopMusic stops the tune.
-func (s *Synth) StopMusic() {
-	if s == nil {
-		return
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.music.stop()
-}
+func (s *Synth) StopMusic() { s.send(command{kind: stopMusic}) }
 
 // PlaySFX starts an effect, replacing any effect playing. The music is
 // silent until it ends.
-func (s *Synth) PlaySFX(notes []Note) {
-	if s == nil {
-		return
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.sfx.start(notes, false)
-}
+func (s *Synth) PlaySFX(notes []Note) { s.send(command{kind: playSFX, notes: notes}) }
 
 // StopSFX ends the effect early, letting the music resume.
-func (s *Synth) StopSFX() {
+func (s *Synth) StopSFX() { s.send(command{kind: stopSFX}) }
+
+// Stop ends the tune and the effect. The game calls it at every scene change,
+// as the original silences the speaker at each transition (DESIGN §7.1).
+func (s *Synth) Stop() { s.send(command{kind: stopAll}) }
+
+// Now sets the game time, in master ticks, that the commands sent after it
+// belong to. Once it has been called, each command plays at its own time
+// plus a fixed delay, sample-exact, rather than whenever the audio buffer is
+// next filled: so the patter's steps fall exactly 3 ticks apart (DESIGN
+// §7). Without it, as in tests, commands apply at once.
+func (s *Synth) Now(ticks float64) {
 	if s == nil {
 		return
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.sfx.stop()
+	const (
+		perTick = config.AudioSampleRate / clock.TickHz
+		base    = config.AudioScheduleMs * config.AudioSampleRate / 1000
+		most    = config.AudioScheduleMaxMs * config.AudioSampleRate / 1000
+	)
+	at := int64(ticks * perTick)
+	if !s.timed {
+		s.latency = base
+	}
+	// Anchor the game clock to the audio clock. The device reads audio ahead
+	// in chunks by an amount we cannot know, so if a command would already
+	// be late, widen the delay to cover it and re-anchor; this settles after
+	// a moment. If the two clocks drift far apart, re-anchor too.
+	ahead := at + s.offset - s.pos
+	if !s.timed || ahead < 0 || ahead > 4*s.latency {
+		// A little late: the device reads further ahead than allowed for.
+		// Very late means the game stalled; that needs no wider delay.
+		if s.timed && ahead < 0 && -ahead <= most {
+			s.latency = min(s.latency-ahead+base/2, most)
+		}
+		s.offset = s.pos + s.latency - at
+		s.timed = true
+	}
+	s.stamp = at + s.offset
 }
+
+// send queues a command at the current game time, or applies it at once if
+// the game has not set a time.
+func (s *Synth) send(c command) {
+	if s == nil {
+		return
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if !s.timed {
+		s.apply(c)
+		return
+	}
+	c.at = s.stamp
+	if n := len(s.queue); n > 0 {
+		c.at = max(c.at, s.queue[n-1].at) // keep the order they were sent in
+	}
+	s.queue = append(s.queue, c)
+}
+
+// apply carries out a command on the tracks.
+func (s *Synth) apply(c command) {
+	switch c.kind {
+	case playMusic:
+		s.music.start(c.notes, c.loop)
+	case stopMusic:
+		s.music.stop()
+	case playSFX:
+		s.sfx.start(c.notes, false)
+	case stopSFX:
+		s.sfx.stop()
+	case stopAll:
+		s.music.stop()
+		s.sfx.stop()
+	}
+}
+
+// command is a queued change to the tracks.
+type command struct {
+	at    int64 // the sample it applies at
+	kind  commandKind
+	notes []Note
+	loop  bool
+}
+
+type commandKind int
+
+const (
+	playMusic commandKind = iota
+	stopMusic
+	playSFX
+	stopSFX
+	stopAll
+)
 
 // SetEnabled turns sound on or off (Ctrl+S). Tracks keep their timing while
 // sound is off, as in the original (DESIGN §7.1).
@@ -132,6 +211,12 @@ func (s *Synth) Read(p []byte) (int, error) {
 
 	n := len(p) / 4
 	for i := range n {
+		for len(s.queue) > 0 && s.queue[0].at <= s.pos {
+			s.apply(s.queue[0])
+			s.queue = s.queue[1:]
+		}
+		s.pos++
+
 		var hz float64
 		var length int // samples in the sounding note
 		var fresh bool // the note starts on this sample
@@ -147,9 +232,11 @@ func (s *Synth) Read(p []byte) (int, error) {
 		target := 0.0
 		if hz > 0 && s.enabled {
 			s.hz = min(hz, maxHz)
-			// Each note starts at the top of its wave, as the speaker's
-			// timer restarts high on every new note.
-			if fresh {
+			// A note that starts from silence starts at the top of its
+			// wave, as the speaker's timer restarts high. A change of
+			// pitch mid-sound keeps the wave going: restarting it on every
+			// note of a fast warble buzzes at the note rate.
+			if fresh && s.gain == 0 {
 				s.phase = 0
 			}
 			// Short notes, such as the patter's clicks, switch on and off

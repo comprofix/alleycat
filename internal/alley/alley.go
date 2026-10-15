@@ -59,12 +59,17 @@ type Alley struct {
 	Impact Impact
 	// Exit is set when Freddy goes in through a window.
 	Exit Exit
+	// Sounds lists the sounds this update made, for the scene to play
+	// (DESIGN §7.3). Each Update starts it afresh.
+	Sounds []Sound
 
 	gap        int // laundry gap chance for this difficulty
 	table      config.Difficulty
 	fenceSince int // tick Freddy last landed on the fence top
 	mouseTurn  int
 	lastCan    int
+	canMark    bool // set landing on a can, cleared by the step-off click (DESIGN §7.3)
+	catTouched bool // Freddy is touching the trash cat: its notes play once per touch
 }
 
 // New sets up the alley for a game, with Freddy walking in from the left.
@@ -101,6 +106,7 @@ func newAlley(s *session.Session, rng *rand.Rand, f *entity.Freddy) *Alley {
 // Update advances the alley by this frame's master ticks and Freddy steps.
 // While the game is frozen only the freeze counts down.
 func (a *Alley) Update(ticks, freddySteps int, in entity.Controls, rng *rand.Rand) {
+	a.Sounds = a.Sounds[:0]
 	for range ticks {
 		if a.Exit != NoExit {
 			return
@@ -125,21 +131,33 @@ func (a *Alley) Update(ticks, freddySteps int, in entity.Controls, rng *rand.Ran
 		}
 		a.Freddy.HoldEntry = a.Dog.Out()
 		a.Freddy.Update(a.controls(in, rng), a)
-		a.checkPauses()
+		a.checkFreddy()
 		a.checkThrownHit()
 		a.checkDogCatch()
 	}
 }
 
-// checkPauses holds the game still after Freddy sinks behind the fence, as
-// the original's sound routine does (DESIGN §7.1, §12).
-func (a *Alley) checkPauses() {
+// checkFreddy acts on what Freddy reported this step. Sinking behind the
+// fence holds the game still for the crackle, as the original's sound
+// routine does (DESIGN §7.3, §12). Leaping off after landing on a can clicks,
+// unless the dog is out, which leaves the mark set.
+func (a *Alley) checkFreddy() {
 	f := a.Freddy
 	if f.Sank {
 		f.Sank = false
 		a.Freeze = max(a.Freeze, config.FenceDropTicks)
+		a.sound(SoundFenceDrop)
+	}
+	if f.Leapt {
+		f.Leapt = false
+		if a.canMark && !a.Dog.Active {
+			a.canMark = false
+			a.sound(SoundCanOff)
+		}
 	}
 }
+
+func (a *Alley) sound(s Sound) { a.Sounds = append(a.Sounds, s) }
 
 // controls applies the trash cat's bump: standing on a can it touches,
 // Freddy drops off in a random direction (DESIGN §3.8, "Alley systems").
@@ -149,7 +167,13 @@ func (a *Alley) controls(in entity.Controls, rng *rand.Rand) entity.Controls {
 		return in
 	}
 	if !a.TrashCat.touches(f) {
+		a.catTouched = false
 		return in
+	}
+	// Its notes play once for each touch (DESIGN §7.3).
+	if !a.catTouched {
+		a.catTouched = true
+		a.sound(SoundTrashCat)
 	}
 	return entity.Controls{H: entity.RandDir(rng), V: 1}
 }
@@ -228,6 +252,12 @@ func (a *Alley) Support(f *entity.Freddy) bool {
 	}
 	if top, ok := a.canUnder(f); ok {
 		f.Y = top
+		if !a.canMark {
+			a.canMark = true
+			if !a.Dog.Active {
+				a.sound(SoundCanOn)
+			}
+		}
 		return true
 	}
 	for i, y := range config.LineY {

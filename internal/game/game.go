@@ -81,9 +81,10 @@ func New(seed uint64) (*Game, error) {
 			Alley: alleySheet,
 			Rooms: roomSheet,
 			Audio: synth,
-			// The patter has its own RNG so audio never shifts the game's
-			// random sequence (DESIGN §7.2).
+			// The patter and the effects have their own RNGs so audio never
+			// shifts the game's random sequence (DESIGN §7.2).
 			Patter:  audio.NewPatter(rand.New(rand.NewPCG(seed^0x5eed0a0d10, seed))),
+			FX:      audio.NewFX(rand.New(rand.NewPCG(seed^0xeffec75, seed+1))),
 			SoundOn: true,
 		},
 	}
@@ -112,6 +113,8 @@ func (g *Game) Update() error {
 	}
 
 	g.ctx.Ticks, g.ctx.FreddySteps = g.clock.Advance()
+	g.ctx.TickCount = g.clock.Total()
+	g.ctx.Audio.Now(g.clock.Time())
 	return g.scenes.Update(g.ctx)
 }
 

@@ -45,6 +45,9 @@ func (m *Manager) Update(ctx *Context) error {
 		if ctx.next != nil {
 			m.pending, ctx.next = ctx.next, nil
 			m.phase, m.frame = fadingOut, 0
+			// Every sound ends with its scene, as the original silences
+			// the speaker at each transition (DESIGN §7.1).
+			ctx.Audio.Stop()
 		}
 	case fadingOut:
 		m.frame++
