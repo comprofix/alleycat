@@ -604,3 +604,17 @@ D.DDD11DD11DDDD11DDDDDD11DDDD11DDDDDD11DDDDDDD..
 ..........DDDDDDDDDDDDDDDDDDDDDDDDDDDD..........
 ...........D.D.DDDDDDDDDDDDDDDDDDD..D...........
 .................D.D.DD.D.DD.D..................
+
+; The moon over the alley (M8a, our own art): white, shaded silver on the
+; right, two slate craters.
+sprite moon 10 10
+...CCCC...
+.CCCCCCDD.
+.CCECCCCD.
+CCCCCCCCDD
+CCCCCECCDD
+CECCCCCCDD
+CCCCCCCCDD
+.CCCCECCD.
+.CCCCCCDD.
+...CDDD...

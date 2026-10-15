@@ -4,6 +4,7 @@ import (
 	"image"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/colorm"
 
 	"github.com/comprofix/alleycat/internal/config"
 	"github.com/comprofix/alleycat/internal/gfx"
@@ -32,7 +33,15 @@ func FreddyImage(sheet *gfx.Sheet, f *Freddy) *ebiten.Image { return freddyFrame
 
 // DrawFreddy draws Freddy. While he walks in he shows at the screen edge;
 // behind the alley fence, rows from config.FenceHideY down are hidden.
-func DrawFreddy(dst *ebiten.Image, sheet *gfx.Sheet, f *Freddy) {
+func DrawFreddy(dst *ebiten.Image, sheet *gfx.Sheet, f *Freddy) { drawFreddy(dst, sheet, f, -1) }
+
+// DrawFreddyRimmed draws Freddy with a one-pixel rim in palette colour rim
+// round him, so the dark cat shows against a dark backdrop (DESIGN §8).
+func DrawFreddyRimmed(dst *ebiten.Image, sheet *gfx.Sheet, f *Freddy, rim int) {
+	drawFreddy(dst, sheet, f, rim)
+}
+
+func drawFreddy(dst *ebiten.Image, sheet *gfx.Sheet, f *Freddy, rim int) {
 	if f.Hidden() || f.Gone {
 		return
 	}
@@ -53,6 +62,11 @@ func DrawFreddy(dst *ebiten.Image, sheet *gfx.Sheet, f *Freddy) {
 		}
 		if vis < h {
 			img = img.SubImage(image.Rect(b.Min.X, b.Min.Y, b.Max.X, b.Min.Y+vis)).(*ebiten.Image)
+		}
+	}
+	if rim >= 0 {
+		for _, d := range [4][2]int{{-1, 0}, {1, 0}, {0, -1}, {0, 1}} {
+			drawFlat(dst, img, x+d[0], f.Y+d[1], f.Facing < 0, rim)
 		}
 	}
 	DrawAt(dst, img, x, f.Y, f.Facing < 0)
@@ -104,4 +118,19 @@ func EdgeX(fromLeft bool, px, w int) int {
 		return px - w
 	}
 	return gfx.ScreenWidth - px
+}
+
+// drawFlat draws img's shape in a single palette colour.
+func drawFlat(dst, img *ebiten.Image, x, y int, flip bool, idx int) {
+	var cm colorm.ColorM
+	cm.Scale(0, 0, 0, 1)
+	c := gfx.Palette[idx]
+	cm.Translate(float64(c.R)/255, float64(c.G)/255, float64(c.B)/255, 0)
+	op := &colorm.DrawImageOptions{}
+	if flip {
+		op.GeoM.Scale(-1, 1)
+		op.GeoM.Translate(float64(img.Bounds().Dx()), 0)
+	}
+	op.GeoM.Translate(float64(x), float64(y))
+	colorm.DrawImage(dst, img, cm, op)
 }
