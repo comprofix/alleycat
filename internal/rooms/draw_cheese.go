@@ -46,8 +46,8 @@ func holeDrawAt(h int) (x, y int) {
 // pedestal table.
 func (r *Renderer) buildCheese() {
 	s, b := r.scheme, r.back
-	r.buildWalls()
-	r.buildWindow(cheeseOpeningX, "curtain")
+	r.buildWalls(wallY0, wallY1)
+	r.buildWindow(cheeseOpeningX, openingY, "curtain")
 	entity.DrawAt(b, r.sheet.Sprite("chair").Frame(0), cheeseChairX, furnitureY, false)
 	entity.DrawAt(b, r.sheet.Sprite("pedestal").Frame(0), pedestalX, pedestalY, false)
 

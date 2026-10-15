@@ -19,7 +19,9 @@ type Dog struct {
 	Capture int
 	// Forced calls the dog in at once (the trash cat).
 	Forced bool
-	Frame  int
+	// Y is the row it is drawn on, or 0 for its usual line along the floor.
+	Y     int
+	Frame int
 
 	delay int // fight steps left before it runs off
 	wait  int // ticks to the next step
@@ -152,7 +154,21 @@ func (d *Dog) CheckCatch(f *Freddy) bool {
 	if d.X+config.DogCatchAfter < f.X || max(d.X-config.DogCatchBefore, 0) > f.X {
 		return false
 	}
-	mid := min((d.X+f.X)/2, config.DogFightMaxX)
+	d.startFight((d.X + f.X) / 2)
+	return true
+}
+
+// CaptureAt starts the fight where a sleeping dog has woken on Freddy, at
+// his X on the row at y (DESIGN §3.4, "Sleeping dogs room in detail").
+func (d *Dog) CaptureAt(x, y int) {
+	d.Y = y
+	d.startFight(x)
+}
+
+// startFight begins the fight cloud at x: it rolls about for a while, then
+// runs off to the nearer edge.
+func (d *Dog) startFight(x int) {
+	mid := min(x, config.DogFightMaxX)
 	d.X = mid
 	dist := config.DogSideSplitX + 1 - mid
 	d.Capture = -1
@@ -162,5 +178,4 @@ func (d *Dog) CheckCatch(f *Freddy) bool {
 	}
 	d.delay = dist / config.DogStepPx
 	d.Active, d.Entering, d.Exiting = true, 0, 0
-	return true
 }

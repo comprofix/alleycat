@@ -76,7 +76,11 @@ func DrawDog(dst *ebiten.Image, sheet *gfx.Sheet, d *Dog, coat string) {
 	case d.Exiting > 0:
 		x = EdgeX(d.X < gfx.ScreenWidth/2, (d.Exiting-1)*8, w)
 	}
-	DrawAt(dst, img, x, config.DogY, flip)
+	y := config.DogY
+	if d.Y != 0 {
+		y = d.Y
+	}
+	DrawAt(dst, img, x, y, flip)
 }
 
 // DrawAt draws img with its top-left at x, y, mirrored when flip is set.

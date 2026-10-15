@@ -18,7 +18,7 @@ const (
 	pictureX, pictureY             = 88, 88
 	openingX, openingY             = 232, 88
 	openingW, openingH             = 32, 16
-	curtainW, curtainY             = 16, 86
+	curtainW, curtainDY            = 16, 2
 	lampX, lampY                   = 16, 112
 	furnitureY                     = 128 // chair tops
 	tableX, tableY                 = 128, 144
@@ -54,30 +54,31 @@ func line(dst *ebiten.Image, x0, y0, x1, y1, idx int) {
 	vector.StrokeLine(dst, float32(x0)+0.5, float32(y0)+0.5, float32(x1)+0.5, float32(y1)+0.5, 1, gfx.Palette[idx], false)
 }
 
-// buildWalls fills the backdrop and draws the walls in perspective, shared
-// by the red rooms.
-func (r *Renderer) buildWalls() {
+// buildWalls fills the backdrop and draws the walls in perspective, with
+// the back wall from y0 to y1.
+func (r *Renderer) buildWalls(y0, y1 int) {
 	s, b := r.scheme, r.back
 	b.Fill(gfx.Palette[s.Wall])
 	ink := s.Outline
-	line(b, wallX0, wallY0, wallX1, wallY0, ink)
-	line(b, wallX0, wallY1, wallX1, wallY1, ink)
-	line(b, wallX0, wallY0, wallX0, wallY1, ink)
-	line(b, wallX1, wallY0, wallX1, wallY1, ink)
-	line(b, 0, wallY0-16, wallX0, wallY0, ink)
-	line(b, gfx.ScreenWidth-1, wallY0-16, wallX1, wallY0, ink)
-	line(b, 0, wallY1+16, wallX0, wallY1, ink)
-	line(b, gfx.ScreenWidth-1, wallY1+16, wallX1, wallY1, ink)
+	line(b, wallX0, y0, wallX1, y0, ink)
+	line(b, wallX0, y1, wallX1, y1, ink)
+	line(b, wallX0, y0, wallX0, y1, ink)
+	line(b, wallX1, y0, wallX1, y1, ink)
+	line(b, 0, y0-16, wallX0, y0, ink)
+	line(b, gfx.ScreenWidth-1, y0-16, wallX1, y0, ink)
+	line(b, 0, y1+16, wallX0, y1, ink)
+	line(b, gfx.ScreenWidth-1, y1+16, wallX1, y1, ink)
 }
 
-// buildWindow draws the window opening at x with a curtain either side.
-func (r *Renderer) buildWindow(x int, curtainName string) {
+// buildWindow draws the window opening at (x, y) with a curtain either
+// side.
+func (r *Renderer) buildWindow(x, y int, curtainName string) {
 	s, b := r.scheme, r.back
-	fill(b, x-1, openingY-1, openingW+2, openingH+2, s.Trim)
-	fill(b, x, openingY, openingW, openingH, s.Glass)
+	fill(b, x-1, y-1, openingW+2, openingH+2, s.Trim)
+	fill(b, x, y, openingW, openingH, s.Glass)
 	curtain := r.sheet.Sprite(curtainName).Frame(0)
-	entity.DrawAt(b, curtain, x-curtainW, curtainY, false)
-	entity.DrawAt(b, curtain, x+openingW, curtainY, true)
+	entity.DrawAt(b, curtain, x-curtainW, y-curtainDY, false)
+	entity.DrawAt(b, curtain, x+openingW, y-curtainDY, true)
 }
 
 // buildBirdcage draws the birdcage room's backdrop: the walls in
@@ -85,9 +86,9 @@ func (r *Renderer) buildWindow(x int, curtainName string) {
 // chairs and the table.
 func (r *Renderer) buildBirdcage() {
 	b := r.back
-	r.buildWalls()
+	r.buildWalls(wallY0, wallY1)
 	entity.DrawAt(b, r.sheet.Sprite("picture").Frame(0), pictureX, pictureY, false)
-	r.buildWindow(openingX, "curtain")
+	r.buildWindow(openingX, openingY, "curtain")
 	entity.DrawAt(b, r.sheet.Sprite("lamp").Frame(0), lampX, lampY, false)
 	for _, c := range chairs {
 		entity.DrawAt(b, r.sheet.Sprite("chair").Frame(0), c.x, furnitureY, c.left)
@@ -110,6 +111,9 @@ func (r *Renderer) Draw(dst *ebiten.Image, room Room) {
 		case Fishbowl:
 			r.scheme = gfx.FishbowlScheme
 			r.buildFishbowl()
+		case Dogs:
+			r.scheme = gfx.DogsScheme
+			r.buildDogs()
 		default:
 			r.buildBirdcage()
 		}
@@ -130,10 +134,16 @@ func (r *Renderer) Draw(dst *ebiten.Image, room Room) {
 		r.drawCheese(dst, rm)
 	case *FishbowlRoom:
 		r.drawBowl(dst, rm)
+	case *DogsRoom:
+		r.drawDogs(dst, rm)
 	}
 	entity.DrawDog(dst, r.actors, &b.Dog, "dog_run_orange")
 	entity.DrawAt(dst, r.sheet.Sprite("broom").Frame(broomPoses[b.Broom.Frame]), b.Broom.X, b.Broom.Y, false)
-	entity.DrawFreddy(dst, r.actors, b.Freddy)
+	if dr, ok := room.(*DogsRoom); ok && dr.Eating {
+		r.drawEating(dst, dr)
+	} else {
+		entity.DrawFreddy(dst, r.actors, b.Freddy)
+	}
 }
 
 func (r *Renderer) drawBirdcage(dst *ebiten.Image, bc *BirdcageRoom) {
@@ -189,6 +199,13 @@ func (r *Renderer) DrawDebug(dst *ebiten.Image, room Room) {
 	case *FishbowlRoom:
 		br := rm.BowlRect()
 		box(br.X, br.Y, br.W, br.H, gfx.White)
+	case *DogsRoom:
+		for i, sd := range rm.Sleepers {
+			if sd.On {
+				sr := SleeperRect(i)
+				box(sr.X, sr.Y, sr.W, sr.H, []int{gfx.White, gfx.Yellow, gfx.Red}[sd.Alert])
+			}
+		}
 	case *CheeseRoom:
 		for i := range rm.Mice {
 			if rm.Mice[i].Visible() {

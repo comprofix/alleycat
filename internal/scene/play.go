@@ -17,7 +17,7 @@ import (
 
 // testRoom is the room every ordinary window leads to while it is being
 // checked (PLAN M5).
-const testRoom = rooms.Fishbowl
+const testRoom = rooms.Dogs
 
 // Play is the alley scene. It runs the alley, sends Freddy into a room when
 // he goes in through a window, and ends the game when the lives run out. It
