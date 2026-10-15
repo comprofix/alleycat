@@ -1,8 +1,11 @@
 package scene
 
 import (
+	"time"
+
 	"github.com/hajimehoshi/ebiten/v2"
 
+	"github.com/comprofix/alleycat/internal/audio"
 	"github.com/comprofix/alleycat/internal/gfx"
 )
 
@@ -49,6 +52,8 @@ func (m *Manager) Update(ctx *Context) error {
 			// the speaker at each transition (DESIGN §7.1).
 			ctx.Audio.Stop()
 			ctx.Audio.SetPaused(false)
+			// The rising figure plays through the fade out and back in.
+			ctx.Audio.PlaySFX(audio.Wipe(2 * FadeFrames * time.Second / 60))
 		}
 	case fadingOut:
 		m.frame++

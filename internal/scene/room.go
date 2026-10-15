@@ -5,6 +5,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 
+	"github.com/comprofix/alleycat/internal/audio"
 	"github.com/comprofix/alleycat/internal/config"
 	"github.com/comprofix/alleycat/internal/debug"
 	"github.com/comprofix/alleycat/internal/gfx"
@@ -137,6 +138,12 @@ func (r *Result) Update(ctx *Context) error {
 		if r.word == resultLost {
 			r.text = lostWords[ctx.RNG.IntN(len(lostWords))]
 		}
+		// The result tune fills the screen's 28 ticks (DESIGN §7.4).
+		tune := audio.RoomLeft()
+		if r.word == resultLost {
+			tune = audio.Failure()
+		}
+		ctx.Audio.PlayMusic(tune, false)
 	}
 	r.ticks += ctx.Ticks
 	if r.ticks >= config.ResultTicks {

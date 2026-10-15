@@ -6,6 +6,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 
+	"github.com/comprofix/alleycat/internal/audio"
 	"github.com/comprofix/alleycat/internal/config"
 	"github.com/comprofix/alleycat/internal/entity"
 	"github.com/comprofix/alleycat/internal/gfx"
@@ -93,6 +94,9 @@ func (k *Kiss) Update(ctx *Context) error {
 		if n := ctx.FX.Smooch(); n != nil {
 			ctx.Audio.PlaySFX(n)
 		}
+		// The kiss tune loops through the sequence. The smooch is an
+		// effect, so the tune waits under it and starts as it ends.
+		ctx.Audio.PlayMusic(audio.Kiss(), true)
 	}
 	for range ctx.Ticks {
 		k.ticks++
