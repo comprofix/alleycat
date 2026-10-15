@@ -105,21 +105,18 @@ func (r *Renderer) drawTrashCat(dst *ebiten.Image, t *TrashCat) {
 
 // drawImpact shows the impact word while the game is frozen.
 func (r *Renderer) drawImpact(dst *ebiten.Image, im Impact) {
-	var word string
-	var bg, ink int
+	// Ragged splats with slanting lettering, as in the original (checked
+	// against the HD video at 10:19.4 for "BONK!").
+	var name string
 	switch im.Kind {
 	case Bonk:
-		// A ragged splat with slanting lettering, as in the original
-		// (checked against the HD video at 10:19.4).
-		entity.DrawAt(dst, r.sheet.Sprite("bonk").Frame(0), im.X, im.Y, false)
-		return
+		name = "bonk"
 	case Squeak:
-		word, bg, ink = "SQUEEK!", gfx.White, gfx.Plum
+		name = "squeek"
 	default:
 		return
 	}
-	w := gfx.Width(word)
-	x := min(im.X, gfx.ScreenWidth-w-4)
-	fill(dst, x, im.Y, w+4, 12, bg)
-	r.font.Draw(dst, word, x+2, im.Y+2, ink, 1)
+	img := r.sheet.Sprite(name).Frame(0)
+	x := min(im.X, gfx.ScreenWidth-img.Bounds().Dx())
+	entity.DrawAt(dst, img, x, im.Y, false)
 }
