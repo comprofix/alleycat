@@ -28,9 +28,10 @@ type Context struct {
 	Session *session.Session // nil outside a game
 	Font    *gfx.Font
 	UI      *gfx.Sheet
-	Alley   *gfx.Sheet   // alley sprites: Freddy, laundry, litter
-	Rooms   *gfx.Sheet   // room sprites: furniture, broom, cage, bird
-	Audio   *audio.Synth // nil in headless tests; every call is then ignored
+	Alley   *gfx.Sheet    // alley sprites: Freddy, laundry, litter
+	Rooms   *gfx.Sheet    // room sprites: furniture, broom, cage, bird
+	Audio   *audio.Synth  // nil in headless tests; every call is then ignored
+	Patter  *audio.Patter // the background patter (DESIGN §7.2); nil in tests too
 	SoundOn bool
 
 	// HighScore is the best score this run; it updates when a game ends

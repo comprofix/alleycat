@@ -58,7 +58,9 @@ func (p *Play) Update(ctx *Context) error {
 		return nil
 	}
 
-	if a.Exit != alley.NoExit {
+	if a.Exit == alley.NoExit {
+		runPatter(ctx, alleyPatter(a))
+	} else {
 		s := ctx.Session
 		room := rooms.Heart
 		if a.Exit == alley.ToHeart {
