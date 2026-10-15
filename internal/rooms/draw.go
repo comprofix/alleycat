@@ -39,6 +39,7 @@ type Renderer struct {
 	scheme gfx.Scheme
 	back   *ebiten.Image
 	water  *ebiten.Image // the underwater backdrop
+	kiss   *ebiten.Image // the heart room backdrop in the kiss colours
 }
 
 // NewRenderer returns a renderer using the room and actor sheets.
@@ -98,6 +99,10 @@ func (r *Renderer) buildBirdcage() {
 
 // Draw renders the room.
 func (r *Renderer) Draw(dst *ebiten.Image, room Room) {
+	if h, ok := room.(*HeartRoom); ok {
+		r.drawHeart(dst, h)
+		return
+	}
 	if fb, ok := room.(*FishbowlRoom); ok && fb.Phase != InRoom {
 		r.drawUnderwater(dst, fb)
 		return
@@ -171,6 +176,10 @@ func (r *Renderer) drawBirdcage(dst *ebiten.Image, bc *BirdcageRoom) {
 func (r *Renderer) DrawDebug(dst *ebiten.Image, room Room) {
 	box := func(x, y, w, h, idx int) {
 		vector.StrokeRect(dst, float32(x)+0.5, float32(y)+0.5, float32(w)-1, float32(h)-1, 1, gfx.Palette[idx], false)
+	}
+	if h, ok := room.(*HeartRoom); ok {
+		drawHeartDebug(dst, h)
+		return
 	}
 	b := room.Shared()
 	if fb, ok := room.(*FishbowlRoom); ok && fb.Phase != InRoom {

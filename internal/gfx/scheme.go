@@ -109,3 +109,21 @@ var DogsScheme = FishbowlScheme
 // BookshelfScheme is the bookshelf room: the other magenta rooms' plum walls
 // and teal furniture (DESIGN §3.4, "Bookshelf room layout").
 var BookshelfScheme = FishbowlScheme
+
+// HeartScheme is the heart room: a green backdrop, after the original's
+// red/green set (DESIGN §3.5, "Heart room layout"). The hearts, cats and
+// cherubs carry their own colours.
+var HeartScheme = Scheme{
+	Wall:    Green,
+	Outline: Night,
+}
+
+// KissScheme is the heart room at the kiss: the cyan/magenta set, with
+// teal ground, plum hearts and silver cats (DESIGN §3.5, "The kiss").
+var KissScheme = Scheme{
+	Wall:    Teal,
+	Shade:   Plum,   // intact hearts
+	Gap:     Night,  // broken hearts
+	Metal:   Silver, // the rivals
+	Outline: Night,
+}

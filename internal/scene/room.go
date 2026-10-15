@@ -29,8 +29,14 @@ func (r *RoomScene) Update(ctx *Context) error {
 	if handleGameKeys(ctx, &r.paused) || r.paused {
 		return nil
 	}
+	s := ctx.Session
+	s.LevelTicks += ctx.Ticks
 	r.room.Update(ctx.Ticks, ctx.FreddySteps, controls(ctx.Input), ctx.RNG)
-	b, s := r.room.Shared(), ctx.Session
+	b := r.room.Shared()
+	if hr, ok := r.room.(*rooms.HeartRoom); ok {
+		r.heartEnds(ctx, hr)
+		return nil
+	}
 	switch b.Out {
 	case rooms.Cleared:
 		bonus := rooms.Bonus(r.room.Kind(), b.Ticks)
@@ -49,6 +55,17 @@ func (r *RoomScene) Update(ctx *Context) error {
 		}
 	}
 	return nil
+}
+
+// heartEnds sends Freddy on from the heart room: the kiss, or the
+// rejection scene and back to the alley with no life lost (DESIGN §3.5).
+func (r *RoomScene) heartEnds(ctx *Context, hr *rooms.HeartRoom) {
+	switch hr.Out {
+	case rooms.Cleared:
+		ctx.Switch(newKiss(ctx, hr, r.view, returnTo(r.x, r.y)))
+	case rooms.Failed:
+		ctx.Switch(newReject(returnTo(r.x, r.y)))
+	}
 }
 
 // Draw implements Scene.
@@ -77,46 +94,6 @@ func afterLostLife(ctx *Context) Scene {
 		return NewTitle()
 	}
 	return NewPlay(ctx)
-}
-
-// stubRoomTicks is how long a stub room shows before Freddy comes back out.
-const stubRoomTicks = 36
-
-// StubRoom stands in for a room until it is built (M5–M6). It names the
-// room and sends Freddy back out of the window he came in by, as if he had
-// left without clearing it.
-type StubRoom struct {
-	room  rooms.Kind
-	x, y  int // where Freddy went in
-	ticks int
-}
-
-func newStubRoom(room rooms.Kind, x, y int) *StubRoom {
-	return &StubRoom{room: room, x: x, y: y}
-}
-
-// Update implements Scene.
-func (r *StubRoom) Update(ctx *Context) error {
-	r.ticks += ctx.Ticks
-	if r.ticks < stubRoomTicks {
-		return nil
-	}
-	if r.room == rooms.Heart {
-		// Failing the heart room costs no life and shows no word; its
-		// rejection scene comes in M6 (DESIGN §3.5).
-		ctx.Switch(newReturnPlay(ctx, r.x, r.y))
-		return nil
-	}
-	ctx.Switch(newResult(resultOops, returnTo(r.x, r.y)))
-	return nil
-}
-
-// Draw implements Scene.
-func (r *StubRoom) Draw(ctx *Context, dst *ebiten.Image) {
-	dst.Fill(gfx.Palette[gfx.Navy])
-	f := ctx.Font
-	f.DrawCentred(dst, r.room.String(), 80, gfx.Yellow, 2)
-	f.DrawCentred(dst, "(room not built yet)", 110, gfx.Silver, 1)
 }
 
 // resultWord is the word shown on leaving a room (DESIGN §3.7).

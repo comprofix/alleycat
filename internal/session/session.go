@@ -24,6 +24,9 @@ type Session struct {
 	Lives        int
 	Score        int
 	RoomsCleared int // since the last kiss; sets the heart-room gift count
+	// LevelTicks counts master ticks since the level began (the game start
+	// or the last kiss), for the kiss bonus (DESIGN §3.6).
+	LevelTicks int
 
 	// FeliciaWaiting is set when a room is cleared: the next window to open
 	// is Felicia's (DESIGN §3.3). Entering it clears the flag.
@@ -63,9 +66,23 @@ func (s *Session) LoseLife() (gameOver bool) {
 	return s.Lives == 0
 }
 
-// LevelUp applies a kiss: +1 life, difficulty +1 (to 7), rooms reset.
+// LevelUp applies a kiss: +1 life, difficulty +1 (to 7), rooms and the
+// level timer reset.
 func (s *Session) LevelUp() {
 	s.GainLife()
 	s.Difficulty = min(s.Difficulty+1, config.MaxDifficulty)
 	s.RoomsCleared = 0
+	s.LevelTicks = 0
+}
+
+// KissBonus is the kiss bonus and its multiplier at the current difficulty
+// (DESIGN §3.6): 4000 + max(0, 10800 − T) ÷ 2, added multiplier times, the
+// multiplier being 2d + 1, doubled with a gift.
+func (s *Session) KissBonus(withGift bool) (bonus, multiplier int) {
+	bonus = config.KissBase + max(0, config.KissWindow-s.LevelTicks)/2
+	multiplier = 2*s.Difficulty + 1
+	if withGift {
+		multiplier *= 2
+	}
+	return bonus, multiplier
 }
