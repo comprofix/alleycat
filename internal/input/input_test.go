@@ -111,3 +111,27 @@ func TestAnyKeyIgnoresModifiersAndWindowKeys(t *testing.T) {
 		t.Fatal("Space should count as any key")
 	}
 }
+
+// Ctrl combinations are commands, and Alt+Enter is fullscreen: on the title
+// screen, Ctrl+S must toggle sound, not start the game.
+func TestAnyKeyIgnoresCommands(t *testing.T) {
+	f := &fakeKeys{}
+	in := New(f)
+	for _, keys := range [][]ebiten.Key{
+		{ebiten.KeyControlLeft, ebiten.KeyS},
+		{ebiten.KeyControlRight, ebiten.KeyR},
+		{ebiten.KeyControl, ebiten.KeyM},
+		{ebiten.KeyAltLeft, ebiten.KeyEnter},
+	} {
+		step(in, f) // all keys up
+		step(in, f, keys...)
+		if in.AnyKeyJustPressed() {
+			t.Errorf("%v counted as any key", keys)
+		}
+	}
+	step(in, f)
+	step(in, f, ebiten.KeyEnter)
+	if !in.AnyKeyJustPressed() {
+		t.Error("Enter alone should count as any key")
+	}
+}
