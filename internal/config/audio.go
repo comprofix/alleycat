@@ -67,3 +67,14 @@ const (
 	AudioScheduleMs    = 60
 	AudioScheduleMaxMs = 250 // the delay widens up to this to cover the device's read-ahead
 )
+
+// CageFallK sets the falling birdcage's pitch: K ÷ Y Hz, Y its height [asm]
+// (DESIGN §7.3).
+const CageFallK = 298295
+
+// Alarm countdowns started by room effects, in steps of the patter's alarm
+// (DESIGN §7.3) [asm].
+const (
+	AirWarningAlarm = 24
+	DogWakeAlarm    = 12
+)

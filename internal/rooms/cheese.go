@@ -59,6 +59,7 @@ func (r *CheeseRoom) Kind() Kind { return Cheese }
 
 // Update implements Room.
 func (r *CheeseRoom) Update(ticks, freddySteps int, in entity.Controls, rng *rand.Rand) {
+	r.Sounds = r.Sounds[:0]
 	for range ticks {
 		if r.Out != Playing {
 			return
@@ -229,6 +230,7 @@ func (r *CheeseRoom) tryCatch(i int) {
 	}
 	m.Caught = true
 	r.Caught++
+	r.sound(SoundMouseCaught)
 	r.Freddy.Seat = entity.NotSeated
 	if r.Caught == config.CheeseMice {
 		r.end(Cleared)

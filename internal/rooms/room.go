@@ -43,6 +43,9 @@ type Base struct {
 	Out Outcome
 	// ByDog is set when a dog caused the failure ("HERE KITTY").
 	ByDog bool
+	// Sounds lists the sounds this update made, for the scene to play
+	// (DESIGN §7.3). Each Update starts it afresh.
+	Sounds []Sound
 
 	table   config.Difficulty
 	hasDog  bool

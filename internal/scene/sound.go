@@ -3,6 +3,7 @@ package scene
 import (
 	"github.com/comprofix/alleycat/internal/alley"
 	"github.com/comprofix/alleycat/internal/audio"
+	"github.com/comprofix/alleycat/internal/config"
 	"github.com/comprofix/alleycat/internal/entity"
 	"github.com/comprofix/alleycat/internal/rooms"
 )
@@ -90,5 +91,51 @@ func followFight(ctx *Context, d *entity.Dog, fighting *bool) {
 	case !caught && *fighting:
 		*fighting = false
 		ctx.Audio.StopSFX()
+	}
+}
+
+// playRoomSounds plays the effects a room made this frame (DESIGN §7.3).
+// The air warning and a waking dog also start the patter's alarm.
+func playRoomSounds(ctx *Context, r rooms.Room) {
+	fx := ctx.FX
+	for _, s := range r.Shared().Sounds {
+		var n []audio.Note
+		switch s.Kind {
+		case rooms.SoundMouseCaught:
+			n = fx.MouseCaught()
+		case rooms.SoundCagePush:
+			n = fx.CagePush()
+		case rooms.SoundCageFall:
+			n = fx.CageFall(s.Arg)
+		case rooms.SoundBirdChirp:
+			n = fx.BirdChirp()
+		case rooms.SoundFishEaten:
+			n = fx.FishEaten()
+		case rooms.SoundAirWarning:
+			n = fx.AirWarning(s.Arg)
+			ctx.Patter.Alarm(config.AirWarningAlarm)
+		case rooms.SoundZap:
+			n = fx.Zap()
+		case rooms.SoundFernEaten:
+			n = fx.FernEaten()
+		case rooms.SoundByte:
+			n = fx.Byte()
+		case rooms.SoundBowlEmpty:
+			n = fx.BowlEmpty()
+		case rooms.SoundDogWake:
+			n = fx.DogWake()
+			ctx.Patter.Alarm(config.DogWakeAlarm)
+		case rooms.SoundRivalBump:
+			n = fx.RivalBump()
+		case rooms.SoundArrowHit:
+			n = fx.ArrowHit()
+		case rooms.SoundGiftPick:
+			n = fx.GiftPick()
+		case rooms.SoundGiftDrop:
+			n = fx.GiftDrop()
+		}
+		if n != nil {
+			ctx.Audio.PlaySFX(n)
+		}
 	}
 }

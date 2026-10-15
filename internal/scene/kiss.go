@@ -53,6 +53,7 @@ type Kiss struct {
 
 	bonus, multiplier int
 	next              func(*Context) Scene
+	smooched          bool
 }
 
 func newKiss(ctx *Context, room *rooms.HeartRoom, view *rooms.Renderer, next func(*Context) Scene) *Kiss {
@@ -86,6 +87,13 @@ func (k *Kiss) dropStep() {
 
 // Update implements Scene.
 func (k *Kiss) Update(ctx *Context) error {
+	// The smooch plays as the big heart first appears (DESIGN §7.3).
+	if !k.smooched {
+		k.smooched = true
+		if n := ctx.FX.Smooch(); n != nil {
+			ctx.Audio.PlaySFX(n)
+		}
+	}
 	for range ctx.Ticks {
 		k.ticks++
 		if k.wait--; k.wait > 0 {
