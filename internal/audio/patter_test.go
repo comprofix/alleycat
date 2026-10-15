@@ -187,14 +187,18 @@ func TestPatterClickLengths(t *testing.T) {
 	}
 }
 
-// The patter is dense: well over half the steps click.
+// The patter's density matches the reference capture: about a third of the
+// steps click in the alley and half in the rooms (DESIGN §7.2).
 func TestPatterDensity(t *testing.T) {
-	for _, mode := range []PatterMode{Alley, Room} {
+	for _, c := range []struct {
+		mode   PatterMode
+		lo, hi float64
+	}{{Alley, 0.33, 0.45}, {Room, 0.45, 0.56}} {
 		p := newTestPatter()
-		every := params(mode).Every
-		at := steps(runPatter(p, PatterState{Mode: mode}, 3000))
-		if got, want := len(at), 3000/every*55/100; got < want {
-			t.Errorf("mode %d: %d clicks in %d steps, want at least %d", mode, len(at), 3000/every, want)
+		n := 3000 / params(c.mode).Every
+		got := float64(len(steps(runPatter(p, PatterState{Mode: c.mode}, 3000)))) / float64(n)
+		if got < c.lo || got > c.hi {
+			t.Errorf("mode %d: %.0f%% of steps click, want %.0f–%.0f%%", c.mode, got*100, c.lo*100, c.hi*100)
 		}
 	}
 }

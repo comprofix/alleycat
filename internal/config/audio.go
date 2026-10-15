@@ -51,3 +51,11 @@ const (
 	PatterSweepChance = 128 // out of 256, per phrase: sweep rather than the pitch sequence [asm]
 	PatterSweepRise   = 1.07
 )
+
+// The speaker's signal (DESIGN §7), measured from the reference capture:
+// one-sided pulses that a slow high-pass centres, with a time constant of
+// about 48 ms.
+const (
+	SpeakerHighPassHz = 3.3
+	SharpNoteMs       = 10 // notes shorter than this switch on and off at once
+)

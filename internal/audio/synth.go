@@ -31,6 +31,8 @@ type Synth struct {
 	gain  float64 // 0–1, slewed for attack and release
 	slew  float64 // gain step per sample, set by the last sounding note
 	lp    float64 // low-pass filter state
+	hpIn  float64 // high-pass filter state: last input and output
+	hpOut float64
 }
 
 // NewSynth returns an enabled synth at the default volume with "Soften
@@ -125,26 +127,37 @@ func (s *Synth) Read(p []byte) (int, error) {
 		slewSamps = config.BeeperSlewMs * sr / 1000
 	)
 	lpCoef := 1 - math.Exp(-2*math.Pi*config.SoftenCutoffHz/sr)
+	hpCoef := math.Exp(-2 * math.Pi * config.SpeakerHighPassHz / sr)
+	sharpSamps := config.SharpNoteMs * sr / 1000
 
 	n := len(p) / 4
 	for i := range n {
 		var hz float64
 		var length int // samples in the sounding note
+		var fresh bool // the note starts on this sample
 		switch {
 		case s.sfx.active():
-			hz, length = s.sfx.hz(), s.sfx.length()
+			hz, length, fresh = s.sfx.hz(), s.sfx.length(), s.sfx.take()
 			s.sfx.step()
 		case s.music.active():
-			hz, length = s.music.hz(), s.music.length()
+			hz, length, fresh = s.music.hz(), s.music.length(), s.music.take()
 			s.music.step()
 		}
 
 		target := 0.0
 		if hz > 0 && s.enabled {
 			s.hz = min(hz, maxHz)
-			// A note much shorter than the ramp, such as a patter click,
-			// ramps in a quarter of its length so it stays sharp.
-			s.slew = 1 / max(1, min(slewSamps, float64(length)/4))
+			// Each note starts at the top of its wave, as the speaker's
+			// timer restarts high on every new note.
+			if fresh {
+				s.phase = 0
+			}
+			// Short notes, such as the patter's clicks, switch on and off
+			// at once, as the speaker does; longer ones ramp.
+			s.slew = 1
+			if float64(length) >= sharpSamps {
+				s.slew = 1 / max(1, slewSamps)
+			}
 			target = 1
 		}
 		if s.gain < target {
@@ -153,15 +166,21 @@ func (s *Synth) Read(p []byte) (int, error) {
 			s.gain = max(s.gain-s.slew, target)
 		}
 
-		x := 0.0
+		// The speaker is driven or not: the wave runs from 0 to the peak,
+		// never below. A slow high-pass then centres long tones while short
+		// clicks stay one-sided pulses (DESIGN §7).
+		u := 0.0
 		if s.gain > 0 {
 			dt := s.hz / sr
-			x = square(s.phase, dt) * s.gain * config.BeeperAmplitude * s.volume
+			u = (square(s.phase, dt) + 1) * s.gain * config.BeeperAmplitude * s.volume
 			s.phase += dt
 			if s.phase >= 1 {
 				s.phase -= 1
 			}
 		}
+		s.hpOut = u - s.hpIn + hpCoef*s.hpOut
+		s.hpIn = u
+		x := s.hpOut
 		if s.soften {
 			s.lp += lpCoef * (x - s.lp)
 			x = s.lp
@@ -208,8 +227,9 @@ func polyBLEP(t, dt float64) float64 {
 type track struct {
 	notes []Note
 	loop  bool
-	i     int // current note
-	left  int // samples left in it
+	i     int  // current note
+	left  int  // samples left in it
+	fresh bool // the current note has not sounded yet
 }
 
 func (t *track) active() bool { return t.notes != nil }
@@ -219,6 +239,13 @@ func (t *track) hz() float64 { return t.notes[t.i].Hz }
 // length is the current note's length in samples.
 func (t *track) length() int { return samples(t.notes[t.i].Dur) }
 
+// take reports whether the current note has just started, once.
+func (t *track) take() bool {
+	f := t.fresh
+	t.fresh = false
+	return f
+}
+
 func (t *track) start(notes []Note, loop bool) {
 	t.notes, t.loop, t.i = notes, loop, 0
 	if len(notes) == 0 {
@@ -226,6 +253,7 @@ func (t *track) start(notes []Note, loop bool) {
 		return
 	}
 	t.left = samples(notes[0].Dur)
+	t.fresh = true
 	t.skipEmpty()
 }
 
@@ -250,6 +278,7 @@ func (t *track) skipEmpty() {
 			t.i, wrapped = 0, true
 		}
 		t.left = samples(t.notes[t.i].Dur)
+		t.fresh = true
 	}
 }
 
