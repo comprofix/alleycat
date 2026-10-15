@@ -39,19 +39,33 @@ func rows(img *ebiten.Image, from, n int) *ebiten.Image {
 	return img.SubImage(image.Rect(b.Min.X, b.Min.Y+from, b.Max.X, b.Min.Y+from+n)).(*ebiten.Image)
 }
 
+// drawGraffiti sprays the decorative words onto the fence (M8a): bright
+// paint with a dark shadow, and drips running down from some letters.
 func (r *Renderer) drawGraffiti(dst *ebiten.Image) {
-	for _, g := range graffiti {
-		r.font.Draw(dst, g.text, g.x, g.y, r.scheme.Outline, 1)
+	for gi, g := range graffiti {
+		r.font.Draw(dst, g.text, g.x+1, g.y+1, r.scheme.Outline, 1)
+		r.font.Draw(dst, g.text, g.x, g.y, gfx.Orange, 1)
+		for i := range len(g.text) {
+			if (i+gi)%3 == 1 {
+				fill(dst, g.x+i*gfx.GlyphSize+3, g.y+gfx.GlyphSize-1, 1, 2+(i+gi)%3, gfx.Orange)
+			}
+		}
 	}
 }
 
+// drawHUD writes the scores, lives and skill on the fence, chalk white with
+// a dark shadow so they stay easy to read (M8a).
 func (r *Renderer) drawHUD(dst *ebiten.Image, a *Alley, high int) {
-	s, ink := a.Session, r.scheme.Outline
-	r.font.Draw(dst, "HI!", hudHighX-gfx.Width("HI! "), hudHighY, ink, 1)
-	r.font.Draw(dst, session.FormatScore(high), hudHighX, hudHighY, ink, 1)
-	r.font.Draw(dst, fmt.Sprintf("%d CAT", s.Lives), hudLivesX, hudLivesY, ink, 1)
-	r.font.Draw(dst, session.FormatScore(s.Score), hudScoreX, hudScoreY, ink, 1)
-	r.font.Draw(dst, string(s.Skill.Letter()), hudSkillX, hudSkillY, ink, 1)
+	s := a.Session
+	write := func(text string, x, y int) {
+		r.font.Draw(dst, text, x+1, y+1, r.scheme.Outline, 1)
+		r.font.Draw(dst, text, x, y, gfx.White, 1)
+	}
+	write("HI!", hudHighX-gfx.Width("HI! "), hudHighY)
+	write(session.FormatScore(high), hudHighX, hudHighY)
+	write(fmt.Sprintf("%d CAT", s.Lives), hudLivesX, hudLivesY)
+	write(session.FormatScore(s.Score), hudScoreX, hudScoreY)
+	write(string(s.Skill.Letter()), hudSkillX, hudSkillY)
 }
 
 // drawWindow shows the open window: darkness, or Felicia, rising from the

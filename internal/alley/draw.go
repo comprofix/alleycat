@@ -66,14 +66,14 @@ func (r *Renderer) Draw(dst *ebiten.Image, a *Alley, high int) {
 	r.drawThrown(dst, &a.Thrown)
 	f := a.Freddy
 	if f.Depth == entity.Behind {
-		entity.DrawFreddy(dst, r.sheet, f)
+		entity.DrawFreddyRimmed(dst, r.sheet, f, r.scheme.Shade)
 	}
 	dst.DrawImage(r.front, nil)
 	r.drawHUD(dst, a, high)
 	r.drawTrashCat(dst, &a.TrashCat)
 	entity.DrawDog(dst, r.sheet, &a.Dog, "dog_run")
 	if f.Depth != entity.Behind {
-		entity.DrawFreddy(dst, r.sheet, f)
+		entity.DrawFreddyRimmed(dst, r.sheet, f, r.scheme.Shade)
 	}
 	r.drawImpact(dst, a.Impact)
 }
@@ -95,45 +95,155 @@ func (r *Renderer) build(cans []config.Can) {
 	r.buildFront(cans)
 }
 
-// buildBack draws the building: brickwork and the 3×4 closed windows.
+// The backdrop's art (DESIGN §8, M8a): our own, drawn once into the back
+// layer. None of it changes the layout of §3.3.
+const (
+	skyBottom = 16 // rows above this are night sky
+	wallTop   = 20 // the cornice runs from skyBottom to here
+)
+
+// skyBands are the night sky's colour bands, darkest at the top.
+var skyBands = []struct{ to, idx int }{{4, gfx.Night}, {8, gfx.Charcoal}, {skyBottom, gfx.Navy}}
+
+// stars are single pixels in the upper sky.
+var stars = [][2]int{{12, 2}, {37, 5}, {71, 1}, {98, 6}, {133, 3}, {166, 1}, {188, 6}, {219, 2}, {241, 5}, {301, 3}}
+
+// skyline is the distant rooftops: left edge, width and top row. Lit windows
+// are a pixel or two in each.
+var skyline = []struct{ x, w, top int }{
+	{0, 22, 12}, {22, 14, 10}, {36, 26, 13}, {62, 10, 11}, {72, 30, 13},
+	{102, 18, 12}, {120, 24, 14}, {144, 12, 11}, {156, 34, 13}, {190, 16, 12},
+	{206, 28, 13}, {234, 12, 10}, {246, 30, 13}, {276, 20, 12}, {296, 24, 13},
+}
+
+// litWindows are the windows with a lamp on, by index (row × 4 + column):
+// warm light against the cool wall.
+var litWindows = map[int]bool{1: true, 4: true, 7: true, 10: true}
+
+// buildBack draws the night sky, the distant skyline, the building's
+// roofline and brick wall, its drainpipes and the 3×4 windows.
 func (r *Renderer) buildBack() {
 	s, b := r.scheme, r.back
 	b.Fill(gfx.Palette[s.Wall])
-	for y := 4; y < fenceTop; y += 8 {
-		for x := (y / 8 % 2) * 6; x < gfx.ScreenWidth; x += 12 {
-			fill(b, x, y, 4, 1, s.WallShade)
+
+	from := 0
+	for _, band := range skyBands {
+		fill(b, 0, from, gfx.ScreenWidth, band.to-from, band.idx)
+		from = band.to
+	}
+	for i, st := range stars {
+		idx := gfx.Silver
+		if i%3 == 0 {
+			idx = gfx.White
+		}
+		fill(b, st[0], st[1], 1, 1, idx)
+	}
+	entity.DrawAt(b, r.sheet.Sprite("moon").Frame(0), 268, 1, false)
+	for i, sk := range skyline {
+		fill(b, sk.x, sk.top, sk.w, skyBottom-sk.top, gfx.Night)
+		fill(b, sk.x+sk.w/3, sk.top-2, 2, 2, gfx.Night) // a chimney
+		if i%2 == 0 {
+			fill(b, sk.x+sk.w/2, sk.top+2, 1, 1, gfx.Yellow)
+		}
+		if i%3 == 1 {
+			fill(b, sk.x+3, sk.top+3, 1, 1, gfx.Orange)
 		}
 	}
+	// A water tower on the far roofs.
+	fill(b, 150, 3, 9, 4, gfx.Night)
+	fill(b, 151, 2, 7, 1, gfx.Night)
+	fill(b, 151, 7, 1, 2, gfx.Night)
+	fill(b, 157, 7, 1, 2, gfx.Night)
+
+	// The cornice along our building's roof.
+	fill(b, 0, skyBottom, gfx.ScreenWidth, wallTop-skyBottom, s.WallShade)
+	fill(b, 0, skyBottom, gfx.ScreenWidth, 1, s.Shade)
+	for x := 2; x < gfx.ScreenWidth; x += 8 {
+		fill(b, x, skyBottom+2, 4, 1, s.Outline)
+	}
+
+	// Brick courses 6 rows high, the joints staggered.
+	for y, course := wallTop+5, 0; y < fenceTop; y, course = y+6, course+1 {
+		for x := (course % 2) * 8; x < gfx.ScreenWidth; x += 16 {
+			fill(b, x, y, 12, 1, s.WallShade)
+			fill(b, x+12, y-5, 1, 5, s.WallShade)
+		}
+	}
+
+	// Drainpipes down both edges, with brackets.
+	for _, px := range []int{3, gfx.ScreenWidth - 7} {
+		fill(b, px, wallTop, 4, fenceTop-wallTop, s.WallShade)
+		fill(b, px+1, wallTop, 1, fenceTop-wallTop, s.Shade)
+		for y := wallTop + 10; y < fenceTop; y += 24 {
+			fill(b, px-1, y, 6, 1, s.Shade)
+		}
+	}
+
 	for row := range 3 {
 		for col := range 4 {
-			x, y := windowLeft+col*windowPitchX, windowTop+row*windowPitchY
-			fill(b, x, y, windowW, windowH, s.Trim)
-			fill(b, x+2, y+1, windowW-4, windowH-2, s.Outline)
-			fill(b, x+3, y+2, windowW-6, windowH-4, s.Glass)
-			fill(b, x+windowW/2-1, y+1, 2, windowH-2, s.Trim)
-			for _, gx := range []int{x + 6, x + 25} {
-				for i := range 4 {
-					fill(b, gx+i, y+8-i, 1, 1, s.Glint)
-				}
-			}
+			r.buildWindow(b, windowLeft+col*windowPitchX, windowTop+row*windowPitchY, litWindows[row*4+col])
 		}
 	}
+}
+
+// buildWindow draws one closed window: a lintel above, a sill below, the
+// frame and the glass, dark or lit by a lamp inside.
+func (r *Renderer) buildWindow(b *ebiten.Image, x, y int, lit bool) {
+	s := r.scheme
+	fill(b, x-2, y-3, windowW+4, 2, s.WallShade)         // lintel
+	fill(b, x-3, y+windowH, windowW+6, 2, s.Shade)       // sill
+	fill(b, x-3, y+windowH+2, windowW+6, 1, s.WallShade) // its shadow
+	fill(b, x, y, windowW, windowH, s.Trim)
+	fill(b, x+2, y+1, windowW-4, windowH-2, s.Outline)
+	if !lit {
+		fill(b, x+3, y+2, windowW-6, windowH-4, s.Glass)
+		for _, gx := range []int{x + 6, x + 25} {
+			for i := range 4 {
+				fill(b, gx+i, y+8-i, 1, 1, s.Glint)
+			}
+		}
+	} else {
+		fill(b, x+3, y+2, windowW-6, windowH-4, gfx.Yellow)
+		fill(b, x+3, y+windowH-6, windowW-6, 4, gfx.Orange) // the lamp's glow
+		for _, cx := range []int{x + 3, x + windowW - 6} {
+			fill(b, cx, y+2, 3, windowH-4, gfx.Red) // curtains
+		}
+	}
+	fill(b, x+windowW/2-1, y+1, 2, windowH-2, s.Trim)
 }
 
 // buildFront draws the fence, the ground, the litter and the trash cans.
 func (r *Renderer) buildFront(cans []config.Can) {
 	s, f := r.scheme, r.front
 	f.Clear()
+	// Weathered boards: a lit left edge, a shadowed right, grain and a knot.
 	for i, x := 0, 0; x < gfx.ScreenWidth; i, x = i+1, x+8 {
 		top := fenceTop + (i*37+i/3)%4
 		fill(f, x, top, 7, fenceBottom-top+1, s.Fence)
+		fill(f, x, top+1, 1, fenceBottom-top, s.Shade)
 		fill(f, x+7, top+2, 1, fenceBottom-top-1, s.Gap)
-		fill(f, x+3, top+(i*11)%40+12, 1, 1, s.Gap) // a knot
+		fill(f, x+4, top+3+(i*7)%9, 1, 6+(i*5)%8, s.Gap) // grain
+		fill(f, x+2, top+(i*11)%40+14, 2, 1, s.Gap)      // a knot
+		fill(f, x+1, top, 5, 1, s.Gap)                   // the cut top
 	}
-	fill(f, 0, 128, gfx.ScreenWidth, 1, s.Gap)
-	fill(f, 0, 160, gfx.ScreenWidth, 1, s.Gap)
+	// The rails behind the boards show as shadow lines, with a nail in each
+	// board.
+	for _, ry := range []int{128, 160} {
+		fill(f, 0, ry, gfx.ScreenWidth, 1, s.Gap)
+		for x := 3; x < gfx.ScreenWidth; x += 8 {
+			fill(f, x, ry-2, 1, 1, s.Outline)
+		}
+	}
+	// The ground: cobbles in rows, with a lit edge along the fence.
 	fill(f, 0, groundTop, gfx.ScreenWidth, gfx.ScreenHeight-groundTop, s.Ground)
 	fill(f, 0, groundTop, gfx.ScreenWidth, 1, s.Shade)
+	for y, row := groundTop+6, 0; y < gfx.ScreenHeight; y, row = y+6, row+1 {
+		fill(f, 0, y, gfx.ScreenWidth, 1, s.Outline)
+		for x := (row % 2) * 7; x < gfx.ScreenWidth; x += 14 {
+			fill(f, x, y-5, 1, 5, s.Outline)
+			fill(f, x+4, y-3, 1, 1, s.Shade) // a speck
+		}
+	}
 
 	r.drawGraffiti(f)
 	for _, c := range clutter {
