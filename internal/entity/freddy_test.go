@@ -227,3 +227,53 @@ func TestBehindFenceReenters(t *testing.T) {
 			f.Hidden(), f.X, f.Depth)
 	}
 }
+
+// After sitting on a line, a floor landing thumps, even after a jump; a
+// knock clears the mark (DESIGN §7.3).
+func TestFloorThump(t *testing.T) {
+	land := func(f *Freddy, in Controls) {
+		run(f, in, floorOnly{}, 1)
+		for i := 0; f.Airborne() && i < 300; i++ {
+			f.Update(Controls{}, floorOnly{})
+		}
+	}
+
+	f := inAlley()
+	f.Y, f.OnLine = 96, true
+	land(f, Controls{V: 1}) // drop
+	if !f.Thumped {
+		t.Error("no thump landing on the floor after a drop from a line")
+	}
+
+	f.Thumped = false
+	land(f, Controls{V: -1}) // a jump from the floor keeps the mark
+	if !f.Thumped {
+		t.Error("no thump after a jump: the mark should stay until cleared")
+	}
+
+	f = inAlley()
+	f.OnLine = true
+	f.KnockOffLine()
+	if f.OnLine {
+		t.Error("a mouse knock left the mark set")
+	}
+	f = inAlley()
+	f.Y = 96
+	land(f, Controls{V: 1})
+	if f.Thumped {
+		t.Error("thump without ever sitting on a line")
+	}
+}
+
+// Sinking out of sight behind the fence is reported for the pause.
+func TestSankBehindFence(t *testing.T) {
+	f := inAlley()
+	f.Y = 60
+	f.KnockDown()
+	for i := 0; !f.Sank && i < 300; i++ {
+		f.Update(Controls{}, floorOnly{})
+	}
+	if !f.Sank || !f.Hidden() {
+		t.Fatalf("Sank %v, hidden %v: want him reset after sinking behind the fence", f.Sank, f.Hidden())
+	}
+}
