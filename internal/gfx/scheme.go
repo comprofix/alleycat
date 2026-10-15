@@ -16,6 +16,7 @@ type Scheme struct {
 	Outline   int
 	Cheese    int // the cheese room's wedge
 	Hole      int // its holes and pits
+	Water     int // the underwater scene's water
 }
 
 // AlleyScheme is the alley at night (DESIGN §8): a cool magenta-plum
@@ -68,3 +69,35 @@ var CheeseScheme = Scheme{
 	Cheese:    Yellow,
 	Hole:      Orange,
 }
+
+// FishbowlScheme is the fishbowl room: a plum room with teal and cyan
+// furniture, after the original's magenta/cyan set (DESIGN §3.4,
+// "Fishbowl room layout").
+var FishbowlScheme = Scheme{
+	Wall:      Plum,
+	WallShade: Charcoal,
+	Glass:     Night,
+	Glint:     Sky,
+	Trim:      Cyan,
+	Fence:     Teal,
+	Gap:       Cyan,
+	Ground:    Plum,
+	Metal:     Silver,
+	Shade:     Charcoal,
+	Outline:   Night,
+}
+
+// UnderwaterScheme is the underwater scene: teal water under a plum
+// surface band (DESIGN §3.4, "Underwater layout").
+var UnderwaterScheme = Scheme{
+	Wall:      Teal,
+	WallShade: Sky, // ripple marks
+	Trim:      Plum,
+	Shade:     Charcoal,
+	Outline:   Night,
+	Water:     Teal,
+}
+
+// AirColours are Freddy's and the eels' colours underwater by air warning
+// stage 0–3 (DESIGN §3.4, "Underwater": the remake's recolouring).
+var AirColours = [4]int{Night, Navy, Plum, Red}
