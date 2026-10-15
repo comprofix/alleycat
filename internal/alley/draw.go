@@ -9,7 +9,6 @@ import (
 	"github.com/comprofix/alleycat/internal/config"
 	"github.com/comprofix/alleycat/internal/entity"
 	"github.com/comprofix/alleycat/internal/gfx"
-	"github.com/comprofix/alleycat/internal/physics"
 )
 
 // Layout positions, measured from the reference for layout only (DESIGN
@@ -67,14 +66,14 @@ func (r *Renderer) Draw(dst *ebiten.Image, a *Alley, high int) {
 	r.drawThrown(dst, &a.Thrown)
 	f := a.Freddy
 	if f.Depth == entity.Behind {
-		r.drawFreddy(dst, f)
+		entity.DrawFreddy(dst, r.sheet, f)
 	}
 	dst.DrawImage(r.front, nil)
 	r.drawHUD(dst, a, high)
 	r.drawTrashCat(dst, &a.TrashCat)
-	r.drawDog(dst, &a.Dog)
+	entity.DrawDog(dst, r.sheet, &a.Dog, "dog_run")
 	if f.Depth != entity.Behind {
-		r.drawFreddy(dst, f)
+		entity.DrawFreddy(dst, r.sheet, f)
 	}
 	r.drawImpact(dst, a.Impact)
 }
@@ -155,7 +154,7 @@ func (r *Renderer) drawCan(dst *ebiten.Image, c config.Can) {
 	if c.Tall {
 		name = "can_tall"
 	}
-	at(dst, r.sheet.Sprite(name).Frame(0), c.X+canSpriteDX, CanTop(c)+canSpriteDY, false)
+	entity.DrawAt(dst, r.sheet.Sprite(name).Frame(0), c.X+canSpriteDX, CanTop(c)+canSpriteDY, false)
 }
 
 // drawLine draws a clothesline and its laundry.
@@ -185,53 +184,4 @@ func (r *Renderer) drawLine(dst *ebiten.Image, l *Line) {
 			dst.DrawImage(img, op)
 		}
 	}
-}
-
-func (r *Renderer) freddyFrame(f *entity.Freddy) *ebiten.Image {
-	switch {
-	case f.Seat != entity.NotSeated:
-		return r.sheet.Sprite("freddy_sit").Frame(0)
-	case f.Arc.Dir == physics.Rising:
-		return r.sheet.Sprite("freddy_jump").Frame(0)
-	case f.Arc.Dir == physics.Falling:
-		return r.sheet.Sprite("freddy_jump").Frame(1)
-	case f.Dir != 0:
-		return r.sheet.Sprite("freddy_walk").Frame(f.WalkFrame)
-	}
-	return r.sheet.Sprite("freddy_stand").Frame(0)
-}
-
-func (r *Renderer) drawFreddy(dst *ebiten.Image, f *entity.Freddy) {
-	if f.Hidden() {
-		return
-	}
-	img := r.freddyFrame(f)
-	b := img.Bounds()
-	w, h := b.Dx(), b.Dy()
-	x := f.X
-	if px, entering := f.EnterSlice(); entering {
-		if px == 0 {
-			return
-		}
-		x = px - w
-		if f.Facing < 0 {
-			x = gfx.ScreenWidth - px
-		}
-	}
-	if f.Depth == entity.Behind {
-		vis := config.FenceHideY - f.Y
-		if vis <= 0 {
-			return
-		}
-		if vis < h {
-			img = img.SubImage(image.Rect(b.Min.X, b.Min.Y, b.Max.X, b.Min.Y+vis)).(*ebiten.Image)
-		}
-	}
-	op := &ebiten.DrawImageOptions{}
-	if f.Facing < 0 {
-		op.GeoM.Scale(-1, 1)
-		op.GeoM.Translate(float64(w), 0)
-	}
-	op.GeoM.Translate(float64(x), float64(f.Y))
-	dst.DrawImage(img, op)
 }

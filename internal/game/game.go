@@ -53,6 +53,10 @@ func New(seed uint64) (*Game, error) {
 	if err != nil {
 		return nil, fmt.Errorf("alley sheet: %w", err)
 	}
+	roomSheet, err := gfx.LoadSheet(assets.FS, "gen/rooms")
+	if err != nil {
+		return nil, fmt.Errorf("rooms sheet: %w", err)
+	}
 
 	g := &Game{
 		screen: ebiten.NewImage(gfx.ScreenWidth, gfx.ScreenHeight),
@@ -64,6 +68,7 @@ func New(seed uint64) (*Game, error) {
 			Font:    gfx.NewFont(glyphs),
 			UI:      ui,
 			Alley:   alleySheet,
+			Rooms:   roomSheet,
 			SoundOn: true,
 		},
 	}

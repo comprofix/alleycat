@@ -7,6 +7,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 
 	"github.com/comprofix/alleycat/internal/config"
+	"github.com/comprofix/alleycat/internal/entity"
 	"github.com/comprofix/alleycat/internal/gfx"
 	"github.com/comprofix/alleycat/internal/session"
 )
@@ -32,30 +33,10 @@ var graffiti = []struct {
 
 var thrownSprites = [...]string{"thrown_boot", "thrown_phone", "thrown_bottle", "thrown_pot"}
 
-// at draws img with its top-left at x, y, mirrored when flip is set.
-func at(dst, img *ebiten.Image, x, y int, flip bool) {
-	op := &ebiten.DrawImageOptions{}
-	if flip {
-		op.GeoM.Scale(-1, 1)
-		op.GeoM.Translate(float64(img.Bounds().Dx()), 0)
-	}
-	op.GeoM.Translate(float64(x), float64(y))
-	dst.DrawImage(img, op)
-}
-
 // rows returns the top n rows of img (from row from).
 func rows(img *ebiten.Image, from, n int) *ebiten.Image {
 	b := img.Bounds()
 	return img.SubImage(image.Rect(b.Min.X, b.Min.Y+from, b.Max.X, b.Min.Y+from+n)).(*ebiten.Image)
-}
-
-// edgeX places a sprite of width w so that px of it show at the screen
-// edge it is entering or leaving by.
-func edgeX(fromLeft bool, px, w int) int {
-	if fromLeft {
-		return px - w
-	}
-	return gfx.ScreenWidth - px
 }
 
 func (r *Renderer) drawGraffiti(dst *ebiten.Image) {
@@ -88,7 +69,7 @@ func (r *Renderer) drawWindow(dst *ebiten.Image, w *Window) {
 		img := r.sheet.Sprite("felicia").Frame(0)
 		h := img.Bounds().Dy()
 		from := max(h-n, 0)
-		at(dst, rows(img, from, h-from), o.X, y, false)
+		entity.DrawAt(dst, rows(img, from, h-from), o.X, y, false)
 	}
 }
 
@@ -103,7 +84,7 @@ func (r *Renderer) drawMice(dst *ebiten.Image, a *Alley) {
 		if m.Dir != 0 {
 			img = r.sheet.Sprite("mouse_walk").Frame(m.Frame)
 		}
-		at(dst, img, m.X, y, m.Dir < 0)
+		entity.DrawAt(dst, img, m.X, y, m.Dir < 0)
 	}
 }
 
@@ -112,35 +93,14 @@ func (r *Renderer) drawThrown(dst *ebiten.Image, t *Thrown) {
 		return
 	}
 	img := r.sheet.Sprite(thrownSprites[t.Kind]).Frame(0)
-	at(dst, rows(img, 0, t.Visible()), t.X, t.Y, t.Dir < 0)
+	entity.DrawAt(dst, rows(img, 0, t.Visible()), t.X, t.Y, t.Dir < 0)
 }
 
 func (r *Renderer) drawTrashCat(dst *ebiten.Image, t *TrashCat) {
 	if t.Phase == 0 || t.H <= 0 {
 		return
 	}
-	at(dst, rows(r.sheet.Sprite("trash_cat").Frame(0), 0, t.H), t.X, t.Top, false)
-}
-
-func (r *Renderer) drawDog(dst *ebiten.Image, d *Dog) {
-	if !d.Out() {
-		return
-	}
-	img := r.sheet.Sprite("dog_run").Frame(d.Frame)
-	flip := d.Dir < 0
-	if d.Capture != 0 {
-		img = r.sheet.Sprite("dog_fight").Frame(0)
-		flip = d.Frame%2 == 1
-	}
-	x := d.X
-	w := img.Bounds().Dx()
-	switch {
-	case d.Entering > 0:
-		x = edgeX(d.Dir > 0, (config.DogEdgeSteps+1-d.Entering)*8, w)
-	case d.Exiting > 0:
-		x = edgeX(d.X < gfx.ScreenWidth/2, (d.Exiting-1)*8, w)
-	}
-	at(dst, img, x, config.DogY, flip)
+	entity.DrawAt(dst, rows(r.sheet.Sprite("trash_cat").Frame(0), 0, t.H), t.X, t.Top, false)
 }
 
 // drawImpact shows the impact word while the game is frozen.
@@ -149,7 +109,10 @@ func (r *Renderer) drawImpact(dst *ebiten.Image, im Impact) {
 	var bg, ink int
 	switch im.Kind {
 	case Bonk:
-		word, bg, ink = "BONK!", gfx.Yellow, gfx.Red
+		// A ragged splat with slanting lettering, as in the original
+		// (checked against the HD video at 10:19.4).
+		entity.DrawAt(dst, r.sheet.Sprite("bonk").Frame(0), im.X, im.Y, false)
+		return
 	case Squeak:
 		word, bg, ink = "SQUEEK!", gfx.White, gfx.Plum
 	default:

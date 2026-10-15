@@ -71,6 +71,14 @@ type Freddy struct {
 	// HoldEntry pauses his wait before walking in, while the alley dog is
 	// out (DESIGN §3.8, "Re-entering the alley").
 	HoldEntry bool
+
+	// Gone is set while a room dog fights him: he is off the screen and does
+	// not move (DESIGN §3.4).
+	Gone bool
+
+	// Bouncing is set by the broom's bounce until he lands; he cannot be
+	// bounced again meanwhile (DESIGN §3.4, "The broom in detail").
+	Bouncing bool
 }
 
 // NewFreddy returns Freddy about to walk into the alley from the left.
@@ -128,6 +136,9 @@ func (f *Freddy) HitBox() physics.Rect {
 
 // Update runs one Freddy update.
 func (f *Freddy) Update(in Controls, w World) {
+	if f.Gone {
+		return
+	}
 	if f.enterWait > 0 {
 		if !f.HoldEntry {
 			f.enterWait--
@@ -215,6 +226,7 @@ func (f *Freddy) updateAirborne(w World) {
 func (f *Freddy) land() {
 	f.Arc.Dir = physics.Still
 	f.Knocked = false
+	f.Bouncing = false
 	f.RunSpeed = config.FreddyWalkStartSpeed
 	f.noLand = 0
 }
@@ -343,4 +355,53 @@ func (f *Freddy) ReturnFromRoom(x, y int) {
 	f.Depth = Behind
 	f.RunSpeed = config.FreddyWalkStartSpeed
 	f.Arc.Start(physics.Falling, 1, config.ReturnFallStep)
+	f.noLand = config.RoomEnterNoLand
 }
+
+// Bounce is the broom's knock: it throws him towards the room's window at
+// (wx, wy), harder the nearer he is to it (DESIGN §3.4, "The broom in
+// detail").
+func (f *Freddy) Bounce(wx, wy int) {
+	if f.Bouncing {
+		return
+	}
+	f.Bouncing = true
+	f.Seat = NotSeated
+	dir := physics.Falling
+	if f.Y >= wy {
+		dir = physics.Rising
+	}
+	var d int
+	if f.X > wx {
+		f.Dir, d = -1, f.X-wx
+	} else {
+		f.Dir, d = 1, wx-f.X-1
+	}
+	s := max(255-min(d, 255), config.BounceMinStrength)
+	step := s - s/4
+	f.RunSpeed = step >> 5
+	f.Arc = physics.Arc{Dir: dir, Speed: config.BounceSpeed, Step: uint8(step), Acc: 1}
+	f.noLand = config.BounceNoLand
+}
+
+// EnterRoom places him at a room's start point, falling, unable to land for
+// a moment (DESIGN §3.4, "Room framework in detail").
+func (f *Freddy) EnterRoom(x, y, noLand int) {
+	*f = Freddy{MinX: f.MinX, MaxX: f.MaxX, X: x, Y: y, Facing: 1}
+	f.RunSpeed = config.FreddyWalkStartSpeed
+	f.Arc.Start(physics.Falling, 1, config.RoomEnterStep)
+	f.noLand = noLand
+}
+
+// Topple knocks him off whatever he is standing on: he falls and cannot
+// land for noLand updates. His sideways motion is unchanged.
+func (f *Freddy) Topple(noLand int) {
+	f.Seat = NotSeated
+	f.noLand = noLand
+	f.Arc.Dir = physics.Falling
+	f.Arc.Speed = max(f.Arc.Speed, 1)
+}
+
+// Standing reports whether he is standing on a walkable surface or the
+// floor (not in the air, not seated).
+func (f *Freddy) Standing() bool { return !f.Airborne() && f.Seat == NotSeated }

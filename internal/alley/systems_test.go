@@ -172,7 +172,7 @@ func TestDogCatchCostsALife(t *testing.T) {
 	a := standing(0)
 	f := a.Freddy
 	f.X = 150
-	a.Dog = Dog{X: 140, Dir: 1, Active: true}
+	a.Dog = entity.Dog{X: 140, Dir: 1, Active: true}
 	lives := a.Session.Lives
 	a.checkDogCatch()
 	if a.Dog.Capture == 0 || !f.Hidden() {

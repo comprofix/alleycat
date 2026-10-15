@@ -28,6 +28,7 @@ type Context struct {
 	Font    *gfx.Font
 	UI      *gfx.Sheet
 	Alley   *gfx.Sheet // alley sprites: Freddy, laundry, litter
+	Rooms   *gfx.Sheet // room sprites: furniture, broom, cage, bird
 	SoundOn bool
 
 	// HighScore is the best score this run; it updates when a game ends

@@ -50,7 +50,7 @@ type Alley struct {
 	Thrown   Thrown
 	Mice     [3]Mouse
 	TrashCat TrashCat
-	Dog      Dog
+	Dog      entity.Dog
 
 	// Tick counts master ticks since the alley started.
 	Tick int
@@ -140,14 +140,7 @@ func (a *Alley) controls(in entity.Controls, rng *rand.Rand) entity.Controls {
 	if !a.TrashCat.touches(f) {
 		return in
 	}
-	return entity.Controls{H: randDir(rng), V: 1}
-}
-
-func randDir(rng *rand.Rand) int {
-	if rng.IntN(2) == 0 {
-		return -1
-	}
-	return 1
+	return entity.Controls{H: entity.RandDir(rng), V: 1}
 }
 
 // loseLife takes a life, if any are left.

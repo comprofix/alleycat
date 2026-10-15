@@ -68,7 +68,7 @@ func (a *Alley) updateMice(rng *rand.Rand) {
 	y := config.MouseY[i]
 	switch {
 	case i == a.Moving && m.Dir == 0:
-		m.Dir = randDir(rng)
+		m.Dir = entity.RandDir(rng)
 	case f.Seat != entity.NotSeated && y <= f.Y && f.Y <= y+config.MouseRowReach &&
 		rng.IntN(256) <= config.MouseChargeChance[a.Difficulty]:
 		speed = config.MouseSpeedFast
@@ -88,7 +88,7 @@ func (a *Alley) updateMice(rng *rand.Rand) {
 			if m.Dir != 0 {
 				m.Dir = 0
 			} else {
-				m.Dir = randDir(rng)
+				m.Dir = entity.RandDir(rng)
 			}
 		}
 	}
