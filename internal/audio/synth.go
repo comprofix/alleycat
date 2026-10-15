@@ -29,6 +29,7 @@ type Synth struct {
 	hz    float64 // pitch of the last sounding note, kept through its release
 	phase float64 // 0–1
 	gain  float64 // 0–1, slewed for attack and release
+	slew  float64 // gain step per sample, set by the last sounding note
 	lp    float64 // low-pass filter state
 }
 
@@ -119,33 +120,37 @@ func (s *Synth) Read(p []byte) (int, error) {
 	defer s.mu.Unlock()
 
 	const (
-		sr       = float64(config.AudioSampleRate)
-		maxHz    = sr * 0.45 // keep the band-limiting step valid
-		slewStep = 1000 / (config.BeeperSlewMs * sr)
+		sr        = float64(config.AudioSampleRate)
+		maxHz     = sr * 0.45 // keep the band-limiting step valid
+		slewSamps = config.BeeperSlewMs * sr / 1000
 	)
 	lpCoef := 1 - math.Exp(-2*math.Pi*config.SoftenCutoffHz/sr)
 
 	n := len(p) / 4
 	for i := range n {
 		var hz float64
+		var length int // samples in the sounding note
 		switch {
 		case s.sfx.active():
-			hz = s.sfx.hz()
+			hz, length = s.sfx.hz(), s.sfx.length()
 			s.sfx.step()
 		case s.music.active():
-			hz = s.music.hz()
+			hz, length = s.music.hz(), s.music.length()
 			s.music.step()
 		}
 
 		target := 0.0
 		if hz > 0 && s.enabled {
 			s.hz = min(hz, maxHz)
+			// A note much shorter than the ramp, such as a patter click,
+			// ramps in a quarter of its length so it stays sharp.
+			s.slew = 1 / max(1, min(slewSamps, float64(length)/4))
 			target = 1
 		}
 		if s.gain < target {
-			s.gain = min(s.gain+slewStep, target)
+			s.gain = min(s.gain+s.slew, target)
 		} else if s.gain > target {
-			s.gain = max(s.gain-slewStep, target)
+			s.gain = max(s.gain-s.slew, target)
 		}
 
 		x := 0.0
@@ -210,6 +215,9 @@ type track struct {
 func (t *track) active() bool { return t.notes != nil }
 
 func (t *track) hz() float64 { return t.notes[t.i].Hz }
+
+// length is the current note's length in samples.
+func (t *track) length() int { return samples(t.notes[t.i].Dur) }
 
 func (t *track) start(notes []Note, loop bool) {
 	t.notes, t.loop, t.i = notes, loop, 0

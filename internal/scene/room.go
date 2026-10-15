@@ -32,6 +32,7 @@ func (r *RoomScene) Update(ctx *Context) error {
 	s := ctx.Session
 	s.LevelTicks += ctx.Ticks
 	r.room.Update(ctx.Ticks, ctx.FreddySteps, controls(ctx.Input), ctx.RNG)
+	runPatter(ctx, roomPatter(r.room))
 	b := r.room.Shared()
 	if hr, ok := r.room.(*rooms.HeartRoom); ok {
 		r.heartEnds(ctx, hr)

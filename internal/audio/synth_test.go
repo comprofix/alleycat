@@ -229,3 +229,19 @@ func TestNilSynth(t *testing.T) {
 	s.SetVolume(1)
 	s.SetSoften(false)
 }
+
+// A patter tick of a fifth of a millisecond still reaches full level: very
+// short notes ramp in a quarter of their length (DESIGN §7).
+func TestTinyClickIsSharp(t *testing.T) {
+	s := NewSynth()
+	s.SetSoften(false)
+	s.PlaySFX([]Note{{3000, 210 * time.Microsecond}})
+	x := render(t, s, ms(2))
+	full := config.BeeperAmplitude * config.DefaultVolume
+	if p := peak(x); p < full*0.8 {
+		t.Errorf("0.21 ms click peak = %.3f, want near %.3f", p, full)
+	}
+	if p := peak(x[samples(ms(1)):]); p > 0.001 {
+		t.Errorf("click rings on after it ends: peak %.4f", p)
+	}
+}

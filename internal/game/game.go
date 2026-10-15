@@ -74,13 +74,16 @@ func New(seed uint64) (*Game, error) {
 		clock:   clock.New(TPS),
 		speaker: speaker,
 		ctx: &scene.Context{
-			Input:   input.New(input.Ebiten{}),
-			RNG:     rand.New(rand.NewPCG(seed, seed^0x9e3779b97f4a7c15)),
-			Font:    gfx.NewFont(glyphs),
-			UI:      ui,
-			Alley:   alleySheet,
-			Rooms:   roomSheet,
-			Audio:   synth,
+			Input: input.New(input.Ebiten{}),
+			RNG:   rand.New(rand.NewPCG(seed, seed^0x9e3779b97f4a7c15)),
+			Font:  gfx.NewFont(glyphs),
+			UI:    ui,
+			Alley: alleySheet,
+			Rooms: roomSheet,
+			Audio: synth,
+			// The patter has its own RNG so audio never shifts the game's
+			// random sequence (DESIGN §7.2).
+			Patter:  audio.NewPatter(rand.New(rand.NewPCG(seed^0x5eed0a0d10, seed))),
 			SoundOn: true,
 		},
 	}
