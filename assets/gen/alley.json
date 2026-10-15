@@ -6,6 +6,41 @@
     "h": 5,
     "frames": 1
   },
+  "can_short": {
+    "x": 0,
+    "y": 253,
+    "w": 30,
+    "h": 39,
+    "frames": 1
+  },
+  "can_tall": {
+    "x": 0,
+    "y": 206,
+    "w": 30,
+    "h": 47,
+    "frames": 1
+  },
+  "dog_fight": {
+    "x": 0,
+    "y": 177,
+    "w": 32,
+    "h": 15,
+    "frames": 1
+  },
+  "dog_run": {
+    "x": 0,
+    "y": 162,
+    "w": 32,
+    "h": 15,
+    "frames": 2
+  },
+  "felicia": {
+    "x": 0,
+    "y": 192,
+    "w": 32,
+    "h": 14,
+    "frames": 1
+  },
   "fishbones": {
     "x": 0,
     "y": 84,
@@ -62,11 +97,60 @@
     "h": 8,
     "frames": 3
   },
+  "mouse_stand": {
+    "x": 0,
+    "y": 102,
+    "w": 16,
+    "h": 8,
+    "frames": 1
+  },
+  "mouse_walk": {
+    "x": 0,
+    "y": 94,
+    "w": 16,
+    "h": 8,
+    "frames": 2
+  },
+  "thrown_boot": {
+    "x": 0,
+    "y": 110,
+    "w": 16,
+    "h": 9,
+    "frames": 1
+  },
+  "thrown_bottle": {
+    "x": 0,
+    "y": 125,
+    "w": 16,
+    "h": 12,
+    "frames": 1
+  },
+  "thrown_phone": {
+    "x": 0,
+    "y": 119,
+    "w": 16,
+    "h": 6,
+    "frames": 1
+  },
+  "thrown_pot": {
+    "x": 0,
+    "y": 137,
+    "w": 16,
+    "h": 12,
+    "frames": 1
+  },
   "tincan": {
     "x": 0,
     "y": 89,
     "w": 10,
     "h": 5,
+    "frames": 1
+  },
+  "trash_cat": {
+    "x": 0,
+    "y": 149,
+    "w": 16,
+    "h": 13,
     "frames": 1
   }
 }

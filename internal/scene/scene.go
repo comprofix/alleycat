@@ -30,6 +30,10 @@ type Context struct {
 	Alley   *gfx.Sheet // alley sprites: Freddy, laundry, litter
 	SoundOn bool
 
+	// HighScore is the best score this run; it updates when a game ends
+	// (DESIGN §3.8, "Lives and game over"). Saving it is M9 work.
+	HighScore int
+
 	// Clock output for the current frame (DESIGN §3.8).
 	Ticks       int // master ticks (18.2 Hz)
 	FreddySteps int // Freddy updates (2 per tick)

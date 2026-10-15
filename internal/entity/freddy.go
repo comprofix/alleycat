@@ -62,6 +62,15 @@ type Freddy struct {
 
 	enterWait   int // updates before he appears
 	enterSlices int // updates left coming into view at the screen edge
+
+	// Knocked is set when a thrown object knocks him down: he falls behind
+	// the fence and cannot land until he walks back in (DESIGN §3.8,
+	// "Alley systems").
+	Knocked bool
+
+	// HoldEntry pauses his wait before walking in, while the alley dog is
+	// out (DESIGN §3.8, "Re-entering the alley").
+	HoldEntry bool
 }
 
 // NewFreddy returns Freddy about to walk into the alley from the left.
@@ -98,6 +107,9 @@ func (f *Freddy) EnterSlice() (px int, entering bool) {
 	return (config.FreddyEnterSlices - f.enterSlices) * 8, true
 }
 
+// Entering reports whether he is waiting to walk in or coming into view.
+func (f *Freddy) Entering() bool { return f.enterWait > 0 || f.enterSlices > 0 }
+
 // Airborne reports whether he is rising or falling.
 func (f *Freddy) Airborne() bool { return f.Arc.Dir != physics.Still }
 
@@ -109,15 +121,17 @@ func (f *Freddy) Height() int {
 	return config.FreddyH
 }
 
-// Box is his collision box.
-func (f *Freddy) Box() physics.Rect {
-	return physics.Rect{X: f.X, Y: f.Y, W: config.FreddyW, H: f.Height()}
+// HitBox is his box for windows, thrown objects, mice and the trash cat.
+func (f *Freddy) HitBox() physics.Rect {
+	return physics.Rect{X: f.X, Y: f.Y, W: config.FreddyHitW, H: config.FreddyHitH}
 }
 
 // Update runs one Freddy update.
 func (f *Freddy) Update(in Controls, w World) {
 	if f.enterWait > 0 {
-		f.enterWait--
+		if !f.HoldEntry {
+			f.enterWait--
+		}
 		return
 	}
 	if f.enterSlices > 0 {
@@ -162,8 +176,8 @@ func (f *Freddy) updateAirborne(w World) {
 		f.Arc.Gravity(config.FreddyMaxFallSpeed)
 	}
 
-	canLand := true
-	if f.noLand > 0 {
+	canLand := !f.Knocked
+	if canLand && f.noLand > 0 {
 		f.noLand--
 		canLand = f.noLand == 0
 	}
@@ -200,6 +214,7 @@ func (f *Freddy) updateAirborne(w World) {
 
 func (f *Freddy) land() {
 	f.Arc.Dir = physics.Still
+	f.Knocked = false
 	f.RunSpeed = config.FreddyWalkStartSpeed
 	f.noLand = 0
 }
@@ -298,4 +313,34 @@ func (f *Freddy) moveH() bool {
 		}
 	}
 	return false
+}
+
+// KnockDown is a thrown object's hit: he drops straight down behind the
+// fence at a steady speed, unable to land, and walks back in (DESIGN §3.8,
+// "Alley systems").
+func (f *Freddy) KnockDown() {
+	f.Seat = NotSeated
+	f.Dir = 0
+	f.Depth = Behind
+	f.Knocked = true
+	f.Arc = physics.Arc{Dir: physics.Falling, Speed: config.KnockFallSpeed, Step: 1, Acc: 0xff}
+}
+
+// KnockOffLine is a mouse knocking him off a clothesline: he falls and
+// cannot land for a while.
+func (f *Freddy) KnockOffLine() {
+	f.Seat = NotSeated
+	f.Dir = 0
+	f.noLand = config.MouseKnockNoLand
+	f.Arc.Dir = physics.Falling
+	f.Arc.Speed = max(f.Arc.Speed, 1)
+}
+
+// ReturnFromRoom puts him back where he went in, falling behind the fence
+// (DESIGN §3.8, "Returning from a room").
+func (f *Freddy) ReturnFromRoom(x, y int) {
+	*f = Freddy{MinX: f.MinX, MaxX: f.MaxX, X: x, Y: y, Facing: 1}
+	f.Depth = Behind
+	f.RunSpeed = config.FreddyWalkStartSpeed
+	f.Arc.Start(physics.Falling, 1, config.ReturnFallStep)
 }
