@@ -187,13 +187,14 @@ func TestPatterClickLengths(t *testing.T) {
 	}
 }
 
-// The patter's density matches the reference capture: about a third of the
-// steps click in the alley and half in the rooms (DESIGN §7.2).
+// The patter's density follows the original's rhythm table: about 60% of
+// the steps click in the alley and 55% in the rooms, fills included
+// (DESIGN §7.2).
 func TestPatterDensity(t *testing.T) {
 	for _, c := range []struct {
 		mode   PatterMode
 		lo, hi float64
-	}{{Alley, 0.33, 0.45}, {Room, 0.45, 0.56}} {
+	}{{Alley, 0.56, 0.67}, {Room, 0.51, 0.61}} {
 		p := newTestPatter()
 		n := 3000 / params(c.mode).Every
 		got := float64(len(steps(runPatter(p, PatterState{Mode: c.mode}, 3000)))) / float64(n)
@@ -217,4 +218,33 @@ func TestPatterPitchMoves(t *testing.T) {
 	if len(distinct) < 4 {
 		t.Errorf("only %d distinct pitches over two phrases", len(distinct))
 	}
+}
+
+// The rows themselves average the original's densities, before fills: 60%
+// in the alley and 55% in the rooms (DESIGN §7.2).
+func TestRhythmRowDensity(t *testing.T) {
+	for _, c := range []struct {
+		name   string
+		rows   [][]uint8
+		lo, hi float64
+	}{{"alley", alleyRhythms, 0.59, 0.61}, {"rooms", roomRhythms, 0.54, 0.56}} {
+		bits, steps := 0, 0
+		for _, row := range c.rows {
+			for _, bar := range row {
+				bits += bits8(bar)
+				steps += 8
+			}
+		}
+		if got := float64(bits) / float64(steps); got < c.lo || got > c.hi {
+			t.Errorf("%s rows: %.1f%% of steps click, want %.0f–%.0f%%", c.name, got*100, c.lo*100, c.hi*100)
+		}
+	}
+}
+
+func bits8(b uint8) int {
+	n := 0
+	for ; b != 0; b &= b - 1 {
+		n++
+	}
+	return n
 }
