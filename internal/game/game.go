@@ -6,7 +6,9 @@ package game
 import (
 	"fmt"
 	"image/color"
+	"log"
 	"math/rand/v2"
+	"path/filepath"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	eaudio "github.com/hajimehoshi/ebiten/v2/audio"
@@ -14,6 +16,7 @@ import (
 	"github.com/comprofix/alleycat/assets"
 	"github.com/comprofix/alleycat/internal/audio"
 	"github.com/comprofix/alleycat/internal/clock"
+	"github.com/comprofix/alleycat/internal/config"
 	"github.com/comprofix/alleycat/internal/gfx"
 	"github.com/comprofix/alleycat/internal/input"
 	"github.com/comprofix/alleycat/internal/scene"
@@ -35,11 +38,22 @@ type Game struct {
 	scenes *scene.Manager
 
 	speaker *eaudio.Player // kept alive while the game runs
+
+	// The saved files (DESIGN §9).
+	dir      string // where they live; empty saves nothing
+	settings config.Settings
+}
+
+// Saved is what was loaded from the saved files, and where they live
+// (DESIGN §9). An empty Dir saves nothing.
+type Saved struct {
+	Settings config.Settings
+	Dir      string
 }
 
 // New loads the assets and starts at the title screen. seed initialises the
 // game's random number generator.
-func New(seed uint64) (*Game, error) {
+func New(seed uint64, saved Saved) (*Game, error) {
 	f, err := assets.FS.Open("font/font8x8.txt")
 	if err != nil {
 		return nil, err
@@ -68,11 +82,18 @@ func New(seed uint64) (*Game, error) {
 		return nil, fmt.Errorf("audio: %w", err)
 	}
 
+	set := saved.Settings
+	aspect := gfx.AspectSquare
+	if set.Aspect == config.AspectCRT {
+		aspect = gfx.AspectCRT
+	}
 	g := &Game{
-		screen:  ebiten.NewImage(gfx.ScreenWidth, gfx.ScreenHeight),
-		aspect:  gfx.AspectSquare,
-		clock:   clock.New(TPS),
-		speaker: speaker,
+		screen:   ebiten.NewImage(gfx.ScreenWidth, gfx.ScreenHeight),
+		aspect:   aspect,
+		clock:    clock.New(TPS),
+		speaker:  speaker,
+		dir:      saved.Dir,
+		settings: set,
 		ctx: &scene.Context{
 			Input: input.New(input.Ebiten{}),
 			RNG:   rand.New(rand.NewPCG(seed, seed^0x9e3779b97f4a7c15)),
@@ -85,7 +106,7 @@ func New(seed uint64) (*Game, error) {
 			// shifts the game's random sequence (DESIGN §7.2).
 			Patter: audio.NewPatter(rand.New(rand.NewPCG(seed^0x5eed0a0d10, seed))),
 			FX:     audio.NewFX(rand.New(rand.NewPCG(seed^0xeffec75, seed+1))),
-			Sound:  scene.DefaultSound(),
+			Sound:  scene.SoundSettings{On: set.SoundOn, Muted: set.Muted, Volume: set.Volume, Soften: set.Soften},
 		},
 	}
 	g.ctx.ApplySound()
@@ -99,24 +120,50 @@ func (g *Game) Update() error {
 	in := g.ctx.Input
 	in.Update()
 
-	if in.JustPressed(input.Quit) {
+	if in.JustPressed(input.Quit) || ebiten.IsWindowBeingClosed() {
+		g.saveSettings() // keeps the window size
 		return ebiten.Termination
 	}
 	if in.JustPressed(input.Fullscreen) {
 		ebiten.SetFullscreen(!ebiten.IsFullscreen())
+		g.saveSettings()
 	}
 	if in.JustPressed(input.Aspect) {
 		g.aspect = g.aspect.Next()
+		g.saveSettings()
 	}
 	if in.JustPressed(input.Sound) {
 		g.ctx.Sound.On = !g.ctx.Sound.On
 		g.ctx.ApplySound()
+		g.saveSettings()
 	}
 
 	g.ctx.Ticks, g.ctx.FreddySteps = g.clock.Advance()
 	g.ctx.TickCount = g.clock.Total()
 	g.ctx.Audio.Now(g.clock.Time())
 	return g.scenes.Update(g.ctx)
+}
+
+// saveSettings writes the current settings (DESIGN §9). A failure is
+// logged, never fatal.
+func (g *Game) saveSettings() {
+	s := &g.settings
+	s.Aspect = config.AspectSquare
+	if g.aspect == gfx.AspectCRT {
+		s.Aspect = config.AspectCRT
+	}
+	s.Fullscreen = ebiten.IsFullscreen()
+	if w, h := ebiten.WindowSize(); w > 0 && h > 0 {
+		s.WindowW, s.WindowH = w, h
+	}
+	snd := g.ctx.Sound
+	s.SoundOn, s.Muted, s.Volume, s.Soften = snd.On, snd.Muted, snd.Volume, snd.Soften
+	if g.dir == "" {
+		return
+	}
+	if err := config.SaveSettings(filepath.Join(g.dir, config.SettingsFile), *s); err != nil {
+		log.Printf("saving settings: %v", err)
+	}
 }
 
 // Draw renders the scene to the logical screen and presents it.
