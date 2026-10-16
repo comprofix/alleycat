@@ -22,6 +22,7 @@ type RoomScene struct {
 	x, y   int // where Freddy went in, in the alley
 
 	fighting bool // the dog-fight sound is playing
+	shake    shaker
 }
 
 func newRoomScene(ctx *Context, room rooms.Room, x, y int) *RoomScene {
@@ -38,6 +39,7 @@ func (r *RoomScene) Update(ctx *Context) error {
 	r.room.Update(ctx.Ticks, ctx.FreddySteps, controls(ctx.Input), ctx.RNG)
 	runPatter(ctx, roomPatter(r.room))
 	b := r.room.Shared()
+	r.shake.update(b.Freddy.Hits, ctx.Ticks)
 	playRoomSounds(ctx, r.room)
 	followFight(ctx, &b.Dog, &r.fighting)
 	if hr, ok := r.room.(*rooms.HeartRoom); ok {
@@ -77,7 +79,7 @@ func (r *RoomScene) heartEnds(ctx *Context, hr *rooms.HeartRoom) {
 
 // Draw implements Scene.
 func (r *RoomScene) Draw(ctx *Context, dst *ebiten.Image) {
-	r.view.Draw(dst, r.room)
+	r.shake.draw(dst, func(d *ebiten.Image) { r.view.Draw(d, r.room) })
 	if debug.Enabled {
 		r.view.DrawDebug(dst, r.room)
 		ctx.Font.Draw(dst, fmt.Sprintf("TPS %.1f FPS %.1f", ebiten.ActualTPS(), ebiten.ActualFPS()), 4, 190, gfx.White, 1)

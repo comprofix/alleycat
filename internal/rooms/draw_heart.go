@@ -81,6 +81,7 @@ func (r *Renderer) drawHeart(dst *ebiten.Image, h *HeartRoom) {
 	case f.Gone:
 	case h.Carrying >= 0:
 		entity.DrawAt(dst, entity.FreddyImageIn(r.actors, f, "gift"), f.X, f.Y, f.Facing < 0)
+		entity.DrawDust(dst, r.actors, f)
 	default:
 		entity.DrawFreddy(dst, r.actors, f)
 	}

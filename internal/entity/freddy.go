@@ -96,6 +96,14 @@ type Freddy struct {
 	// NoFloor is set in the heart room: there is no floor to land on, and
 	// the bottom row is held up by its hearts like any other (DESIGN §3.5).
 	NoFloor bool
+
+	// Dust is the updates left of the puff from his last landing, at
+	// DustX, DustY; drawing only (DESIGN §8, "Polish").
+	Dust, DustX, DustY int
+
+	// Hits counts the knocks he has taken, so a scene can shake the screen
+	// at each new one; drawing only (DESIGN §8, "Polish").
+	Hits int
 }
 
 // NewFreddy returns Freddy about to walk into the alley from the left.
@@ -153,6 +161,9 @@ func (f *Freddy) HitBox() physics.Rect {
 
 // Update runs one Freddy update.
 func (f *Freddy) Update(in Controls, w World) {
+	if f.Dust > 0 {
+		f.Dust--
+	}
 	if f.Gone {
 		return
 	}
@@ -247,6 +258,9 @@ func (f *Freddy) land() {
 	f.Bouncing = false
 	f.RunSpeed = config.FreddyWalkStartSpeed
 	f.noLand = 0
+	if f.Seat == NotSeated { // no puff off a clothesline
+		f.Dust, f.DustX, f.DustY = config.DustUpdates, f.X, f.Y
+	}
 }
 
 func (f *Freddy) updateStanding(in Controls, w World) {
@@ -351,6 +365,9 @@ func (f *Freddy) moveH() bool {
 // fence at a steady speed, unable to land, and walks back in (DESIGN §3.8,
 // "Alley systems").
 func (f *Freddy) KnockDown() {
+	if !f.Knocked {
+		f.Hits++
+	}
 	f.Seat = NotSeated
 	f.Dir = 0
 	f.Depth = Behind
@@ -386,6 +403,7 @@ func (f *Freddy) Bounce(wx, wy int) {
 		return
 	}
 	f.Bouncing = true
+	f.Hits++
 	f.Seat = NotSeated
 	dir := physics.Falling
 	if f.Y >= wy {
@@ -426,6 +444,7 @@ func (f *Freddy) Topple(noLand int) {
 // noLand updates; his sideways motion is unchanged (DESIGN §3.5: an arrow
 // or a rival cat in the heart room).
 func (f *Freddy) Knock(speed int, step uint8, noLand int) {
+	f.Hits++
 	f.Seat = NotSeated
 	f.Arc.Dir, f.Arc.Speed, f.Arc.Step = physics.Falling, speed, step
 	f.noLand = noLand
