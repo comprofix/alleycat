@@ -20,3 +20,12 @@ type Note struct {
 func Ticks(n float64) time.Duration {
 	return time.Duration(n * float64(time.Second) / clock.TickHz)
 }
+
+// Length is how long the notes take to play.
+func Length(notes []Note) time.Duration {
+	var d time.Duration
+	for _, n := range notes {
+		d += n.Dur
+	}
+	return d
+}
