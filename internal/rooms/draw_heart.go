@@ -22,6 +22,14 @@ const (
 func (r *Renderer) buildHeart() {
 	b := r.back
 	b.Fill(gfx.Palette[r.scheme.Wall])
+	// A faint lattice of tiny hearts behind the platforms (M8f).
+	for y, row := 4, 0; y < gfx.ScreenHeight; y, row = y+12, row+1 {
+		for x := 4 + (row%2)*12; x < gfx.ScreenWidth; x += 24 {
+			fill(b, x, y, 1, 1, gfx.Lime)
+			fill(b, x+2, y, 1, 1, gfx.Lime)
+			fill(b, x+1, y+1, 1, 1, gfx.Lime)
+		}
+	}
 	cherub := r.sheet.Sprite("cherub").Frame(0)
 	for x := 0; x < gfx.ScreenWidth; x += cherubW {
 		entity.DrawAt(b, cherub, x, 0, x >= gfx.ScreenWidth/2)
