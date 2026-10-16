@@ -45,6 +45,40 @@ func (r *Renderer) buildWater() {
 	s := gfx.UnderwaterScheme
 	b := r.water
 	b.Fill(gfx.Palette[s.Water])
+	// Deeper water darkens gently (M8f): a quarter of the pixels from row
+	// 120, half of them near the bottom.
+	for y := 120; y < gfx.ScreenHeight; y++ {
+		for x := (y / 2) % 2 * 2; x < gfx.ScreenWidth; x += 4 {
+			if y%2 == 0 {
+				fill(b, x+(y/2)%2, y, 1, 1, gfx.Navy)
+			}
+			if y >= 170 && y%2 == 1 {
+				fill(b, x+2, y, 1, 1, gfx.Navy)
+			}
+		}
+	}
+	// Faint light rays slanting down from the surface.
+	for _, rx := range []int{40, 112, 196, 268} {
+		for y := 8; y < 90; y++ {
+			if y%3 == 0 {
+				fill(b, rx+y/3, y, 2, 1, gfx.Sky)
+			}
+		}
+	}
+	// The sandy bottom, below Freddy's deepest dive, with pebbles and weed.
+	const sandY = 194
+	fill(b, 0, sandY, gfx.ScreenWidth, gfx.ScreenHeight-sandY, gfx.Yellow)
+	for x := 3; x < gfx.ScreenWidth; x += 11 {
+		fill(b, x, sandY+1+x%4, 1, 1, gfx.Orange)
+		if x%3 == 0 {
+			fill(b, x+4, sandY+2, 2, 1, gfx.Slate)
+		}
+	}
+	for _, wx := range []int{18, 74, 150, 233, 297} {
+		for y := sandY - 1; y > sandY-14-wx%9; y-- {
+			fill(b, wx+(y/3)%2, y, 1, 1, gfx.Green)
+		}
+	}
 	for y := 16; y < gfx.ScreenHeight-4; y += rippleCell {
 		for x := 4; x < gfx.ScreenWidth-8; x += rippleCell {
 			if h := (x*5 + y*11) % 13; h < 2 {

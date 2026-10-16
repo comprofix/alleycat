@@ -55,11 +55,47 @@ func line(dst *ebiten.Image, x0, y0, x1, y1, idx int) {
 	vector.StrokeLine(dst, float32(x0)+0.5, float32(y0)+0.5, float32(x1)+0.5, float32(y1)+0.5, 1, gfx.Palette[idx], false)
 }
 
-// buildWalls fills the backdrop and draws the walls in perspective, with
-// the back wall from y0 to y1.
+// buildWalls fills the backdrop and draws the room in perspective, with the
+// back wall from y0 to y1 (M8f): a darker ceiling, wallpaper on the back
+// wall with a picture rail and skirting, lightly shaded side walls and
+// floorboards. The floor keeps the room's Ground colour, so footprints
+// still show (DESIGN §3.4).
 func (r *Renderer) buildWalls(y0, y1 int) {
 	s, b := r.scheme, r.back
 	b.Fill(gfx.Palette[s.Wall])
+	const sw = gfx.ScreenWidth
+	// edge is how far the side wall reaches in from the screen edge on a row
+	// of the ceiling or the floor, which slope over 16 rows to the back wall.
+	edge := func(d int) int { return max(wallX0-d*wallX0/16, 0) }
+
+	for y := 0; y < y0; y++ { // the ceiling
+		x := edge(y0 - y)
+		fill(b, x, y, sw-2*x, 1, s.WallShade)
+	}
+	for y := y0; y < y1; y++ { // the side walls, lightly shaded
+		for x := (y % 2); x < wallX0; x += 2 {
+			if y%4 < 2 {
+				fill(b, x, y, 1, 1, s.WallShade)
+				fill(b, sw-1-x, y, 1, 1, s.WallShade)
+			}
+		}
+	}
+	for x := wallX0 + 6; x < wallX1; x += 8 { // wallpaper pinstripes
+		fill(b, x, y0+6, 1, y1-y0-9, s.WallShade)
+	}
+	fill(b, wallX0, y0+4, wallX1-wallX0, 1, s.WallShade) // the picture rail
+	fill(b, wallX0, y1-3, wallX1-wallX0, 2, s.Trim)      // the skirting
+	fill(b, wallX0, y1-1, wallX1-wallX0, 1, s.Outline)
+	// Floorboards: rows that widen towards us, and joints that fan out.
+	for y, gap := y1+3, 3; y < gfx.ScreenHeight; y, gap = y+gap, gap+1 {
+		x := edge(y - y1)
+		fill(b, x, y, sw-2*x, 1, s.WallShade)
+	}
+	for i := 1; i < 8; i++ {
+		bx := wallX0 + i*(wallX1-wallX0)/8
+		line(b, bx, y1, sw/2+(bx-sw/2)*3, gfx.ScreenHeight*2, s.WallShade)
+	}
+
 	ink := s.Outline
 	line(b, wallX0, y0, wallX1, y0, ink)
 	line(b, wallX0, y1, wallX1, y1, ink)
