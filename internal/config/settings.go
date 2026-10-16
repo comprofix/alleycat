@@ -10,6 +10,7 @@ import (
 // Saved files (DESIGN §9).
 const (
 	SettingsFile = "settings.json"
+	ScoresFile   = "scores.json"
 )
 
 // The window's default and allowed sizes, in window pixels (DESIGN §2.1).
