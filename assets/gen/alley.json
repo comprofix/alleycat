@@ -62,6 +62,20 @@
     "h": 14,
     "frames": 1
   },
+  "felicia_jump": {
+    "x": 0,
+    "y": 427,
+    "w": 24,
+    "h": 11,
+    "frames": 2
+  },
+  "felicia_walk": {
+    "x": 0,
+    "y": 416,
+    "w": 24,
+    "h": 11,
+    "frames": 6
+  },
   "fishbones": {
     "x": 0,
     "y": 84,
@@ -93,6 +107,34 @@
   "freddy_walk": {
     "x": 0,
     "y": 0,
+    "w": 24,
+    "h": 11,
+    "frames": 6
+  },
+  "gift_jump": {
+    "x": 0,
+    "y": 482,
+    "w": 24,
+    "h": 11,
+    "frames": 2
+  },
+  "gift_sit": {
+    "x": 0,
+    "y": 493,
+    "w": 24,
+    "h": 14,
+    "frames": 1
+  },
+  "gift_stand": {
+    "x": 0,
+    "y": 471,
+    "w": 24,
+    "h": 11,
+    "frames": 1
+  },
+  "gift_walk": {
+    "x": 0,
+    "y": 460,
     "w": 24,
     "h": 11,
     "frames": 6
@@ -138,6 +180,34 @@
     "w": 16,
     "h": 8,
     "frames": 2
+  },
+  "rival_jump": {
+    "x": 0,
+    "y": 405,
+    "w": 24,
+    "h": 11,
+    "frames": 2
+  },
+  "rival_walk": {
+    "x": 0,
+    "y": 394,
+    "w": 24,
+    "h": 11,
+    "frames": 6
+  },
+  "silver_jump": {
+    "x": 0,
+    "y": 449,
+    "w": 24,
+    "h": 11,
+    "frames": 2
+  },
+  "silver_walk": {
+    "x": 0,
+    "y": 438,
+    "w": 24,
+    "h": 11,
+    "frames": 6
   },
   "squeek": {
     "x": 0,

@@ -618,3 +618,22 @@ CCCCCCCCDD
 .CCCCECCD.
 .CCCCCCDD.
 ...CDDD...
+
+; The heart room's cats are Freddy's own frames in their colours (owner,
+; M8d): body, highlight and eye each get a colour, so they look like him,
+; not like flat cut-outs. They follow any change to Freddy's art.
+; Freddy: 0 body, E highlight, 4 eye.
+; Rivals: orange, yellow highlight, dark eye.
+recolour rival_walk from freddy_walk 0=3 E=4 4=0
+recolour rival_jump from freddy_jump 0=3 E=4 4=0
+; Felicia: white, silver highlight, sky-blue eye.
+recolour felicia_walk from freddy_walk 0=C E=D 4=A
+recolour felicia_jump from freddy_jump 0=C E=D 4=A
+; The rivals at the kiss, in the silver mood: silver, white highlight.
+recolour silver_walk from freddy_walk 0=D E=C 4=0
+recolour silver_jump from freddy_jump 0=D E=C 4=0
+; Freddy carrying a gift: blue, sky highlight, his own yellow eye.
+recolour gift_walk from freddy_walk 0=9 E=A
+recolour gift_stand from freddy_stand 0=9 E=A
+recolour gift_jump from freddy_jump 0=9 E=A
+recolour gift_sit from freddy_sit 0=9 E=A

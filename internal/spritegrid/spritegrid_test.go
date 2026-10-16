@@ -86,3 +86,44 @@ func TestPackRejectsDuplicates(t *testing.T) {
 		t.Error("duplicate names should fail")
 	}
 }
+
+// recolour copies a sprite with palette indices swapped, all at once, frame
+// by frame.
+func TestRecolour(t *testing.T) {
+	src := `sprite cat 3 1
+0E4
+
+00.
+
+recolour orange from cat 0=3 E=4 4=0
+`
+	sprites, err := Parse(strings.NewReader(src))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(sprites) != 2 || sprites[1].Name != "orange" || sprites[1].W != 3 || len(sprites[1].Frames) != 2 {
+		t.Fatalf("got %+v", sprites)
+	}
+	if got := sprites[1].Frames[0]; got[0] != 3 || got[1] != 4 || got[2] != 0 {
+		t.Errorf("frame 0 = %v, want [3 4 0]: swaps happen at once, not one after another", got)
+	}
+	if got := sprites[1].Frames[1]; got[0] != 3 || got[1] != 3 || got[2] != Transparent {
+		t.Errorf("frame 1 = %v, want [3 3 transparent]", got)
+	}
+	if got := sprites[0].Frames[0]; got[0] != 0 {
+		t.Error("the source sprite was changed")
+	}
+}
+
+func TestRecolourErrors(t *testing.T) {
+	for _, src := range []string{
+		"recolour x from nothing 0=1\n",
+		"sprite a 1 1\n0\n\nrecolour x of a 0=1\n",
+		"sprite a 1 1\n0\n\nrecolour x from a 0=Z\n",
+		"sprite a 1 1\n0\n\nrecolour x from a\n",
+	} {
+		if _, err := Parse(strings.NewReader(src)); err == nil {
+			t.Errorf("%q parsed without an error", src)
+		}
+	}
+}

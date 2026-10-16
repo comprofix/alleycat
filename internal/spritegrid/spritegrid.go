@@ -6,6 +6,8 @@
 //	<HEIGHT rows of WIDTH characters>   frame 0
 //	<blank line>
 //	<HEIGHT rows>                       frame 1, and so on
+//	recolour NEW from SRC 0=3 E=4 ...    a copy of sprite SRC (from the same file)
+//	                                     with palette indices swapped
 //
 // Each character is '.' for transparent or a hex digit 0–F naming a
 // Sweetie 16 palette index.
@@ -74,6 +76,8 @@ func Parse(r io.Reader) ([]Sprite, error) {
 		return nil
 	}
 
+	var recolours []recolour
+
 	sc := bufio.NewScanner(r)
 	for sc.Scan() {
 		lineNo++
@@ -81,6 +85,16 @@ func Parse(r io.Reader) ([]Sprite, error) {
 		switch {
 		case strings.HasPrefix(line, ";"):
 			continue
+		case strings.HasPrefix(line, "recolour "):
+			if err := flush(); err != nil {
+				return nil, err
+			}
+			rc, err := parseRecolour(line)
+			if err != nil {
+				return nil, fmt.Errorf("line %d: %v", lineNo, err)
+			}
+			recolours = append(recolours, rc)
+			cur = nil
 		case strings.HasPrefix(line, "sprite "):
 			if err := flush(); err != nil {
 				return nil, err
@@ -119,7 +133,61 @@ func Parse(r io.Reader) ([]Sprite, error) {
 			return nil, fmt.Errorf("sprite %q has no frames", s.Name)
 		}
 	}
+	for _, rc := range recolours {
+		s, err := rc.apply(sprites)
+		if err != nil {
+			return nil, err
+		}
+		sprites = append(sprites, s)
+	}
 	return sprites, nil
+}
+
+// recolour is a sprite made from another by swapping palette indices.
+type recolour struct {
+	name, from string
+	swap       map[int]int
+}
+
+// parseRecolour reads "recolour NEW from SRC a=b ...", a and b hex digits.
+func parseRecolour(line string) (recolour, error) {
+	f := strings.Fields(line)
+	if len(f) < 5 || f[2] != "from" {
+		return recolour{}, fmt.Errorf("want \"recolour NEW from SRC a=b ...\", got %q", line)
+	}
+	rc := recolour{name: f[1], from: f[3], swap: map[int]int{}}
+	for _, p := range f[4:] {
+		a, b, ok := strings.Cut(p, "=")
+		av, err1 := strconv.ParseInt(a, 16, 8)
+		bv, err2 := strconv.ParseInt(b, 16, 8)
+		if !ok || err1 != nil || err2 != nil || len(a) != 1 || len(b) != 1 {
+			return recolour{}, fmt.Errorf("bad colour swap %q", p)
+		}
+		rc.swap[int(av)] = int(bv)
+	}
+	return rc, nil
+}
+
+// apply builds the recoloured sprite from its source.
+func (rc recolour) apply(sprites []Sprite) (Sprite, error) {
+	for _, s := range sprites {
+		if s.Name != rc.from {
+			continue
+		}
+		out := Sprite{Name: rc.name, W: s.W, H: s.H}
+		for _, fr := range s.Frames {
+			nf := make([]int, len(fr))
+			for i, v := range fr {
+				if to, ok := rc.swap[v]; ok {
+					v = to
+				}
+				nf[i] = v
+			}
+			out.Frames = append(out.Frames, nf)
+		}
+		return out, nil
+	}
+	return Sprite{}, fmt.Errorf("recolour %q: no sprite %q in this file", rc.name, rc.from)
 }
 
 // Pack lays sprites out top to bottom, frames left to right, and returns

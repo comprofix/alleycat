@@ -14,22 +14,26 @@ import (
 // Drawing for the shared actors. It reads state only. Sprites come from the
 // alley sheet, which holds Freddy and the dog (DESIGN §8).
 
-func freddyFrame(sheet *gfx.Sheet, f *Freddy) *ebiten.Image {
-	switch {
-	case f.Seat != NotSeated:
-		return sheet.Sprite("freddy_sit").Frame(0)
-	case f.Arc.Dir == physics.Rising:
-		return sheet.Sprite("freddy_jump").Frame(0)
-	case f.Arc.Dir == physics.Falling:
-		return sheet.Sprite("freddy_jump").Frame(1)
-	case f.Dir != 0:
-		return sheet.Sprite("freddy_walk").Frame(f.WalkFrame)
-	}
-	return sheet.Sprite("freddy_stand").Frame(0)
-}
+func freddyFrame(sheet *gfx.Sheet, f *Freddy) *ebiten.Image { return FreddyImageIn(sheet, f, "freddy") }
 
 // FreddyImage is the sprite frame for Freddy's current pose.
 func FreddyImage(sheet *gfx.Sheet, f *Freddy) *ebiten.Image { return freddyFrame(sheet, f) }
+
+// FreddyImageIn is the frame for Freddy's current pose from a set of his
+// sprites: "freddy", or a recoloured set such as "gift" (DESIGN §8).
+func FreddyImageIn(sheet *gfx.Sheet, f *Freddy, set string) *ebiten.Image {
+	switch {
+	case f.Seat != NotSeated:
+		return sheet.Sprite(set + "_sit").Frame(0)
+	case f.Arc.Dir == physics.Rising:
+		return sheet.Sprite(set + "_jump").Frame(0)
+	case f.Arc.Dir == physics.Falling:
+		return sheet.Sprite(set + "_jump").Frame(1)
+	case f.Dir != 0:
+		return sheet.Sprite(set + "_walk").Frame(f.WalkFrame)
+	}
+	return sheet.Sprite(set + "_stand").Frame(0)
+}
 
 // DrawFreddy draws Freddy. While he walks in he shows at the screen edge;
 // behind the alley fence, rows from config.FenceHideY down are hidden.
