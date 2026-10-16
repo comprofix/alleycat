@@ -40,6 +40,12 @@ type Context struct {
 	// (DESIGN §3.8, "Lives and game over"). Saving it is M9 work.
 	HighScore int
 
+	// Played is set once a skill has been chosen this run, and LastSkill is
+	// that skill: from then on the title loops and any key replays at it
+	// (DESIGN §4, "No attract mode").
+	Played    bool
+	LastSkill config.Skill
+
 	// Clock output for the current frame (DESIGN §3.8).
 	Ticks       int   // master ticks (18.2 Hz)
 	TickCount   int64 // master ticks so far, this frame's included
