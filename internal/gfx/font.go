@@ -137,3 +137,23 @@ func (f *Font) Draw(dst *ebiten.Image, s string, x, y, idx, scale int) {
 func (f *Font) DrawCentred(dst *ebiten.Image, s string, y, idx, scale int) {
 	f.Draw(dst, s, (ScreenWidth-Width(s)*max(scale, 1))/2, y, idx, scale)
 }
+
+// DrawShadowed renders s with a drop shadow, one pixel per scale step down
+// and right, in palette colour shadow.
+func (f *Font) DrawShadowed(dst *ebiten.Image, s string, x, y, idx, shadow, scale int) {
+	d := max(scale, 1)
+	f.Draw(dst, s, x+d, y+d, shadow, scale)
+	f.Draw(dst, s, x, y, idx, scale)
+}
+
+// DrawOutlined renders s with a one-pixel outline round every letter in
+// palette colour outline.
+func (f *Font) DrawOutlined(dst *ebiten.Image, s string, x, y, idx, outline, scale int) {
+	for _, d := range [8][2]int{{-1, -1}, {0, -1}, {1, -1}, {-1, 0}, {1, 0}, {-1, 1}, {0, 1}, {1, 1}} {
+		f.Draw(dst, s, x+d[0], y+d[1], outline, scale)
+	}
+	f.Draw(dst, s, x, y, idx, scale)
+}
+
+// CentreX is the X that centres s at scale on the logical screen.
+func CentreX(s string, scale int) int { return (ScreenWidth - Width(s)*max(scale, 1)) / 2 }

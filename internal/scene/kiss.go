@@ -204,7 +204,8 @@ func (k *Kiss) Draw(ctx *Context, dst *ebiten.Image) {
 		return
 	}
 	f := ctx.Font
-	f.DrawCentred(dst, fmt.Sprint(k.bonus), config.KissScoreY, gfx.White, 1)
+	score := fmt.Sprint(k.bonus)
+	f.DrawShadowed(dst, score, gfx.CentreX(score, 1), config.KissScoreY, gfx.White, gfx.Night, 1)
 	text := fmt.Sprintf("BONUS MULTIPLIER: %02d", k.multiplier)
 	bar := gfx.Night
 	if (k.ticks/config.KissFlashTicks)%2 == 1 {
@@ -212,7 +213,7 @@ func (k *Kiss) Draw(ctx *Context, dst *ebiten.Image) {
 	}
 	w := len(text)*8 + 8
 	dst.SubImage(image.Rect((gfx.ScreenWidth-w)/2, config.KissBarY-2, (gfx.ScreenWidth+w)/2, config.KissBarY+10)).(*ebiten.Image).Fill(gfx.Palette[bar])
-	f.DrawCentred(dst, text, config.KissBarY, gfx.White, 1)
+	f.DrawShadowed(dst, text, gfx.CentreX(text, 1), config.KissBarY, gfx.White, gfx.Night, 1)
 }
 
 func abs(v int) int {

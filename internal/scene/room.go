@@ -2,6 +2,7 @@ package scene
 
 import (
 	"fmt"
+	"image"
 
 	"github.com/hajimehoshi/ebiten/v2"
 
@@ -153,9 +154,26 @@ func (r *Result) Update(ctx *Context) error {
 }
 
 // Draw implements Scene.
+// The result word is sprayed like the fence graffiti (DESIGN §8, M8g): big,
+// with a dark shadow and paint running down from some letters.
+const (
+	resultScale = 3
+	resultY     = 84
+)
+
 func (r *Result) Draw(ctx *Context, dst *ebiten.Image) {
 	dst.Fill(gfx.Palette[gfx.Night])
-	if r.ink >= 0 {
-		ctx.Font.DrawCentred(dst, r.text, 92, r.ink, 2)
+	if r.ink < 0 {
+		return
+	}
+	x := gfx.CentreX(r.text, resultScale)
+	ctx.Font.DrawShadowed(dst, r.text, x, resultY, r.ink, gfx.Charcoal, resultScale)
+	glyph := gfx.GlyphSize * resultScale
+	for i := range len(r.text) {
+		if i%2 == 0 {
+			continue
+		}
+		dx := x + i*glyph + glyph/2
+		dst.SubImage(image.Rect(dx, resultY+glyph-3, dx+2, resultY+glyph+3+i%3*3)).(*ebiten.Image).Fill(gfx.Palette[r.ink])
 	}
 }

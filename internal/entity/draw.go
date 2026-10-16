@@ -70,7 +70,7 @@ func drawFreddy(dst *ebiten.Image, sheet *gfx.Sheet, f *Freddy, rim int) {
 	}
 	if rim >= 0 {
 		for _, d := range [4][2]int{{-1, 0}, {1, 0}, {0, -1}, {0, 1}} {
-			drawFlat(dst, img, x+d[0], f.Y+d[1], f.Facing < 0, rim)
+			DrawFlat(dst, img, x+d[0], f.Y+d[1], f.Facing < 0, rim)
 		}
 	}
 	DrawAt(dst, img, x, f.Y, f.Facing < 0)
@@ -124,8 +124,8 @@ func EdgeX(fromLeft bool, px, w int) int {
 	return gfx.ScreenWidth - px
 }
 
-// drawFlat draws img's shape in a single palette colour.
-func drawFlat(dst, img *ebiten.Image, x, y int, flip bool, idx int) {
+// DrawFlat draws img's shape in a single palette colour.
+func DrawFlat(dst, img *ebiten.Image, x, y int, flip bool, idx int) {
 	var cm colorm.ColorM
 	cm.Scale(0, 0, 0, 1)
 	c := gfx.Palette[idx]

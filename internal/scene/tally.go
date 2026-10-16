@@ -18,7 +18,6 @@ var tallyColumns = []int{16, 32, 272, 288}
 const (
 	tallyBottomY = 176
 	tallyRowH    = 8
-	tallyTextX   = 144
 )
 
 // Tally is the room-clear screen: the cat faces light up from the bottom, as
@@ -81,7 +80,9 @@ func (t *Tally) Draw(ctx *Context, dst *ebiten.Image) {
 		}
 	}
 	if t.lit >= t.rows() {
-		ctx.Font.Draw(dst, fmt.Sprintf("%04d", t.bonus%10000), tallyTextX, t.stopY, gfx.Yellow, 1)
+		// The bonus, big and shadowed (M8g), centred between the columns.
+		text := fmt.Sprintf("%04d", t.bonus%10000)
+		ctx.Font.DrawShadowed(dst, text, gfx.CentreX(text, 2), t.stopY, gfx.Yellow, gfx.Night, 2)
 	}
 }
 

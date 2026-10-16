@@ -34,6 +34,15 @@ const (
 	FreddySittingH = 14
 )
 
+// The title cat wandering the fence (DESIGN §4, "The title cat").
+const (
+	TitleCatSpeed      = 4   // px per master tick, no run-up
+	TitleCatTurnLeftX  = 32  // at or below this he walks right
+	TitleCatTurnRightX = 288 // at or above this he walks left
+	TitleCatEvery      = 18  // master ticks between choices
+	TitleCatStopAbove  = 160 // a random byte above this stops him
+)
+
 // Re-entering the alley (DESIGN §3.8, "Re-entering the alley").
 const (
 	FreddyEnterWait   = 12 // updates before he appears
