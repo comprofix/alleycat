@@ -13,9 +13,9 @@ import (
 )
 
 // Title is the title screen (M8g): a night sky over the town, Freddy
-// wandering the fence, and the name. Before the first game it moves on to
-// skill select, by itself after a long wait or at any key. After a game it
-// loops its tune, and any key replays at the same skill (DESIGN §4, "No
+// wandering the fence, and the name. Before the first game it waits for a
+// key, then goes to skill select (owner decision). After a game it loops
+// its tune, and any key replays at the same skill (DESIGN §4, "No
 // attract mode").
 type Title struct {
 	blink  gfx.Animator
@@ -46,8 +46,6 @@ func (t *Title) Update(ctx *Context) error {
 	case ctx.Input.AnyKeyJustPressed() && ctx.Played:
 		startGame(ctx, ctx.LastSkill)
 	case ctx.Input.AnyKeyJustPressed():
-		ctx.Switch(NewSkillSelect())
-	case !ctx.Played && t.ticks > config.TitleHoldTicks+config.TitleFirstExtra:
 		ctx.Switch(NewSkillSelect())
 	case ctx.Played && t.ticks >= config.TitleHoldTicks+config.TitleRepeatExtra:
 		// The tune starts again on the next update.
