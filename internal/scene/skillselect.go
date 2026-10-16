@@ -1,6 +1,8 @@
 package scene
 
 import (
+	"image"
+
 	"github.com/hajimehoshi/ebiten/v2"
 
 	"github.com/comprofix/alleycat/internal/config"
@@ -41,11 +43,21 @@ func (s *SkillSelect) Update(ctx *Context) error {
 
 // Draw implements Scene.
 func (s *SkillSelect) Draw(ctx *Context, dst *ebiten.Image) {
+	// A framed navy panel (M8g); the text keeps the plain font for reading.
 	dst.Fill(gfx.Palette[gfx.Night])
+	panel := func(x, y, w, h, idx int) {
+		dst.SubImage(image.Rect(x, y, x+w, y+h)).(*ebiten.Image).Fill(gfx.Palette[idx])
+	}
+	panel(2, 2, gfx.ScreenWidth-4, gfx.ScreenHeight-4, gfx.Slate)
+	panel(3, 3, gfx.ScreenWidth-6, gfx.ScreenHeight-6, gfx.Navy)
 	f := ctx.Font
-	y := 8
+	y := 10
 	line := func(text string, idx int) {
-		f.Draw(dst, text, 8, y, idx, 1)
+		if idx == gfx.Yellow {
+			f.DrawShadowed(dst, text, 10, y, idx, gfx.Night, 1)
+		} else {
+			f.Draw(dst, text, 10, y, idx, 1)
+		}
 		y += 10
 	}
 	line("Choose your skill level:", gfx.Yellow)
