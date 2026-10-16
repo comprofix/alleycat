@@ -43,8 +43,6 @@ const (
 	FlickerTicks  = 6  // a flicker's length; the lamp dips every other tick
 )
 
-// The title's timing (DESIGN §4, "No attract mode") [asm].
-const (
-	TitleHoldTicks   = 6861 // the original's hold time, about 6 min 17 s
-	TitleRepeatExtra = 72   // after a game: hold + this, then the tune again
-)
+// The title tune's repeat: once it finishes, a minute of quiet, then it plays
+// again (DESIGN §4, owner decision).
+const TitleTuneGapTicks = 1092 // 60 s of master ticks

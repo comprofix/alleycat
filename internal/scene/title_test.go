@@ -6,6 +6,8 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 
+	"github.com/comprofix/alleycat/internal/audio"
+	"github.com/comprofix/alleycat/internal/clock"
 	"github.com/comprofix/alleycat/internal/config"
 	"github.com/comprofix/alleycat/internal/input"
 )
@@ -54,7 +56,7 @@ func titleContext() (*Context, *heldKeys) {
 func TestTitleWaitsForKeyBeforeFirstGame(t *testing.T) {
 	ctx, keys := titleContext()
 	ti := NewTitle()
-	for range 2 * (config.TitleHoldTicks + config.TitleRepeatExtra) {
+	for range 2 * titleRepeatTicks {
 		if next := step(ctx, ti); next != nil {
 			t.Fatalf("title switched to %T with no key", next)
 		}
@@ -71,7 +73,7 @@ func TestTitleAfterGame(t *testing.T) {
 	ctx, keys := titleContext()
 	ctx.Played, ctx.LastSkill = true, config.Tomcat
 	ti := NewTitle()
-	for range 3 * (config.TitleHoldTicks + config.TitleRepeatExtra) {
+	for range 3 * titleRepeatTicks {
 		if next := step(ctx, ti); next != nil {
 			t.Fatalf("title switched to %T with no key", next)
 		}
@@ -86,13 +88,12 @@ func TestTitleAfterGame(t *testing.T) {
 	}
 }
 
-// The tune starts again every hold + 72 ticks after a game.
+// The tune plays again a minute after it finishes, before or after a game.
 func TestTitleRepeatsTune(t *testing.T) {
 	ctx, _ := titleContext()
-	ctx.Played = true
 	ti := NewTitle()
 	restarts := 0
-	for range 2*(config.TitleHoldTicks+config.TitleRepeatExtra) + 1 {
+	for range 2*titleRepeatTicks + 1 {
 		step(ctx, ti)
 		if !ti.played {
 			restarts++
@@ -100,5 +101,14 @@ func TestTitleRepeatsTune(t *testing.T) {
 	}
 	if restarts != 2 {
 		t.Errorf("tune restarted %d times, want 2", restarts)
+	}
+}
+
+// The repeat is the tune's own length plus one minute.
+func TestTitleRepeatTime(t *testing.T) {
+	tune := audio.Length(audio.Title()).Seconds()
+	got := float64(titleRepeatTicks) / clock.TickHz
+	if got < tune+59.9 || got > tune+60.2 {
+		t.Errorf("repeat after %.1f s, want the tune's %.1f s + 60 s", got, tune)
 	}
 }

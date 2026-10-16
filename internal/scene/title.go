@@ -2,21 +2,22 @@ package scene
 
 import (
 	"image"
+	"math"
 	"math/rand/v2"
 
 	"github.com/hajimehoshi/ebiten/v2"
 
 	"github.com/comprofix/alleycat/internal/audio"
+	"github.com/comprofix/alleycat/internal/clock"
 	"github.com/comprofix/alleycat/internal/config"
 	"github.com/comprofix/alleycat/internal/entity"
 	"github.com/comprofix/alleycat/internal/gfx"
 )
 
 // Title is the title screen (M8g): a night sky over the town, Freddy
-// wandering the fence, and the name. Before the first game it waits for a
-// key, then goes to skill select (owner decision). After a game it loops
-// its tune, and any key replays at the same skill (DESIGN §4, "No
-// attract mode").
+// wandering the fence, and the name. Its tune plays, then again after each
+// minute of quiet. Before the first game a key goes to skill select; after
+// a game a key replays at the same skill (DESIGN §4, "No attract mode").
 type Title struct {
 	blink  gfx.Animator
 	played bool // the title theme has started
@@ -34,7 +35,8 @@ func NewTitle() *Title {
 
 // Update implements Scene.
 func (t *Title) Update(ctx *Context) error {
-	// The theme plays once each time the title shows (DESIGN §7.4).
+	// The theme plays as the title shows, then again after each minute of
+	// quiet that follows it (DESIGN §4, §7.4).
 	if !t.played {
 		t.played = true
 		ctx.Audio.PlayMusic(audio.Title(), false)
@@ -47,12 +49,16 @@ func (t *Title) Update(ctx *Context) error {
 		startGame(ctx, ctx.LastSkill)
 	case ctx.Input.AnyKeyJustPressed():
 		ctx.Switch(NewSkillSelect())
-	case ctx.Played && t.ticks >= config.TitleHoldTicks+config.TitleRepeatExtra:
+	case t.ticks >= titleRepeatTicks:
 		// The tune starts again on the next update.
 		t.played, t.ticks = false, 0
 	}
 	return nil
 }
+
+// titleRepeatTicks is the title tune's length plus the minute's gap, in
+// master ticks.
+var titleRepeatTicks = int(math.Ceil(audio.Length(audio.Title()).Seconds()*clock.TickHz)) + config.TitleTuneGapTicks
 
 // titleCat is Freddy wandering along the title fence on his own, walking
 // and stopping to sit (DESIGN §4, "The title cat").
