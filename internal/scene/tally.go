@@ -121,7 +121,8 @@ func (h *HereKitty) Draw(ctx *Context, dst *ebiten.Image) {
 	}
 }
 
-// HERE KITTY layout, measured from the HD video for layout only.
+// HERE KITTY layout, from the HD video for layout only. The words step
+// evenly down and to the right (owner request, 2026-10-16).
 const kittyDogX, kittyDogY = 144, 66
 
 var kittyWords = []struct {
@@ -130,9 +131,9 @@ var kittyWords = []struct {
 	frame int
 }{
 	{"HERE", 160, 50, 2},
-	{"KITTY", 180, 70, 4},
+	{"KITTY", 180, 72, 4},
 	{"KITTY", 200, 94, 5},
-	{"KITTY", 228, 144, 6},
+	{"KITTY", 220, 116, 6},
 }
 
 // drawSlanted writes text in cyan with each letter a little higher than the
