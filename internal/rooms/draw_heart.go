@@ -59,11 +59,11 @@ func (r *Renderer) drawHeart(dst *ebiten.Image, h *HeartRoom) {
 		}
 	}
 	for i := range h.Cats {
-		ink := gfx.Orange
+		set := "rival"
 		if i == config.Felicia {
-			ink = gfx.White
+			set = "felicia"
 		}
-		r.drawCat(dst, &h.Cats[i], ink)
+		r.drawCat(dst, &h.Cats[i], set)
 	}
 	if a := &h.Arrow; a.Active {
 		entity.DrawAt(dst, r.sheet.Sprite("arrow").Frame(a.Frame()), a.X, a.Y, a.Dir < 0)
@@ -72,23 +72,24 @@ func (r *Renderer) drawHeart(dst *ebiten.Image, h *HeartRoom) {
 	switch {
 	case f.Gone:
 	case h.Carrying >= 0:
-		drawTinted(dst, entity.FreddyImage(r.actors, f), f.X, f.Y, f.Facing < 0, gfx.Blue)
+		entity.DrawAt(dst, entity.FreddyImageIn(r.actors, f, "gift"), f.X, f.Y, f.Facing < 0)
 	default:
 		entity.DrawFreddy(dst, r.actors, f)
 	}
 }
 
-// drawCat draws a heart room cat with Freddy's own walking frames, in ink,
-// so the cats are his size; bumped, it shows his jumping pose.
-func (r *Renderer) drawCat(dst *ebiten.Image, c *HeartCat, ink int) {
+// drawCat draws a heart room cat with Freddy's own frames recoloured, from
+// the sprite set ("rival", "felicia" or "silver"), so the cats are his size
+// and look like him; bumped, it shows his jumping pose (DESIGN §8).
+func (r *Renderer) drawCat(dst *ebiten.Image, c *HeartCat, set string) {
 	if c.Away {
 		return
 	}
-	img := r.actors.Sprite("freddy_walk").Frame(c.Frame)
+	img := r.actors.Sprite(set + "_walk").Frame(c.Frame)
 	if c.Bump > 0 {
-		img = r.actors.Sprite("freddy_jump").Frame(0)
+		img = r.actors.Sprite(set + "_jump").Frame(0)
 	}
-	drawTinted(dst, img, c.X, c.Y, c.Dir < 0, ink)
+	entity.DrawAt(dst, img, c.X, c.Y, c.Dir < 0)
 }
 
 // drawHeartDebug outlines the heart room's row lines, cats, gifts, arrow,
@@ -158,6 +159,6 @@ func (r *Renderer) DrawHeartKiss(dst *ebiten.Image, h *HeartRoom) {
 		}
 	}
 	for i := range config.Felicia {
-		r.drawCat(dst, &h.Cats[i], s.Metal)
+		r.drawCat(dst, &h.Cats[i], "silver")
 	}
 }
