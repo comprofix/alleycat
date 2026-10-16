@@ -20,6 +20,7 @@ import (
 	"github.com/comprofix/alleycat/internal/gfx"
 	"github.com/comprofix/alleycat/internal/input"
 	"github.com/comprofix/alleycat/internal/scene"
+	"github.com/comprofix/alleycat/internal/score"
 )
 
 // TPS is the game-loop rate.
@@ -40,14 +41,16 @@ type Game struct {
 	speaker *eaudio.Player // kept alive while the game runs
 
 	// The saved files (DESIGN §9).
-	dir      string // where they live; empty saves nothing
-	settings config.Settings
+	dir       string // where they live; empty saves nothing
+	settings  config.Settings
+	savedHigh int
 }
 
 // Saved is what was loaded from the saved files, and where they live
 // (DESIGN §9). An empty Dir saves nothing.
 type Saved struct {
 	Settings config.Settings
+	High     int
 	Dir      string
 }
 
@@ -88,12 +91,13 @@ func New(seed uint64, saved Saved) (*Game, error) {
 		aspect = gfx.AspectCRT
 	}
 	g := &Game{
-		screen:   ebiten.NewImage(gfx.ScreenWidth, gfx.ScreenHeight),
-		aspect:   aspect,
-		clock:    clock.New(TPS),
-		speaker:  speaker,
-		dir:      saved.Dir,
-		settings: set,
+		screen:    ebiten.NewImage(gfx.ScreenWidth, gfx.ScreenHeight),
+		aspect:    aspect,
+		clock:     clock.New(TPS),
+		speaker:   speaker,
+		dir:       saved.Dir,
+		settings:  set,
+		savedHigh: saved.High,
 		ctx: &scene.Context{
 			Input: input.New(input.Ebiten{}),
 			RNG:   rand.New(rand.NewPCG(seed, seed^0x9e3779b97f4a7c15)),
@@ -104,9 +108,10 @@ func New(seed uint64, saved Saved) (*Game, error) {
 			Audio: synth,
 			// The patter and the effects have their own RNGs so audio never
 			// shifts the game's random sequence (DESIGN §7.2).
-			Patter: audio.NewPatter(rand.New(rand.NewPCG(seed^0x5eed0a0d10, seed))),
-			FX:     audio.NewFX(rand.New(rand.NewPCG(seed^0xeffec75, seed+1))),
-			Sound:  scene.SoundSettings{On: set.SoundOn, Muted: set.Muted, Volume: set.Volume, Soften: set.Soften},
+			Patter:    audio.NewPatter(rand.New(rand.NewPCG(seed^0x5eed0a0d10, seed))),
+			FX:        audio.NewFX(rand.New(rand.NewPCG(seed^0xeffec75, seed+1))),
+			Sound:     scene.SoundSettings{On: set.SoundOn, Muted: set.Muted, Volume: set.Volume, Soften: set.Soften},
+			HighScore: saved.High,
 		},
 	}
 	g.ctx.ApplySound()
@@ -141,7 +146,16 @@ func (g *Game) Update() error {
 	g.ctx.Ticks, g.ctx.FreddySteps = g.clock.Advance()
 	g.ctx.TickCount = g.clock.Total()
 	g.ctx.Audio.Now(g.clock.Time())
-	return g.scenes.Update(g.ctx)
+	err := g.scenes.Update(g.ctx)
+	if g.ctx.HighScore > g.savedHigh {
+		g.savedHigh = g.ctx.HighScore
+		if g.dir != "" {
+			if err := score.SaveHigh(filepath.Join(g.dir, config.ScoresFile), g.savedHigh); err != nil {
+				log.Printf("saving the high score: %v", err)
+			}
+		}
+	}
+	return err
 }
 
 // saveSettings writes the current settings (DESIGN §9). A failure is

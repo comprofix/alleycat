@@ -10,13 +10,15 @@ import (
 
 	"github.com/comprofix/alleycat/internal/config"
 	"github.com/comprofix/alleycat/internal/game"
+	"github.com/comprofix/alleycat/internal/score"
 )
 
 func main() {
-	// The settings live beside the game (DESIGN §9).
+	// The settings and high score live beside the game (DESIGN §9).
 	dir := config.SaveDir()
 	saved := game.Saved{
 		Settings: config.LoadSettings(filepath.Join(dir, config.SettingsFile)),
+		High:     score.LoadHigh(filepath.Join(dir, config.ScoresFile)),
 		Dir:      dir,
 	}
 

@@ -27,8 +27,9 @@ go.work.sum
 .env
 .env.*
 
-# Saved settings, written next to the game (DESIGN §9)
+# Saved settings and high score, written next to the game (DESIGN §9)
 /settings.json
+/scores.json
 
 # Editors / IDEs
 .vscode/
