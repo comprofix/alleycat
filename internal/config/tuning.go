@@ -42,3 +42,10 @@ const (
 	FlickerOdds   = 4  // about one lit window in this many flickers at each chance
 	FlickerTicks  = 6  // a flicker's length; the lamp dips every other tick
 )
+
+// The title's timing (DESIGN §4, "No attract mode") [asm].
+const (
+	TitleHoldTicks   = 6861 // the original's hold time, about 6 min 17 s
+	TitleFirstExtra  = 6    // before the first game: hold + this, then the skill menu
+	TitleRepeatExtra = 72   // after a game: hold + this, then the tune again
+)

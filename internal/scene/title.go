@@ -13,10 +13,14 @@ import (
 )
 
 // Title is the title screen (M8g): a night sky over the town, Freddy
-// wandering the fence, and the name. Any key goes to skill select.
+// wandering the fence, and the name. Before the first game it moves on to
+// skill select, by itself after a long wait or at any key. After a game it
+// loops its tune, and any key replays at the same skill (DESIGN §4, "No
+// attract mode").
 type Title struct {
 	blink  gfx.Animator
 	played bool // the title theme has started
+	ticks  int  // master ticks since the theme started
 	cat    titleCat
 
 	back *ebiten.Image // the night scene, drawn once; a render cache
@@ -37,8 +41,17 @@ func (t *Title) Update(ctx *Context) error {
 	}
 	t.blink.Advance(ctx.Ticks)
 	t.cat.update(ctx.Ticks, ctx.RNG)
-	if ctx.Input.AnyKeyJustPressed() {
+	t.ticks += ctx.Ticks
+	switch {
+	case ctx.Input.AnyKeyJustPressed() && ctx.Played:
+		startGame(ctx, ctx.LastSkill)
+	case ctx.Input.AnyKeyJustPressed():
 		ctx.Switch(NewSkillSelect())
+	case !ctx.Played && t.ticks > config.TitleHoldTicks+config.TitleFirstExtra:
+		ctx.Switch(NewSkillSelect())
+	case ctx.Played && t.ticks >= config.TitleHoldTicks+config.TitleRepeatExtra:
+		// The tune starts again on the next update.
+		t.played, t.ticks = false, 0
 	}
 	return nil
 }

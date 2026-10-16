@@ -33,12 +33,18 @@ func (s *SkillSelect) Update(ctx *Context) error {
 	}
 	for k, skill := range skillKeys {
 		if ctx.Input.KeyJustPressed(k) {
-			ctx.Session = session.New(skill)
-			ctx.Switch(NewPlay(ctx))
+			startGame(ctx, skill)
 			return nil
 		}
 	}
 	return nil
+}
+
+// startGame starts a new game at skill and remembers it for the title.
+func startGame(ctx *Context, skill config.Skill) {
+	ctx.Played, ctx.LastSkill = true, skill
+	ctx.Session = session.New(skill)
+	ctx.Switch(NewPlay(ctx))
 }
 
 // Draw implements Scene.
