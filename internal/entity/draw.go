@@ -74,6 +74,18 @@ func drawFreddy(dst *ebiten.Image, sheet *gfx.Sheet, f *Freddy, rim int) {
 		}
 	}
 	DrawAt(dst, img, x, f.Y, f.Facing < 0)
+	DrawDust(dst, sheet, f) // in front, so the puff hides his paws
+}
+
+// DrawDust draws the puff from Freddy's last landing, under his feet where
+// he landed (DESIGN §8, "Polish").
+func DrawDust(dst *ebiten.Image, sheet *gfx.Sheet, f *Freddy) {
+	if f.Dust <= 0 {
+		return
+	}
+	s := sheet.Sprite("dust")
+	frame := (config.DustUpdates - f.Dust) * s.Frames() / config.DustUpdates
+	DrawAt(dst, s.Frame(frame), f.DustX+config.DustOffsetX, f.DustY+config.FreddyH-s.H, false)
 }
 
 // DrawDog draws the dog: running, or the fight cloud after a catch, sliding

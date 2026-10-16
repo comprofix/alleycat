@@ -58,6 +58,7 @@ func NewRenderer(sheet *gfx.Sheet, font *gfx.Font) *Renderer {
 func (r *Renderer) Draw(dst *ebiten.Image, a *Alley, high int) {
 	r.build(a.Cans)
 	dst.DrawImage(r.back, nil)
+	r.drawFlicker(dst, a.Tick)
 	r.drawWindow(dst, &a.Window)
 	for i := range a.Lines {
 		r.drawLine(dst, &a.Lines[i])
@@ -203,13 +204,46 @@ func (r *Renderer) buildWindow(b *ebiten.Image, x, y int, lit bool) {
 			}
 		}
 	} else {
-		fill(b, x+3, y+2, windowW-6, windowH-4, gfx.Yellow)
-		fill(b, x+3, y+windowH-6, windowW-6, 4, gfx.Orange) // the lamp's glow
-		for _, cx := range []int{x + 3, x + windowW - 6} {
-			fill(b, cx, y+2, 3, windowH-4, gfx.Red) // curtains
-		}
+		r.drawLamp(b, x, y, gfx.Yellow, gfx.Orange)
 	}
 	fill(b, x+windowW/2-1, y+1, 2, windowH-2, s.Trim)
+}
+
+// drawLamp draws a lit window's glass: the lamplight, its glow at the
+// bottom, and the curtains, leaving the mullion.
+func (r *Renderer) drawLamp(b *ebiten.Image, x, y, light, glow int) {
+	fill(b, x+3, y+2, windowW/2-4, windowH-4, light)
+	fill(b, x+windowW/2+1, y+2, windowW/2-4, windowH-4, light)
+	fill(b, x+3, y+windowH-6, windowW/2-4, 4, glow)
+	fill(b, x+windowW/2+1, y+windowH-6, windowW/2-4, 4, glow)
+	for _, cx := range []int{x + 3, x + windowW - 6} {
+		fill(b, cx, y+2, 3, windowH-4, gfx.Red) // curtains
+	}
+}
+
+// drawFlicker dims the lit windows whose lamps are flickering this tick
+// (DESIGN §8, "Polish").
+func (r *Renderer) drawFlicker(dst *ebiten.Image, tick int) {
+	for i := range litWindows {
+		if flickering(tick, i) {
+			r.drawLamp(dst, windowLeft+i%4*windowPitchX, windowTop+i/4*windowPitchY, gfx.Orange, gfx.Red)
+		}
+	}
+}
+
+// flickering reports whether lit window i's lamp dips at this tick. It is a
+// fixed pattern from the tick count, so the game's random numbers are
+// untouched.
+func flickering(tick, i int) bool {
+	h := uint32(tick/config.FlickerEvery)*0x9e3779b1 ^ uint32(i)*0x85ebca77
+	h ^= h >> 15
+	h *= 0x2c1b3c6d
+	h ^= h >> 12
+	if h%config.FlickerOdds != 0 {
+		return false
+	}
+	t := tick % config.FlickerEvery
+	return t < config.FlickerTicks && t%2 == 0
 }
 
 // buildFront draws the fence, the ground, the litter and the trash cans.

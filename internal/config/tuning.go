@@ -31,3 +31,14 @@ const (
 	ArrowStepX = 5
 	ArrowStepY = 2
 )
+
+// Polish (DESIGN §8, M8h): presentation only, with no effect on the rules.
+const (
+	DustUpdates   = 6  // Freddy updates a landing puff lasts: 3 frames, 2 each
+	DustOffsetX   = -4 // the puff's left edge from Freddy's X
+	HitShakeTicks = 6  // master ticks the screen shakes when he is knocked
+	HitShakePx    = 2
+	FlickerEvery  = 40 // master ticks between chances of a lit window flickering
+	FlickerOdds   = 4  // about one lit window in this many flickers at each chance
+	FlickerTicks  = 6  // a flicker's length; the lamp dips every other tick
+)

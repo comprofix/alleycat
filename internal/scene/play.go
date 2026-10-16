@@ -24,6 +24,7 @@ type Play struct {
 	view   *alley.Renderer
 
 	fighting bool // the dog-fight sound is playing
+	shake    shaker
 }
 
 // NewPlay starts the alley at the session's difficulty, with Freddy walking
@@ -51,6 +52,7 @@ func (p *Play) Update(ctx *Context) error {
 	a := p.alley
 	ctx.Session.LevelTicks += ctx.Ticks
 	a.Update(ctx.Ticks, ctx.FreddySteps, controls(ctx.Input), ctx.RNG)
+	p.shake.update(a.Freddy.Hits, ctx.Ticks)
 
 	// At 0 lives the game ends at once, straight back to the title (DESIGN
 	// §3.8, "Lives and game over").
@@ -99,7 +101,7 @@ func controls(in *input.Input) entity.Controls {
 
 // Draw implements Scene.
 func (p *Play) Draw(ctx *Context, dst *ebiten.Image) {
-	p.view.Draw(dst, p.alley, ctx.HighScore)
+	p.shake.draw(dst, func(d *ebiten.Image) { p.view.Draw(d, p.alley, ctx.HighScore) })
 	if debug.Enabled {
 		p.view.DrawDebug(dst, p.alley)
 		ctx.Font.Draw(dst, fmt.Sprintf("TPS %.1f FPS %.1f", ebiten.ActualTPS(), ebiten.ActualFPS()), 4, 190, gfx.White, 1)
