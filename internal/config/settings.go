@@ -128,7 +128,7 @@ func SaveDir() string {
 
 // inGoBuild reports whether dir is inside a go-build temporary folder.
 func inGoBuild(dir string) bool {
-	for _, part := range strings.Split(filepath.ToSlash(dir), "/") {
+	for _, part := range strings.FieldsFunc(dir, func(r rune) bool { return r == '/' || r == '\\' }) {
 		if strings.HasPrefix(part, "go-build") {
 			return true
 		}
