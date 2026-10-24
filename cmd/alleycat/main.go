@@ -23,6 +23,11 @@ func main() {
 	}
 
 	ebiten.SetWindowTitle("Alley Cat")
+	icons, err := windowIcons()
+	if err != nil {
+		log.Fatal(err)
+	}
+	ebiten.SetWindowIcon(icons)
 	ebiten.SetWindowSize(saved.Settings.WindowW, saved.Settings.WindowH)
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 	ebiten.SetFullscreen(saved.Settings.Fullscreen)
