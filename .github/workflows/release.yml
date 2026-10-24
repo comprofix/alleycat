@@ -52,6 +52,14 @@ jobs:
       - name: Install Linux dev packages
         if: matrix.goos == 'linux'
         run: sudo apt-get update && sudo apt-get install -y $LINUX_DEPS
+      # The icon Explorer shows on the exe is linked in from a .syso beside
+      # main.go, made from the same images as the window's icon. Its name
+      # limits it to windows/amd64 builds.
+      - name: Make the exe icon
+        if: matrix.goos == 'windows'
+        run: |
+          go run ./cmd/winicon alleycat.ico
+          go run github.com/akavel/rsrc@v0.10.2 -arch amd64 -ico alleycat.ico -o cmd/alleycat/rsrc_windows_amd64.syso
       - name: Build
         env:
           CGO_ENABLED: ${{ matrix.cgo }}
