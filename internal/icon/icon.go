@@ -1,4 +1,6 @@
-package main
+// Package icon builds the game's icon, Freddy's head against the moon, at
+// each size the window and the Windows exe need.
+package icon
 
 import (
 	"encoding/json"
@@ -11,9 +13,9 @@ import (
 	"github.com/comprofix/alleycat/assets"
 )
 
-// iconSizes lists each window icon size and the hand-drawn sprite it is
-// enlarged from, always by a whole factor so the pixels stay sharp.
-var iconSizes = []struct {
+// sizes lists each icon size and the hand-drawn sprite it is enlarged
+// from, always by a whole factor so the pixels stay sharp.
+var sizes = []struct {
 	size   int
 	sprite string
 }{
@@ -25,10 +27,11 @@ var iconSizes = []struct {
 	{256, "icon32"},
 }
 
-// windowIcons returns the icon at every size; the system picks the best
-// one for each place it is shown. It reads the sheet with the standard
-// library, since ebiten images can't be read back before the game starts.
-func windowIcons() ([]image.Image, error) {
+// Images returns the icon at every size, smallest first; the system picks
+// the best one for each place it is shown. It reads the sheet with the
+// standard library, since ebiten images can't be read back before the game
+// starts.
+func Images() ([]image.Image, error) {
 	pf, err := assets.FS.Open("gen/icon.png")
 	if err != nil {
 		return nil, err
@@ -48,7 +51,7 @@ func windowIcons() ([]image.Image, error) {
 	}
 
 	var icons []image.Image
-	for _, is := range iconSizes {
+	for _, is := range sizes {
 		e, ok := index[is.sprite]
 		if !ok {
 			return nil, fmt.Errorf("gen/icon.json: no sprite named %s", is.sprite)

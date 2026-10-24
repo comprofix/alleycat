@@ -10,6 +10,7 @@ import (
 
 	"github.com/comprofix/alleycat/internal/config"
 	"github.com/comprofix/alleycat/internal/game"
+	"github.com/comprofix/alleycat/internal/icon"
 	"github.com/comprofix/alleycat/internal/score"
 )
 
@@ -23,7 +24,7 @@ func main() {
 	}
 
 	ebiten.SetWindowTitle("Alley Cat")
-	icons, err := windowIcons()
+	icons, err := icon.Images()
 	if err != nil {
 		log.Fatal(err)
 	}
