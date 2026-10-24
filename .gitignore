@@ -13,6 +13,7 @@ CLAUDE.md
 *.so
 *.dylib
 *.syso
+/alleycat.ico
 /alleycat
 
 # Go test / profiling artefacts
