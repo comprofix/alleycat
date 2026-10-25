@@ -13,63 +13,65 @@ const (
 	ScoresFile   = "scores.json"
 )
 
-// The window's default and allowed sizes, in window pixels (DESIGN §2.1).
-const (
-	DefaultWindowW, DefaultWindowH = 1280, 800
-	MinWindowW, MinWindowH         = 320, 200
-	MaxWindowW, MaxWindowH         = 7680, 4800
-)
-
-// Aspect modes as saved.
-const (
-	AspectSquare = "square"
-	AspectCRT    = "crt"
-)
-
 // Settings are the player's choices saved between runs (DESIGN §9). They
 // are presentation and sound only and never touch the rules.
 type Settings struct {
-	Aspect     string  `json:"aspect"` // AspectSquare or AspectCRT
-	Fullscreen bool    `json:"fullscreen"`
-	WindowW    int     `json:"window_width"`
-	WindowH    int     `json:"window_height"`
-	SoundOn    bool    `json:"sound_on"`
-	Muted      bool    `json:"muted"`
-	Volume     float64 `json:"volume"` // 0–1
-	Soften     bool    `json:"soften_beeper"`
+	ScaleMode  ScaleMode `json:"scale_mode"`
+	Fullscreen bool      `json:"fullscreen"`
+	WindowW    int       `json:"window_width"`
+	WindowH    int       `json:"window_height"`
+	SoundOn    bool      `json:"sound_on"`
+	Muted      bool      `json:"muted"`
+	Volume     float64   `json:"volume"` // 0–1
+	Soften     bool      `json:"soften_beeper"`
 }
 
-// DefaultSettings are the settings with no file.
-func DefaultSettings() Settings {
+// DefaultSettings are the settings for preset p with no file.
+func DefaultSettings(p Preset) Settings {
+	w, h := p.DefaultWindow()
 	return Settings{
-		Aspect:  AspectSquare,
-		WindowW: DefaultWindowW, WindowH: DefaultWindowH,
+		ScaleMode: p.ScaleModes[0],
+		WindowW:   w, WindowH: h,
 		SoundOn: true, Volume: DefaultVolume, Soften: true,
 	}
 }
 
-// LoadSettings reads the settings at path. A missing or corrupt file gives
-// the defaults, a missing field keeps its default, and values out of range
-// are clamped, so it never fails.
-func LoadSettings(path string) Settings {
-	s := DefaultSettings()
+// LoadSettings reads the settings at path for preset p. A missing or
+// corrupt file gives the defaults, a missing field keeps its default, and
+// values out of range are clamped, so it never fails. A file from v1.2.1
+// or before keeps its aspect, saved then as "aspect": "crt".
+func LoadSettings(path string, p Preset) Settings {
+	s := DefaultSettings(p)
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return s
 	}
-	got := s
+	// The outer scale_mode hides the inner one, to tell whether it is there.
+	got := struct {
+		Settings
+		Mode   *ScaleMode `json:"scale_mode"`
+		Aspect string     `json:"aspect"`
+	}{Settings: s}
 	if json.Unmarshal(data, &got) != nil {
 		return s
 	}
-	return got.clamped()
+	switch {
+	case got.Mode != nil:
+		got.ScaleMode = *got.Mode
+	case got.Aspect == string(ScaleCRT):
+		got.ScaleMode = ScaleCRT
+	}
+	return got.Settings.Clamped(p)
 }
 
-func (s Settings) clamped() Settings {
-	if s.Aspect != AspectCRT {
-		s.Aspect = AspectSquare
+// Clamped returns s with every value made valid for preset p.
+func (s Settings) Clamped(p Preset) Settings {
+	if !p.HasMode(s.ScaleMode) {
+		s.ScaleMode = p.ScaleModes[0]
 	}
-	s.WindowW = min(max(s.WindowW, MinWindowW), MaxWindowW)
-	s.WindowH = min(max(s.WindowH, MinWindowH), MaxWindowH)
+	minW, minH := p.MinWindow()
+	s.WindowW = min(max(s.WindowW, minW), MaxWindowW)
+	s.WindowH = min(max(s.WindowH, minH), MaxWindowH)
 	if !(s.Volume >= 0) { // also catches NaN
 		s.Volume = 0
 	}

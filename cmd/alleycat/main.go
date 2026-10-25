@@ -18,12 +18,12 @@ func main() {
 	// The settings and high score live beside the game (DESIGN §9).
 	dir := config.SaveDir()
 	saved := game.Saved{
-		Settings: config.LoadSettings(filepath.Join(dir, config.SettingsFile)),
+		Settings: config.LoadSettings(filepath.Join(dir, config.SettingsFile), config.Project),
 		High:     score.LoadHigh(filepath.Join(dir, config.ScoresFile)),
 		Dir:      dir,
 	}
 
-	ebiten.SetWindowTitle("Alley Cat")
+	ebiten.SetWindowTitle(config.Title)
 	icons, err := icon.Images()
 	if err != nil {
 		log.Fatal(err)
@@ -33,7 +33,7 @@ func main() {
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 	ebiten.SetFullscreen(saved.Settings.Fullscreen)
 	ebiten.SetWindowClosingHandled(true) // to save the window size on close
-	ebiten.SetTPS(game.TPS)
+	ebiten.SetTPS(config.TPS)
 
 	g, err := game.New(uint64(time.Now().UnixNano()), saved)
 	if err != nil {

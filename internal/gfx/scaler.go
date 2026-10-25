@@ -1,62 +1,45 @@
 package gfx
 
-import "math"
+import (
+	"math"
 
-// Aspect selects how the 320×200 screen is presented (DESIGN §2.1).
-type Aspect int
-
-const (
-	// AspectSquare shows square pixels at the largest integer scale that fits.
-	AspectSquare Aspect = iota
-	// AspectCRT stretches the image to 4:3, as on a CGA monitor (pixels 1.2× taller than wide).
-	AspectCRT
+	"github.com/comprofix/alleycat/internal/config"
 )
-
-func (a Aspect) String() string {
-	if a == AspectCRT {
-		return "CRT 4:3"
-	}
-	return "square pixels"
-}
-
-// Next cycles to the other aspect mode.
-func (a Aspect) Next() Aspect {
-	if a == AspectSquare {
-		return AspectCRT
-	}
-	return AspectSquare
-}
 
 // Rect is a destination rectangle on the output surface, in output pixels.
 type Rect struct {
 	X, Y, W, H float64
 }
 
-// Fit returns where the logical screen is drawn on an output surface of
-// outW×outH pixels, centred with letterboxing.
-func Fit(a Aspect, outW, outH int) Rect {
+// Fit returns where an sw×sh screen is drawn on an outW×outH output surface
+// in the given mode, centred with letterboxing (DESIGN §2.1).
+func Fit(mode config.ScaleMode, sw, sh, outW, outH int) Rect {
 	ow, oh := float64(outW), float64(outH)
+	fw, fh := float64(sw), float64(sh)
 	var w, h float64
-	switch a {
-	case AspectCRT:
-		// Largest 4:3 rectangle that fits.
+	switch mode {
+	case config.ScaleCRT:
+		// The largest 4:3 rectangle that fits.
 		w = math.Min(ow, oh*4/3)
 		h = w * 3 / 4
+	case config.ScaleSmooth:
+		s := math.Min(ow/fw, oh/fh)
+		w, h = fw*s, fh*s
 	default:
-		s := math.Floor(math.Min(ow/ScreenWidth, oh/ScreenHeight))
+		s := math.Floor(math.Min(ow/fw, oh/fh))
 		if s < 1 {
-			// Window smaller than 320×200: fall back to a fractional fit.
-			s = math.Min(ow/ScreenWidth, oh/ScreenHeight)
+			// Window smaller than the screen: fall back to a fractional fit.
+			s = math.Min(ow/fw, oh/fh)
 		}
-		w, h = ScreenWidth*s, ScreenHeight*s
+		w, h = fw*s, fh*s
 	}
 	return Rect{X: math.Floor((ow - w) / 2), Y: math.Floor((oh - h) / 2), W: w, H: h}
 }
 
-// PrescaleFactor is the integer nearest-neighbour upscale applied before a
-// smooth (linear) resample to a non-integer CRT size. Upscaling first keeps
-// pixel edges sharp while evening out the uneven rows.
-func PrescaleFactor(r Rect) int {
-	k := math.Ceil(math.Max(r.W/ScreenWidth, r.H/ScreenHeight))
+// PrescaleFactor is the whole-number nearest-neighbour upscale applied to
+// an sw×sh screen before a smooth resample to the non-whole-number size r.
+// Upscaling first keeps pixel edges sharp while evening out uneven rows.
+func PrescaleFactor(r Rect, sw, sh int) int {
+	k := math.Ceil(math.Max(r.W/float64(sw), r.H/float64(sh)))
 	return int(math.Max(k, 1))
 }

@@ -23,14 +23,11 @@ import (
 	"github.com/comprofix/alleycat/internal/score"
 )
 
-// TPS is the game-loop rate.
-const TPS = 60
-
 // Game is the top-level ebiten.Game.
 type Game struct {
-	screen   *ebiten.Image // the 320×200 logical screen
-	prescale *ebiten.Image // integer upscale used for CRT presentation
-	aspect   gfx.Aspect
+	preset   config.Preset
+	screen   *ebiten.Image // the internal screen
+	prescale *ebiten.Image // whole-number upscale used for CRT presentation
 	outW     int
 	outH     int
 
@@ -86,14 +83,11 @@ func New(seed uint64, saved Saved) (*Game, error) {
 	}
 
 	set := saved.Settings
-	aspect := gfx.AspectSquare
-	if set.Aspect == config.AspectCRT {
-		aspect = gfx.AspectCRT
-	}
+	p := config.Project
 	g := &Game{
-		screen:    ebiten.NewImage(gfx.ScreenWidth, gfx.ScreenHeight),
-		aspect:    aspect,
-		clock:     clock.New(TPS),
+		preset:    p,
+		screen:    ebiten.NewImage(p.ScreenWidth, p.ScreenHeight),
+		clock:     clock.New(config.TPS),
 		speaker:   speaker,
 		dir:       saved.Dir,
 		settings:  set,
@@ -134,7 +128,7 @@ func (g *Game) Update() error {
 		g.saveSettings()
 	}
 	if in.JustPressed(input.Aspect) {
-		g.aspect = g.aspect.Next()
+		g.settings.ScaleMode = g.preset.NextMode(g.settings.ScaleMode)
 		g.saveSettings()
 	}
 	if in.JustPressed(input.Sound) {
@@ -162,10 +156,6 @@ func (g *Game) Update() error {
 // logged, never fatal.
 func (g *Game) saveSettings() {
 	s := &g.settings
-	s.Aspect = config.AspectSquare
-	if g.aspect == gfx.AspectCRT {
-		s.Aspect = config.AspectCRT
-	}
 	s.Fullscreen = ebiten.IsFullscreen()
 	if w, h := ebiten.WindowSize(); w > 0 && h > 0 {
 		s.WindowW, s.WindowH = w, h
@@ -180,25 +170,34 @@ func (g *Game) saveSettings() {
 	}
 }
 
-// Draw renders the scene to the logical screen and presents it.
+// Draw renders the scene to the internal screen and presents it.
 func (g *Game) Draw(out *ebiten.Image) {
 	g.scenes.Draw(g.ctx, g.screen)
+	g.present(out)
+}
 
+// present scales the internal screen onto the output surface in the
+// current scale mode (DESIGN §2.1).
+func (g *Game) present(out *ebiten.Image) {
+	sw, sh := g.preset.ScreenWidth, g.preset.ScreenHeight
 	out.Fill(color.Black)
-	r := gfx.Fit(g.aspect, g.outW, g.outH)
-	if g.aspect == gfx.AspectSquare {
+	r := gfx.Fit(g.settings.ScaleMode, sw, sh, g.outW, g.outH)
+	if g.settings.ScaleMode != config.ScaleCRT {
 		op := &ebiten.DrawImageOptions{}
-		op.GeoM.Scale(r.W/gfx.ScreenWidth, r.H/gfx.ScreenHeight)
+		op.GeoM.Scale(r.W/float64(sw), r.H/float64(sh))
 		op.GeoM.Translate(r.X, r.Y)
 		op.Filter = ebiten.FilterNearest
+		if g.settings.ScaleMode == config.ScaleSmooth {
+			op.Filter = ebiten.FilterLinear
+		}
 		out.DrawImage(g.screen, op)
 		return
 	}
 
-	// Upscale by an integer factor with nearest-neighbour, then resample
-	// linearly to the non-integer 4:3 size so rows stay even and sharp.
-	k := gfx.PrescaleFactor(r)
-	w, h := gfx.ScreenWidth*k, gfx.ScreenHeight*k
+	// Upscale by a whole number with nearest-neighbour, then resample
+	// smoothly to the 4:3 size so rows stay even and sharp.
+	k := gfx.PrescaleFactor(r, sw, sh)
+	w, h := sw*k, sh*k
 	if g.prescale == nil || g.prescale.Bounds().Dx() != w || g.prescale.Bounds().Dy() != h {
 		if g.prescale != nil {
 			g.prescale.Deallocate()
