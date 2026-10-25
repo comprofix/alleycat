@@ -5,37 +5,45 @@ import "github.com/comprofix/alleycat/internal/gfx/palettes/resurrect64"
 // Scheme is a scene's colour scheme: named roles, each a Resurrect 64 index
 // (DESIGN §2.3). Scenes keep a distinct mood within the one palette.
 type Scheme struct {
-	Wall      int // the main backdrop
-	WallShade int // detail on the backdrop
-	Glass     int // closed windows
-	Glint     int // highlights on glass
-	Trim      int // window frames, lines
-	Fence     int // foreground boards
-	Gap       int // gaps and shade in the foreground
-	Ground    int
-	Metal     int // trash cans
-	Shade     int // shading on props
-	Outline   int
-	Cheese    int // the cheese room's wedge
-	Hole      int // its holes and pits
-	Water     int // the underwater scene's water
-	Prints    int // Freddy's footprints on a room's floor, darker than Ground
+	Wall        int // the main backdrop
+	WallShade   int // detail on the backdrop
+	WallLight   int // lit edges on the backdrop
+	Glass       int // closed windows
+	Glint       int // highlights on glass
+	Trim        int // window frames, lines
+	Fence       int // foreground boards
+	FenceLight  int // their lit edges
+	Gap         int // gaps and shade in the foreground
+	Ground      int
+	GroundLight int // lit edges on the ground
+	Metal       int // trash cans
+	Shade       int // shading on props
+	Outline     int
+	Cheese      int // the cheese room's wedge
+	Hole        int // its holes and pits
+	Water       int // the underwater scene's water
+	Prints      int // Freddy's footprints on a room's floor, darker than Ground
 }
 
 // AlleyScheme is the alley at night (DESIGN §8): a cool magenta-plum
 // building above a teal fence, nodding to CGA's magenta/cyan set (§2.3).
+// Each surface is shaded along its own ramp: plum brick, teal boards, grey
+// cobbles.
 var AlleyScheme = Scheme{
-	Wall:      resurrect64.Grape,
-	WallShade: resurrect64.Shadow,
-	Glass:     resurrect64.Navy,
-	Glint:     resurrect64.Blue,
-	Trim:      resurrect64.Fog,
-	Fence:     resurrect64.DeepTeal,
-	Gap:       resurrect64.Shadow,
-	Ground:    resurrect64.Shadow,
-	Metal:     resurrect64.Fog,
-	Shade:     resurrect64.Lilac,
-	Outline:   resurrect64.Ink,
+	Wall:        resurrect64.Grape,
+	WallShade:   resurrect64.Plum,
+	WallLight:   resurrect64.Violet,
+	Glass:       resurrect64.Navy,
+	Glint:       resurrect64.Blue,
+	Trim:        resurrect64.Fog,
+	Fence:       resurrect64.DeepTeal,
+	FenceLight:  resurrect64.Teal,
+	Gap:         resurrect64.Shadow,
+	Ground:      resurrect64.Shadow,
+	GroundLight: resurrect64.Dusk,
+	Metal:       resurrect64.Fog,
+	Shade:       resurrect64.Lilac,
+	Outline:     resurrect64.Ink,
 }
 
 // BirdcageScheme is the birdcage room: a red room with green furniture,

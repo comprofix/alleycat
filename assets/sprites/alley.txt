@@ -1,6 +1,6 @@
 ; Alley sprites: Freddy and the laundry and clutter (placeholder art, M2).
 ; Freddy faces right; left-facing frames are mirrored when drawn.
-colours k=Ink p=Grape r=Cerise o=Coral y=Honey l=Leaf g=Emerald t=DeepTeal b=Cobalt s=Blue c=Seafoam w=White v=Fog e=Lilac h=Shadow
+colours k=Ink p=Grape r=Cerise o=Coral y=Honey l=Leaf g=Emerald t=DeepTeal b=Cobalt s=Blue c=Seafoam w=White v=Fog m=Mist d=Dusk e=Lilac h=Shadow
 
 ; Freddy walking: 6 frames, 24x11 (DESIGN §3.8).
 sprite freddy_walk 24 11
@@ -397,40 +397,40 @@ kvvhhhghhohhhhhhhghhhhohhhhvvk
 keehghhhhhhhhhhghhhhhhhhhhgeek
 kkeeehhhohhhhghhhhhhhohhgeeekk
 kekkeeeeeehghhohhhhheeeeeekkhk
-keevkkkkeeeeeeeeeeeeeekkkkhhhk
-keevvvvvkkkkkkkkkkkkkkhhhhhhhk
-keevvvvveeeeeeeeeeeeeehhhhhhhk
-keevvvvveeeeeeeeeeeeeehhhhhhhk
-keevvvvveeeeeeeeeeeeeehhhhhhhk
-keevvvvveeeeeeeeeeeeeehhhhhhhk
-keevvvvveeeeeeeeeeeeeehhhhhhhk
-kkevvvvveeeeeeeeeeeeeehhhhhhkk
-kvkkvvvveeeeeeeeeeeeeehhhhkkek
-kevvkkkkeeeeeeeeeeeeeekkkkeehk
-keevvvvvkkkkkkkkkkkkkkeeeehhhk
-keevvvvvvvvvvvvvvvvvvvhhhhhhhk
-keevvvvveeeeeeeeeeeeeehhhhhhhk
-keevvvvveeeeeeeeeeeeeehhhhhhhk
-keevvvvveeeeeeeeeeeeeehhhhhhhk
-kkevvvvveeeeeeeeeeeeeehhhhhhkk
-kvkkvvvveeeeeeeeeeeeeehhhhkkek
-kevvkkkkeeeeeeeeeeeeeekkkkeehk
-keevvvvvkkkkkkkkkkkkkkeeeehhhk
-keevvvvvvvvvvvvvvvvvvvhhhhhhhk
-keevvvvveeeeeeeeeeeeeehhhhhhhk
-keevvvvveeeeeeeeeeeeeehhhhhhhk
-keevvvvveeeeeeeeeeeeeehhhhhhhk
-kkevvvvveeeeeeeeeeeeeehhhhhhkk
-kvkkvvvveeeeeeeeeeeeeehhhhkkek
-kevvkkkkeeeeeeeeeeeeeekkkkeehk
-keevvvvvkkkkkkkkkkkkkkeeeehhhk
-keevvvvvvvvvvvvvvvvvvvhhhhhhhk
-keevvvvveeeeeeeeeeeeeehhhhhhhk
-keevvvvveeeeeeeeeeeeeehhhhhhhk
-keevvvvveeeeeeeeeeeeeehhhhhhhk
-kkevvvvveeeeeeeeeeeeeehhhhhhkk
-..kkvvvveeeeeeeeeeeeeehhhhkk..
-....kkkkeeeeeeeeeeeeeekkkk....
+keevkkkkvveeeeeeedddddkkkkhhhk
+keevmmmvkkkkkkkkkkkkkkhhhhhhhk
+keevmmmvvveeeeeeedddddhhhhhhhk
+keevmmmvvveeeeeeedddddhhhhhhhk
+keevmmmvvveeeeeeedddddhhhhhhhk
+keevmmmvvveeeeeeedddddhhhhhhhk
+keevmmmvvveeeeeeedddddhhhhhhhk
+kkevmmmvvveeeeeeedddddhhhhhhkk
+kekkmmmvvveeeeeeedddddhhhhkkdk
+keevkkkkvveeeeeeedddddkkkkddhk
+keevmmmvkkkkkkkkkkkkkkddddhhhk
+keevmmmvmmvvvvvvveeeeehhhhhhhk
+keevmmmvvveeeeeeedddddhhhhhhhk
+keevmmmvvveeeeeeedddddhhhhhhhk
+keevmmmvvveeeeeeedddddhhhhhhhk
+kkevmmmvvveeeeeeedddddhhhhhhkk
+kekkmmmvvveeeeeeedddddhhhhkkdk
+keevkkkkvveeeeeeedddddkkkkddhk
+keevmmmvkkkkkkkkkkkkkkddddhhhk
+keevmmmvmmvvvvvvveeeeehhhhhhhk
+keevmmmvvveeeeeeedddddhhhhhhhk
+keevmmmvvveeeeeeedddddhhhhhhhk
+keevmmmvvveeeeeeedddddhhhhhhhk
+kkevmmmvvveeeeeeedddddhhhhhhkk
+kekkmmmvvveeeeeeedddddhhhhkkdk
+keevkkkkvveeeeeeedddddkkkkddhk
+keevmmmvkkkkkkkkkkkkkkddddhhhk
+keevmmmvmmvvvvvvveeeeehhhhhhhk
+keevmmmvvveeeeeeedddddhhhhhhhk
+keevmmmvvveeeeeeedddddhhhhhhhk
+keevmmmvvveeeeeeedddddhhhhhhhk
+kkevmmmvvveeeeeeedddddhhhhhhkk
+..kkmmmvvveeeeeeedddddhhhhkk..
+....kkkkvveeeeeeedddddkkkk....
 ........kkkkkkkkkkkkkk........
 
 sprite can_short 30 39
@@ -446,32 +446,32 @@ kvvhhhghhohhhhhhhghhhhohhhhvvk
 keehghhhhhhhhhhghhhhhhhhhhgeek
 kkeeehhhohhhhghhhhhhhohhgeeekk
 kekkeeeeeehghhohhhhheeeeeekkhk
-keevkkkkeeeeeeeeeeeeeekkkkhhhk
-keevvvvvkkkkkkkkkkkkkkhhhhhhhk
-keevvvvveeeeeeeeeeeeeehhhhhhhk
-keevvvvveeeeeeeeeeeeeehhhhhhhk
-keevvvvveeeeeeeeeeeeeehhhhhhhk
-keevvvvveeeeeeeeeeeeeehhhhhhhk
-keevvvvveeeeeeeeeeeeeehhhhhhhk
-kkevvvvveeeeeeeeeeeeeehhhhhhkk
-kvkkvvvveeeeeeeeeeeeeehhhhkkek
-kevvkkkkeeeeeeeeeeeeeekkkkeehk
-keevvvvvkkkkkkkkkkkkkkeeeehhhk
-keevvvvvvvvvvvvvvvvvvvhhhhhhhk
-keevvvvveeeeeeeeeeeeeehhhhhhhk
-keevvvvveeeeeeeeeeeeeehhhhhhhk
-keevvvvveeeeeeeeeeeeeehhhhhhhk
-kkevvvvveeeeeeeeeeeeeehhhhhhkk
-kvkkvvvveeeeeeeeeeeeeehhhhkkek
-kevvkkkkeeeeeeeeeeeeeekkkkeehk
-keevvvvvkkkkkkkkkkkkkkeeeehhhk
-keevvvvvvvvvvvvvvvvvvvhhhhhhhk
-keevvvvveeeeeeeeeeeeeehhhhhhhk
-keevvvvveeeeeeeeeeeeeehhhhhhhk
-keevvvvveeeeeeeeeeeeeehhhhhhhk
-kkevvvvveeeeeeeeeeeeeehhhhhhkk
-..kkvvvveeeeeeeeeeeeeehhhhkk..
-....kkkkeeeeeeeeeeeeeekkkk....
+keevkkkkvveeeeeeedddddkkkkhhhk
+keevmmmvkkkkkkkkkkkkkkhhhhhhhk
+keevmmmvvveeeeeeedddddhhhhhhhk
+keevmmmvvveeeeeeedddddhhhhhhhk
+keevmmmvvveeeeeeedddddhhhhhhhk
+keevmmmvvveeeeeeedddddhhhhhhhk
+keevmmmvvveeeeeeedddddhhhhhhhk
+kkevmmmvvveeeeeeedddddhhhhhhkk
+kekkmmmvvveeeeeeedddddhhhhkkdk
+keevkkkkvveeeeeeedddddkkkkddhk
+keevmmmvkkkkkkkkkkkkkkddddhhhk
+keevmmmvmmvvvvvvveeeeehhhhhhhk
+keevmmmvvveeeeeeedddddhhhhhhhk
+keevmmmvvveeeeeeedddddhhhhhhhk
+keevmmmvvveeeeeeedddddhhhhhhhk
+kkevmmmvvveeeeeeedddddhhhhhhkk
+kekkmmmvvveeeeeeedddddhhhhkkdk
+keevkkkkvveeeeeeedddddkkkkddhk
+keevmmmvkkkkkkkkkkkkkkddddhhhk
+keevmmmvmmvvvvvvveeeeehhhhhhhk
+keevmmmvvveeeeeeedddddhhhhhhhk
+keevmmmvvveeeeeeedddddhhhhhhhk
+keevmmmvvveeeeeeedddddhhhhhhhk
+kkevmmmvvveeeeeeedddddhhhhhhkk
+..kkmmmvvveeeeeeedddddhhhhkk..
+....kkkkvveeeeeeedddddkkkk....
 ........kkkkkkkkkkkkkk........
 
 ; The room dog (M4): the same bulldog in the original's orange coat (DESIGN §8).

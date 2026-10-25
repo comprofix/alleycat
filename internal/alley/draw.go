@@ -104,8 +104,11 @@ const (
 	wallTop   = 20 // the cornice runs from skyBottom to here
 )
 
-// skyBands are the night sky's colour bands, darkest at the top.
-var skyBands = []struct{ to, idx int }{{4, resurrect64.Ink}, {8, resurrect64.Shadow}, {skyBottom, resurrect64.Navy}}
+// skyBands are the night sky's colour bands, darkest at the top. Each band's
+// first row is dithered with the one above, to soften the step.
+var skyBands = []struct{ to, idx int }{
+	{4, resurrect64.Ink}, {8, resurrect64.Shadow}, {12, resurrect64.Navy}, {skyBottom, resurrect64.Indigo},
+}
 
 // stars are single pixels in the upper sky.
 var stars = [][2]int{{12, 2}, {37, 5}, {71, 1}, {98, 6}, {133, 3}, {166, 1}, {188, 6}, {219, 2}, {241, 5}, {301, 3}}
@@ -129,8 +132,13 @@ func (r *Renderer) buildBack() {
 	b.Fill(gfx.Palette[s.Wall])
 
 	from := 0
-	for _, band := range skyBands {
+	for i, band := range skyBands {
 		fill(b, 0, from, gfx.ScreenWidth, band.to-from, band.idx)
+		if i > 0 {
+			for x := 0; x < gfx.ScreenWidth; x += 2 {
+				fill(b, x, from, 1, 1, skyBands[i-1].idx)
+			}
+		}
 		from = band.to
 	}
 	for i, st := range stars {
@@ -157,25 +165,32 @@ func (r *Renderer) buildBack() {
 	fill(b, 151, 7, 1, 2, resurrect64.Ink)
 	fill(b, 157, 7, 1, 2, resurrect64.Ink)
 
-	// The cornice along our building's roof.
-	fill(b, 0, skyBottom, gfx.ScreenWidth, wallTop-skyBottom, s.WallShade)
+	// The cornice along our building's roof: grey stone, lit along the top,
+	// casting a shadow on the wall below.
+	fill(b, 0, skyBottom, gfx.ScreenWidth, wallTop-skyBottom, resurrect64.Dusk)
 	fill(b, 0, skyBottom, gfx.ScreenWidth, 1, s.Shade)
 	for x := 2; x < gfx.ScreenWidth; x += 8 {
-		fill(b, x, skyBottom+2, 4, 1, s.Outline)
+		fill(b, x, skyBottom+2, 4, 1, resurrect64.Shadow)
 	}
+	fill(b, 0, wallTop, gfx.ScreenWidth, 1, s.WallShade)
 
-	// Brick courses 6 rows high, the joints staggered.
+	// Brick courses 6 rows high, the joints staggered, each brick lit along
+	// the top of its left end and shaded at its right.
 	for y, course := wallTop+5, 0; y < fenceTop; y, course = y+6, course+1 {
 		for x := (course % 2) * 8; x < gfx.ScreenWidth; x += 16 {
 			fill(b, x, y, 12, 1, s.WallShade)
 			fill(b, x+12, y-5, 1, 5, s.WallShade)
+			fill(b, x, y-5, 5, 1, s.WallLight)
+			fill(b, x+11, y-4, 1, 4, s.WallShade)
 		}
 	}
 
-	// Drainpipes down both edges, with brackets.
+	// Drainpipes down both edges, rounded by a lit stripe and a shaded
+	// side, with brackets.
 	for _, px := range []int{3, gfx.ScreenWidth - 7} {
-		fill(b, px, wallTop, 4, fenceTop-wallTop, s.WallShade)
+		fill(b, px, wallTop, 4, fenceTop-wallTop, resurrect64.Dusk)
 		fill(b, px+1, wallTop, 1, fenceTop-wallTop, s.Shade)
+		fill(b, px+3, wallTop, 1, fenceTop-wallTop, resurrect64.Shadow)
 		for y := wallTop + 10; y < fenceTop; y += 24 {
 			fill(b, px-1, y, 6, 1, s.Shade)
 		}
@@ -205,7 +220,7 @@ func (r *Renderer) buildWindow(b *ebiten.Image, x, y int, lit bool) {
 			}
 		}
 	} else {
-		r.drawLamp(b, x, y, resurrect64.Honey, resurrect64.Coral)
+		r.drawLamp(b, x, y, resurrect64.Honey, resurrect64.Amber)
 	}
 	fill(b, x+windowW/2-1, y+1, 2, windowH-2, s.Trim)
 }
@@ -218,7 +233,8 @@ func (r *Renderer) drawLamp(b *ebiten.Image, x, y, light, glow int) {
 	fill(b, x+3, y+windowH-6, windowW/2-4, 4, glow)
 	fill(b, x+windowW/2+1, y+windowH-6, windowW/2-4, 4, glow)
 	for _, cx := range []int{x + 3, x + windowW - 6} {
-		fill(b, cx, y+2, 3, windowH-4, resurrect64.Cerise) // curtains
+		fill(b, cx, y+2, 3, windowH-4, resurrect64.Raspberry) // curtains
+		fill(b, cx+1, y+2, 1, windowH-4, resurrect64.Berry)   // a fold
 	}
 }
 
@@ -227,7 +243,7 @@ func (r *Renderer) drawLamp(b *ebiten.Image, x, y, light, glow int) {
 func (r *Renderer) drawFlicker(dst *ebiten.Image, tick int) {
 	for i := range litWindows {
 		if flickering(tick, i) {
-			r.drawLamp(dst, windowLeft+i%4*windowPitchX, windowTop+i/4*windowPitchY, resurrect64.Coral, resurrect64.Cerise)
+			r.drawLamp(dst, windowLeft+i%4*windowPitchX, windowTop+i/4*windowPitchY, resurrect64.Caramel, resurrect64.Copper)
 		}
 	}
 }
@@ -255,7 +271,12 @@ func (r *Renderer) buildFront(cans []config.Can) {
 	for i, x := 0, 0; x < gfx.ScreenWidth; i, x = i+1, x+8 {
 		top := fenceTop + (i*37+i/3)%4
 		fill(f, x, top, 7, fenceBottom-top+1, s.Fence)
-		fill(f, x, top+1, 1, fenceBottom-top, s.Shade)
+		fill(f, x, top+1, 1, fenceBottom-top, s.FenceLight)
+		for y := fenceBottom - 3; y <= fenceBottom; y++ { // shade near the ground
+			for dx := (y + i) % 2; dx < 7; dx += 2 {
+				fill(f, x+dx, y, 1, 1, s.Gap)
+			}
+		}
 		fill(f, x+7, top+2, 1, fenceBottom-top-1, s.Gap)
 		fill(f, x+4, top+3+(i*7)%9, 1, 6+(i*5)%8, s.Gap) // grain
 		fill(f, x+2, top+(i*11)%40+14, 2, 1, s.Gap)      // a knot
@@ -276,7 +297,8 @@ func (r *Renderer) buildFront(cans []config.Can) {
 		fill(f, 0, y, gfx.ScreenWidth, 1, s.Outline)
 		for x := (row % 2) * 7; x < gfx.ScreenWidth; x += 14 {
 			fill(f, x, y-5, 1, 5, s.Outline)
-			fill(f, x+4, y-3, 1, 1, s.Shade) // a speck
+			fill(f, x+1, y-5, 5, 1, s.GroundLight) // each cobble's lit top
+			fill(f, x+4, y-3, 1, 1, s.Shade)       // a speck
 		}
 	}
 
