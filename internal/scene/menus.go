@@ -263,17 +263,22 @@ type Help struct{}
 // NewHelp returns the help screen.
 func NewHelp() *Help { return &Help{} }
 
-// helpLines are the keys and what they do.
-var helpLines = [][2]string{
-	{"Arrow keys", "move the cat"},
-	{"Alt", "special actions"},
-	{"Esc or P", "paws (pause)"},
-	{"Ctrl+S", "sound on/off"},
-	{"Ctrl+R", "restart the game"},
-	{"Ctrl+M", "back to the menu"},
-	{"F9", "scale"},
-	{"F10", "quit"},
-	{"F11", "fullscreen"},
+// helpLines are the keys and what they do in the look set: F9 only where
+// it changes the scale, as Scale is dimmed in the options where it does
+// not.
+func helpLines(set *config.Settings) [][2]string {
+	lines := [][2]string{
+		{"Arrow keys", "move the cat"},
+		{"Alt", "special actions"},
+		{"Esc or P", "paws (pause)"},
+		{"Ctrl+S", "sound on/off"},
+		{"Ctrl+R", "restart the game"},
+		{"Ctrl+M", "back to the menu"},
+	}
+	if len(set.Look.Preset().ScaleModes) > 1 {
+		lines = append(lines, [2]string{"F9", "scale"})
+	}
+	return append(lines, [][2]string{{"F10", "quit"}, {"F11", "fullscreen"}}...)
 }
 
 // helpKeyCells is the width of the keys' column, in characters.
@@ -294,14 +299,15 @@ func (h *Help) Draw(ctx *Context, dst *ebiten.Image) {
 	dst.Fill(gfx.RGBA(sc.Backdrop))
 	ui.TextCentred(dst, f.Large, "HELP", f.Large.LineHeight(), sc.Title, sc.Shadow)
 	cell, line := f.Small.CellWidth(), f.Small.LineHeight()+ui.LineGap
+	lines := helpLines(ctx.Settings)
 	w := 0
-	for _, l := range helpLines {
+	for _, l := range lines {
 		w = max(w, (helpKeyCells+len(l[1]))*cell)
 	}
 	y := menuTop(f)
-	ui.Panel(dst, ui.PanelAround(w, len(helpLines)*line-ui.LineGap, y, menuPad(f)), sc.Panel, sc.Border)
+	ui.Panel(dst, ui.PanelAround(w, len(lines)*line-ui.LineGap, y, menuPad(f)), sc.Panel, sc.Border)
 	x := (config.Project.ScreenWidth - w) / 2
-	for i, l := range helpLines {
+	for i, l := range lines {
 		f.Small.DrawShadowed(dst, l[0], x, y+i*line, sc.Highlight, sc.Shadow)
 		f.Small.DrawShadowed(dst, l[1], x+helpKeyCells*cell, y+i*line, sc.Text, sc.Shadow)
 	}
