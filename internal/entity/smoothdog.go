@@ -58,46 +58,74 @@ func (s *SmoothDog) Draw(dst *ebiten.Image, d *Dog, co DogCoat) {
 	})
 }
 
-// dogLegs are the running frames' legs, hind near and far, front near and
-// far: hip and paw, in the 128×60 box. Frame 0 is the stretch, frame 1
-// the gather, as the sprite's two.
-var dogLegs = [2][4][4]float64{
-	{{38, 40, 22, 55}, {50, 40, 60, 55}, {80, 40, 82, 55}, {92, 40, 112, 54}},
-	{{38, 40, 34, 55}, {48, 40, 52, 55}, {82, 40, 86, 55}, {92, 40, 102, 55}},
+// The dog runs in four poses, one per step it takes, from its step count:
+// the sprite's two are too few for jointed legs to run smoothly. The legs
+// move in diagonal pairs, as a trot.
+const dogPoses = 4
+
+// dogLeg is one of the dog's legs, jointed as a dog's: a front leg bends
+// at the elbow and wrist, a hind leg at the knee and hock. hx, hy is where
+// it joins the body; phase is how far through its stride it is.
+func dogLeg(p Pen, hx, hy, phase float64, hind bool, c int) {
+	dir := func(a, l float64) (float64, float64) { return l * math.Sin(a), l * math.Cos(a) }
+	swing := 0.6 * math.Sin(phase)  // forward of straight down
+	lift := max(0, math.Cos(phase)) // folded up as it swings forward
+	pts := []float64{hx, hy}
+	add := func(a, l float64) {
+		dx, dy := dir(a, l)
+		n := len(pts)
+		pts = append(pts, pts[n-2]+dx, pts[n-1]+dy)
+	}
+	if hind {
+		add(swing+0.45, 10)            // the thigh, forward to the knee
+		add(swing-0.6-0.5*lift, 8)     // back to the hock
+		add(swing*0.5-0.1-0.8*lift, 5) // down to the paw
+	} else {
+		add(swing-0.15, 11)         // the upper leg, to the elbow
+		add(swing+0.1-1.3*lift, 10) // the forearm, folded back when lifted
+	}
+	n := len(pts)
+	pts[n-1] = min(pts[n-1], 56) // never through the ground
+	for i := 0; i+3 < len(pts); i += 2 {
+		w := 9.5 - float64(i)*0.8
+		p.Stroke(c, w, false, pts[i], pts[i+1], pts[i+2], pts[i+3])
+	}
+	p.Ellipse(pts[n-2]+2.5, pts[n-1]+0.5, 6, 3.5, 0, c)
 }
 
 // drawDog draws a white bulldog running, facing right, in a 128×60 box.
 func drawDog(p Pen, frame int, co DogCoat) {
-	legs := dogLegs[frame%2]
-	leg := func(l [4]float64, c int) {
-		p.Stroke(c, 9, false, l[0], l[1], (l[0]+l[2])/2, (l[1]+l[3])/2+1, l[2], l[3])
-		p.Ellipse(l[2]+2, l[3]+1, 6, 3.5, 0, c)
-	}
-	leg(legs[1], co.Far)
-	leg(legs[3], co.Far)
-	// A stub of a tail, then the barrel of a body, deep in the chest.
-	p.Stroke(co.Coat, 6, false, 34, 22, 40, 12)
-	p.Ellipse(58, 30, 30, 13, -0.06, co.Coat)
-	p.Circle(40, 29, 13, co.Coat)
-	p.Circle(80, 28, 16, co.Coat)
-	p.Ellipse(34, 33, 6, 8, 0, co.Shade)
-	p.Ellipse(60, 41, 26, 4, 0, co.Far)
-	leg(legs[0], co.Coat)
-	leg(legs[2], co.Coat)
+	phi := 2 * math.Pi * float64(frame%dogPoses) / dogPoses
+	bob := -1.5 * math.Cos(2*phi) // highest as a leg passes under
+	hip := 36 + bob
+	// Hind near and front far step together, then hind far and front near.
+	dogLeg(p, 50, hip, phi+math.Pi, true, co.Far)
+	dogLeg(p, 92, hip, phi, false, co.Far)
+	b := p.At(0, bob-4, 1) // the body, raised to show the legs' joints
+	// A stub of a tail, wagging with the stride, then the barrel of a body,
+	// deep in the chest.
+	b.Stroke(co.Coat, 6, false, 34, 22, 37+6*math.Sin(phi), 12+2*math.Abs(math.Cos(phi)))
+	b.Ellipse(58, 30, 30, 13, -0.06, co.Coat)
+	b.Circle(40, 29, 13, co.Coat)
+	b.Circle(80, 28, 16, co.Coat)
+	b.Ellipse(34, 33, 6, 8, 0, co.Shade)
+	b.Ellipse(60, 41, 26, 4, 0, co.Far)
+	dogLeg(p, 38, hip, phi, true, co.Coat)
+	dogLeg(p, 80, hip, phi+math.Pi, false, co.Coat)
 	// The collar, then the broad head: jowls, a flat black nose, an eye in
-	// a dark patch, and a folded ear.
-	p.Poly(co.Collar, 76, 12, 84, 13, 82, 40, 73, 38)
-	p.Stroke(co.CollarShade, 2.5, false, 82.5, 14, 80.5, 39)
-	p.Circle(81, 41, 3, resurrect64.Honey)
-	p.Circle(100, 21, 15, co.Coat)
-	p.Ellipse(108, 30, 15, 9, 0.05, co.Coat)
-	p.Ellipse(110, 34, 10, 4, 0, co.Far)
-	p.Ellipse(105, 15, 6, 5, 0, co.Shade)
-	p.Circle(105, 15, 2.6, resurrect64.Ink)
-	p.Circle(104, 14, 0.9, resurrect64.White)
-	p.Ellipse(121, 19, 5, 4, 0.2, resurrect64.Ink)
-	p.Stroke(resurrect64.Ink, 2, true, 112, 31, 118, 32, 124, 28)
-	p.Poly(resurrect64.Ink, 86, 12, 90, 2, 99, 6, 95, 13)
+	// a dark patch, and a folded ear that flaps with the stride.
+	b.Poly(co.Collar, 76, 12, 84, 13, 82, 40, 73, 38)
+	b.Stroke(co.CollarShade, 2.5, false, 82.5, 14, 80.5, 39)
+	b.Circle(81, 41, 3, resurrect64.Honey)
+	b.Circle(100, 21, 15, co.Coat)
+	b.Ellipse(108, 30, 15, 9, 0.05, co.Coat)
+	b.Ellipse(110, 34, 10, 4, 0, co.Far)
+	b.Ellipse(105, 15, 6, 5, 0, co.Shade)
+	b.Circle(105, 15, 2.6, resurrect64.Ink)
+	b.Circle(104, 14, 0.9, resurrect64.White)
+	b.Ellipse(121, 19, 5, 4, 0.2, resurrect64.Ink)
+	b.Stroke(resurrect64.Ink, 2, true, 112, 31, 118, 32, 124, 28)
+	b.Poly(resurrect64.Ink, 86, 12, 90, 2-bob*1.5, 99, 6, 95, 13)
 }
 
 // drawFight draws the cloud the dog and Freddy make fighting: a tumble of
