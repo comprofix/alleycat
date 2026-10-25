@@ -33,7 +33,7 @@ func NewPlay(ctx *Context) *Play {
 	return &Play{
 		alley:  alley.New(ctx.Session, ctx.RNG),
 		view:   alley.NewRenderer(ctx.Alley, ctx.PixelFont),
-		smooth: alley.NewSmoothRenderer(ctx.Alley, ctx.PixelFont),
+		smooth: alley.NewSmoothRenderer(),
 	}
 }
 
@@ -42,7 +42,7 @@ func newReturnPlay(ctx *Context, x, y int) *Play {
 	return &Play{
 		alley:  alley.NewReturning(ctx.Session, ctx.RNG, x, y),
 		view:   alley.NewRenderer(ctx.Alley, ctx.PixelFont),
-		smooth: alley.NewSmoothRenderer(ctx.Alley, ctx.PixelFont),
+		smooth: alley.NewSmoothRenderer(),
 	}
 }
 

@@ -29,27 +29,26 @@ func k(v int) float64 { return float64(v * K) }
 // font's, so the HUD lines up as in the classic look.
 const letterPitch = gfx.GlyphSize * K
 
-// SmoothRenderer draws the alley in the new look (DESIGN §2.1): the
-// backdrop, the fence and its lettering drawn in code from shapes, and
-// whatever has no new art yet drawn from the pixel sprites, enlarged, in
-// its place among them. It caches the backdrop as the pixel Renderer does
-// and holds no game state.
+// SmoothRenderer draws the alley in the new look (DESIGN §2.1), all of
+// it in code from shapes, on the classic look's layout and in its depth
+// order. It caches the backdrop as the pixel Renderer does and holds no
+// game state.
 type SmoothRenderer struct {
-	pixel       *Renderer // the pixel art still in use
 	freddy      entity.SmoothFreddy
+	dog         entity.SmoothDog
+	canvas      entity.Canvas   // for the other actors, drawn one at a time
 	text        *gfx.VectorFont // the lettering on the fence
+	small       *gfx.VectorFont // Felicia's "ME OW!"
 	scheme      gfx.SceneScheme // the alley's colours, as the classic look
 	back, front *ebiten.Image   // the backdrop, behind and in front of Freddy
-	mid, top    *ebiten.Image   // 320×200 layers for the pixel art
 	builtFor    []config.Can
 }
 
-// NewSmoothRenderer returns the new look's renderer, using the alley
-// sprite sheet and the 8×8 font for the art not yet redrawn.
-func NewSmoothRenderer(sheet *gfx.Sheet, font *gfx.PixelFont) *SmoothRenderer {
+// NewSmoothRenderer returns the new look's renderer.
+func NewSmoothRenderer() *SmoothRenderer {
 	return &SmoothRenderer{
-		pixel:  NewRenderer(sheet, font),
 		text:   gfx.NewVectorFont(40),
+		small:  gfx.NewVectorFont(36),
 		scheme: gfx.AlleyScheme,
 	}
 }
@@ -57,42 +56,26 @@ func NewSmoothRenderer(sheet *gfx.Sheet, font *gfx.PixelFont) *SmoothRenderer {
 // Draw renders the alley, as Renderer.Draw does, onto a 1280×800 dst.
 func (r *SmoothRenderer) Draw(dst *ebiten.Image, a *Alley, high int) {
 	r.build(a.Cans)
-	p := r.pixel
 	dst.DrawImage(r.back, nil)
 	r.drawFlicker(dst, a.Tick)
+	r.drawWindowS(dst, &a.Window)
+	for i := range a.Lines {
+		r.drawLineS(dst, &a.Lines[i])
+	}
+	r.drawMiceS(dst, a)
+	r.drawThrownS(dst, &a.Thrown)
 	f := a.Freddy
-	r.layer(dst, r.mid, func(l *ebiten.Image) {
-		p.drawWindow(l, &a.Window)
-		for i := range a.Lines {
-			p.drawLine(l, &a.Lines[i])
-		}
-		p.drawMice(l, a)
-		p.drawThrown(l, &a.Thrown)
-	})
 	if f.Depth == entity.Behind {
 		r.freddy.Draw(dst, f)
 	}
 	dst.DrawImage(r.front, nil)
 	r.drawHUD(dst, a, high)
-	r.layer(dst, r.top, func(l *ebiten.Image) {
-		p.drawTrashCat(l, &a.TrashCat)
-		entity.DrawDog(l, p.sheet, &a.Dog, "dog_run")
-	})
+	r.drawTrashCatS(dst, &a.TrashCat)
+	r.dog.Draw(dst, &a.Dog, entity.WhiteDog)
 	if f.Depth != entity.Behind {
 		r.freddy.Draw(dst, f)
 	}
-	r.layer(dst, r.top, func(l *ebiten.Image) { p.drawImpact(l, a.Impact) })
-}
-
-// layer draws pixel art on the 320×200 layer l and lays it over dst,
-// enlarged with its pixels kept sharp.
-func (r *SmoothRenderer) layer(dst, l *ebiten.Image, draw func(*ebiten.Image)) {
-	l.Clear()
-	draw(l)
-	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Scale(K, K)
-	op.Filter = ebiten.FilterNearest
-	dst.DrawImage(l, op)
+	r.drawImpactS(dst, a.Impact)
 }
 
 func (r *SmoothRenderer) build(cans []config.Can) {
@@ -103,8 +86,6 @@ func (r *SmoothRenderer) build(cans []config.Can) {
 	if r.back == nil {
 		w, h := gfx.ScreenWidth*K, gfx.ScreenHeight*K
 		r.back, r.front = ebiten.NewImage(w, h), ebiten.NewImage(w, h)
-		r.mid = ebiten.NewImage(gfx.ScreenWidth, gfx.ScreenHeight)
-		r.top = ebiten.NewImage(gfx.ScreenWidth, gfx.ScreenHeight)
 	}
 	r.buildBack()
 	r.buildFront(cans)
@@ -467,34 +448,14 @@ var canStripes = []struct {
 // its rim level with Freddy's feet when he stands on it: a round metal
 // body with raised hoops, and rubbish showing in its mouth.
 func (r *SmoothRenderer) drawCan(dst *ebiten.Image, c config.Can) {
-	h := 39
-	if c.Tall {
-		h = 47
-	}
-	x, y := k(c.X+canSpriteDX), k(CanTop(c)+canSpriteDY)
-	cw := k(30)
-	cx := x + cw/2
-	rimY := y + 30
-	rx, ry := cw/2, 14.0
-	baseY := y + k(h) - ry
-
+	g := canAt(c)
 	// The body: a stripe of each shade, each cut to the curve of the base.
-	outline := append([]float64{x, rimY}, ellipse(cx, baseY, rx, ry, math.Pi, 0, 32)...)
-	outline = append(outline, x+cw, rimY)
-	shapes.FillPoly(dst, resurrect64.Ink, grow(outline, cx, 3)...)
-	from := 0
-	for _, st := range canStripes {
-		x0, x1 := x+cw*float64(from)/30, x+cw*float64(st.to)/30
-		shapes.FillPoly(dst, st.idx, stripe(x0, x1, rimY, cx, baseY, rx, ry)...)
-		from = st.to
-	}
-	// Raised hoops, curving round the body: a dark groove over a lit rib.
-	for row := 12; row < h-6; row += 9 {
-		hy := y + k(row) - 6
-		shapes.StrokePath(dst, path(ellipse(cx, hy, rx-1, ry, math.Pi, 0, 32)), 4, resurrect64.Ink)
-		shapes.StrokePath(dst, path(ellipse(cx, hy+4, rx-2, ry, math.Pi*0.97, math.Pi*0.03, 32)), 2.5, resurrect64.Mist)
-	}
+	outline := append([]float64{g.x, g.rimY}, ellipse(g.cx, g.baseY, g.rx, g.ry, math.Pi, 0, 32)...)
+	outline = append(outline, g.x+g.cw, g.rimY)
+	shapes.FillPoly(dst, resurrect64.Ink, grow(outline, g.cx, 3)...)
+	g.drawBody(dst, 0)
 	// The mouth: a lit rim round the dark inside, with rubbish in it.
+	x, cx, rimY, rx, ry := g.x, g.cx, g.rimY, g.rx, g.ry
 	shapes.FillPoly(dst, resurrect64.Ink, ellipse(cx, rimY, rx+2, ry+2, 0, 2*math.Pi, 40)...)
 	shapes.FillPoly(dst, resurrect64.Fog, ellipse(cx, rimY, rx, ry, 0, 2*math.Pi, 40)...)
 	shapes.FillPoly(dst, resurrect64.Mist, ellipse(cx, rimY-1.5, rx-3, ry-2.5, math.Pi, 2*math.Pi, 24)...)
@@ -505,15 +466,78 @@ func (r *SmoothRenderer) drawCan(dst *ebiten.Image, c config.Can) {
 	shapes.FillPoly(dst, resurrect64.Mist, cx-10, rimY+4, cx-2, rimY-3, cx+4, rimY+5)
 }
 
-// stripe is the outline of the can's body between x0 and x1: from the rim
-// down to the base, whose curve it follows.
-func stripe(x0, x1, top, cx, baseY, rx, ry float64) []float64 {
-	pts := []float64{x0, top, x1, top}
+// drawCanFront draws the front of can c again: its body up to the front
+// of the mouth and the front of the rim, so what is in the mouth (the
+// trash cat) shows only inside it.
+func (r *SmoothRenderer) drawCanFront(dst *ebiten.Image, c config.Can) {
+	g := canAt(c)
+	g.drawBody(dst, g.ry)
+	lip := func(out, in float64, col int) {
+		pts := ellipse(g.cx, g.rimY, g.rx+out, g.ry+out, 0, math.Pi, 24)
+		pts = append(pts, ellipse(g.cx, g.rimY+1, g.rx-in, g.ry-in+1, math.Pi, 0, 24)...)
+		shapes.FillPoly(dst, col, pts...)
+	}
+	lip(2, 6, resurrect64.Ink)
+	lip(0, 6, resurrect64.Fog)
+}
+
+// can is where a trash can is drawn, in screen pixels: its left edge and
+// width, the middle and radii of its mouth, and the middle of its base.
+type can struct {
+	x, y, cw, cx float64
+	rimY, rx, ry float64
+	baseY        float64
+	h            int // the sprite's height, on the layout
+}
+
+// canAt is where can c is drawn: where the classic look's sprite sits.
+func canAt(c config.Can) can {
+	h := 39
+	if c.Tall {
+		h = 47
+	}
+	x, y := k(c.X+canSpriteDX), k(CanTop(c)+canSpriteDY)
+	cw := k(30)
+	g := can{x: x, y: y, cw: cw, cx: x + cw/2, rimY: y + 30, rx: cw / 2, ry: 14, h: h}
+	g.baseY = y + k(h) - g.ry
+	return g
+}
+
+// drawBody draws the can's shaded stripes and raised hoops, from the
+// mouth down: from across its middle when top is 0, or from its front
+// edge when top is the mouth's depth.
+func (g can) drawBody(dst *ebiten.Image, top float64) {
+	from := 0
+	for _, st := range canStripes {
+		x0, x1 := g.x+g.cw*float64(from)/30, g.x+g.cw*float64(st.to)/30
+		shapes.FillPoly(dst, st.idx, stripe(x0, x1, g.rimY, top, g.cx, g.baseY, g.rx, g.ry)...)
+		from = st.to
+	}
+	// Raised hoops, curving round the body: a dark groove over a lit rib.
+	for row := 12; row < g.h-6; row += 9 {
+		hy := g.y + k(row) - 6
+		shapes.StrokePath(dst, path(ellipse(g.cx, hy, g.rx-1, g.ry, math.Pi, 0, 32)), 4, resurrect64.Ink)
+		shapes.StrokePath(dst, path(ellipse(g.cx, hy+4, g.rx-2, g.ry, math.Pi*0.97, math.Pi*0.03, 32)), 2.5, resurrect64.Mist)
+	}
+}
+
+// stripe is the outline of the can's body between x0 and x1: from the
+// mouth, across its middle at y top or following its front edge topRy
+// further down, to the base, whose curve it follows.
+func stripe(x0, x1, top, topRy, cx, baseY, rx, ry float64) []float64 {
 	const n = 8
+	curve := func(x float64) float64 {
+		d := (x - cx) / rx
+		return math.Sqrt(max(0, 1-d*d))
+	}
+	var pts []float64
+	for i := range n + 1 {
+		x := x0 + (x1-x0)*float64(i)/n
+		pts = append(pts, x, top+topRy*curve(x))
+	}
 	for i := range n + 1 {
 		x := x1 + (x0-x1)*float64(i)/n
-		d := (x - cx) / rx
-		pts = append(pts, x, baseY+ry*math.Sqrt(max(0, 1-d*d)))
+		pts = append(pts, x, baseY+ry*curve(x))
 	}
 	return pts
 }
