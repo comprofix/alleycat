@@ -22,6 +22,9 @@ type DogCoat struct {
 // WhiteDog is the alley dog's coat, as its sprite.
 var WhiteDog = DogCoat{resurrect64.White, resurrect64.Fog, resurrect64.Mist, resurrect64.Cerise, resurrect64.Wine}
 
+// OrangeDog is the room dog's coat, as its sprite.
+var OrangeDog = DogCoat{resurrect64.Coral, resurrect64.Copper, resurrect64.Rust, resurrect64.DeepTeal, resurrect64.Pine}
+
 // SmoothDog draws the dog in the new look. It holds only its canvas, a
 // render cache.
 type SmoothDog struct {

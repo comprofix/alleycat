@@ -17,16 +17,17 @@ import (
 // RoomScene runs a room (DESIGN §3.4) and sends Freddy on according to how
 // it ends: the tally, "OOPS!", or a lost life.
 type RoomScene struct {
-	room rooms.Room
-	view *rooms.Renderer
-	x, y int // where Freddy went in, in the alley
+	room   rooms.Room
+	view   *rooms.Renderer
+	smooth *rooms.SmoothRenderer
+	x, y   int // where Freddy went in, in the alley
 
 	fighting bool // the dog-fight sound is playing
 	shake    shaker
 }
 
 func newRoomScene(ctx *Context, room rooms.Room, x, y int) *RoomScene {
-	return &RoomScene{room: room, view: rooms.NewRenderer(ctx.Rooms, ctx.Alley), x: x, y: y}
+	return &RoomScene{room: room, view: rooms.NewRenderer(ctx.Rooms, ctx.Alley), smooth: rooms.NewSmoothRenderer(), x: x, y: y}
 }
 
 // Update implements Scene.
@@ -77,12 +78,23 @@ func (r *RoomScene) heartEnds(ctx *Context, hr *rooms.HeartRoom) {
 	}
 }
 
-// Draw implements Scene.
+func (*RoomScene) native() {}
+
+// Draw implements Scene: the room in the look dst is the size of, or its
+// pixel art enlarged while its new look is still to come.
 func (r *RoomScene) Draw(ctx *Context, dst *ebiten.Image) {
-	r.shake.draw(dst, func(d *ebiten.Image) { r.view.Draw(d, r.room) })
+	if dst.Bounds().Dx() != gfx.ScreenWidth && r.smooth.Drawn(r.room) {
+		r.shake.draw(dst, func(d *ebiten.Image) { r.smooth.Draw(d, r.room) })
+	} else {
+		drawPixels(ctx, dst, func(d *ebiten.Image) {
+			r.shake.draw(d, func(d *ebiten.Image) { r.view.Draw(d, r.room) })
+		})
+	}
 	if debug.Enabled {
-		r.view.DrawDebug(dst, r.room)
-		ctx.PixelFont.Draw(dst, fmt.Sprintf("TPS %.1f FPS %.1f", ebiten.ActualTPS(), ebiten.ActualFPS()), 4, 190, resurrect64.White, 1)
+		drawPixels(ctx, dst, func(d *ebiten.Image) {
+			r.view.DrawDebug(d, r.room)
+			ctx.PixelFont.Draw(d, fmt.Sprintf("TPS %.1f FPS %.1f", ebiten.ActualTPS(), ebiten.ActualFPS()), 4, 190, resurrect64.White, 1)
+		})
 	}
 }
 
