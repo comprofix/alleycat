@@ -125,6 +125,10 @@ var UnderwaterScheme = Scheme{
 // stage 0–3 (DESIGN §3.4, "Underwater": the remake's recolouring).
 var AirColours = [4]int{resurrect64.Ink, resurrect64.Navy, resurrect64.Grape, resurrect64.Cerise}
 
+// AirLights are the lit pixels of Freddy and the eels at each stage: one
+// step lighter than AirColours along the same ramp.
+var AirLights = [4]int{resurrect64.Shadow, resurrect64.Indigo, resurrect64.Violet, resurrect64.Flamingo}
+
 // DogsScheme is the sleeping dogs room: the fishbowl room's plum walls and
 // teal furniture (DESIGN §3.4, "Sleeping dogs room layout").
 var DogsScheme = FishbowlScheme
