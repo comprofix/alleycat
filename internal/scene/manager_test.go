@@ -13,12 +13,17 @@ import (
 type stub struct {
 	updates int
 	next    Scene
+	cut     bool // change to next with a cut, not a fade
 }
 
 func (s *stub) Update(ctx *Context) error {
 	s.updates++
 	if s.next != nil {
-		ctx.Switch(s.next)
+		if s.cut {
+			ctx.Cut(s.next)
+		} else {
+			ctx.Switch(s.next)
+		}
 		s.next = nil
 	}
 	return nil
@@ -33,7 +38,7 @@ func TestManagerFadesInThenRuns(t *testing.T) {
 	if m.Darkness() != 1 {
 		t.Fatalf("should start fully dark, got %v", m.Darkness())
 	}
-	for range FadeFrames {
+	for range FadeTicks {
 		m.Update(ctx)
 	}
 	if a.updates != 0 || m.Darkness() != 0 {
@@ -50,20 +55,20 @@ func TestManagerSwitchFadesOutAndIn(t *testing.T) {
 	a := &stub{next: b}
 	m := NewManager(a)
 	ctx := &Context{}
-	for range FadeFrames {
+	for range FadeTicks {
 		m.Update(ctx)
 	}
 	m.Update(ctx) // a requests the switch
 	if m.Current() != a {
 		t.Fatal("should still show a while fading out")
 	}
-	for range FadeFrames {
+	for range FadeTicks {
 		m.Update(ctx)
 	}
 	if m.Current() != b || m.Darkness() != 1 {
 		t.Fatalf("after fade-out: current b=%v darkness=%v", m.Current() == b, m.Darkness())
 	}
-	for range FadeFrames {
+	for range FadeTicks {
 		m.Update(ctx)
 	}
 	if b.updates != 0 {
@@ -75,6 +80,32 @@ func TestManagerSwitchFadesOutAndIn(t *testing.T) {
 	}
 }
 
+// A cut changes scene at once, with no fade, and leaves the sound alone:
+// the pause menu opens and closes over a game this way.
+func TestManagerCut(t *testing.T) {
+	b := &stub{}
+	a := &stub{next: b, cut: true}
+	m := NewManager(a)
+	ctx := &Context{Audio: audio.NewSynth()}
+	for range FadeTicks {
+		m.Update(ctx)
+	}
+	ctx.Audio.PlayMusic([]audio.Note{{Hz: 500, Dur: 10 * time.Second}}, false)
+	m.Update(ctx) // a asks for the cut
+	if m.Current() != b || m.Darkness() != 0 {
+		t.Fatalf("after the cut: current b=%v darkness=%v", m.Current() == b, m.Darkness())
+	}
+	m.Update(ctx)
+	if b.updates != 1 {
+		t.Fatalf("b updated %d times, want 1 straight after the cut", b.updates)
+	}
+	buf := make([]byte, 4*4410)
+	ctx.Audio.Read(buf)
+	if maxJump(buf) < 1000 {
+		t.Error("the cut stopped the music")
+	}
+}
+
 // A scene change silences every sound, so nothing carries over, such as a
 // dog fight into the title after the last life (DESIGN §7.1). Only the
 // screen-change figure plays through the fade, then all is quiet (§7.4).
@@ -82,7 +113,7 @@ func TestManagerSwitchStopsSound(t *testing.T) {
 	a := &stub{next: &stub{}}
 	m := NewManager(a)
 	ctx := &Context{Audio: audio.NewSynth()}
-	for range FadeFrames {
+	for range FadeTicks {
 		m.Update(ctx)
 	}
 	ctx.Audio.PlayMusic([]audio.Note{{Hz: 500, Dur: 10 * time.Second}}, false)

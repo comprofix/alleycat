@@ -53,10 +53,15 @@ type Context struct {
 	FreddySteps int   // Freddy updates (2 per tick)
 
 	next Scene
+	cut  bool
 }
 
 // Switch asks the manager to fade to s at the end of this frame.
-func (c *Context) Switch(s Scene) { c.next = s }
+func (c *Context) Switch(s Scene) { c.next, c.cut = s, false }
+
+// Cut asks the manager to change to s at the end of this frame without a
+// fade or a pause in the sound, e.g. to open or close the pause menu.
+func (c *Context) Cut(s Scene) { c.next, c.cut = s, true }
 
 // SoundSettings are the player's sound settings (DESIGN §9). Ctrl+S flips
 // On, as in the original; the options menu (M9) sets the rest. Sound plays
