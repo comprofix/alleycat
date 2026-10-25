@@ -38,7 +38,7 @@ type SmoothRenderer struct {
 	dog         entity.SmoothDog
 	canvas      entity.Canvas   // for the other actors, drawn one at a time
 	text        *gfx.VectorFont // the lettering on the fence
-	small       *gfx.VectorFont // Felicia's "ME OW!"
+	small       *gfx.VectorFont // Felicia's "ME OW!", "BONK!" and "SQUEEK!"
 	scheme      gfx.SceneScheme // the alley's colours, as the classic look
 	back, front *ebiten.Image   // the backdrop, behind and in front of Freddy
 	builtFor    []config.Can

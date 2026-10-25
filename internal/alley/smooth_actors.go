@@ -345,5 +345,5 @@ func (r *SmoothRenderer) drawImpactS(dst *ebiten.Image, im Impact) {
 	}
 	x := min(im.X, gfx.ScreenWidth-w)
 	r.canvas.Draw(dst, entity.Picture{X: x, Y: im.Y, W: w, H: h, Outline: entity.NoOutline},
-		func(p entity.Pen) { entity.DrawSplat(p, r.text, word, w, h) })
+		func(p entity.Pen) { entity.DrawSplat(p, r.small, word, w, h) })
 }
