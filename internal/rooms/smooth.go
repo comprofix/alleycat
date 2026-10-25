@@ -33,15 +33,15 @@ type SmoothRenderer struct {
 }
 
 // furnish is a room's furniture colours, as its sprites are recoloured:
-// the body, its lit edge and its shade, the shade under the trim, and the
-// curtain rod and its ends.
+// the body, its lit edge and its shade, the shade under the trim, the
+// curtain rod and its ends, and the shine on a table top.
 type furnish struct {
-	body, light, shade, trimShade, rod, rodEnd int
+	body, light, shade, trimShade, rod, rodEnd, shine int
 }
 
 var (
-	greenFurnish = furnish{resurrect64.Emerald, resurrect64.Leaf, resurrect64.Forest, resurrect64.Caramel, resurrect64.Copper, resurrect64.Coral}
-	tealFurnish  = furnish{resurrect64.Seafoam, resurrect64.White, resurrect64.Jade, resurrect64.Jade, resurrect64.Indigo, resurrect64.Cobalt}
+	greenFurnish = furnish{resurrect64.Emerald, resurrect64.Leaf, resurrect64.Forest, resurrect64.Caramel, resurrect64.Copper, resurrect64.Coral, resurrect64.Lime}
+	tealFurnish  = furnish{resurrect64.Seafoam, resurrect64.White, resurrect64.Jade, resurrect64.Jade, resurrect64.Indigo, resurrect64.Cobalt, resurrect64.White}
 )
 
 // NewSmoothRenderer returns the new look's room renderer.
@@ -201,17 +201,22 @@ func oval(cx, cy, rx, ry float64) []float64 {
 // perspective, the picture, the window with its curtains, the lamp, the
 // chairs and the table, each casting a soft shadow on the floor.
 func (r *SmoothRenderer) buildBirdcage() {
-	b, ink := r.back, r.scheme.Outline
 	r.buildWalls(wallY0, wallY1)
 	r.buildPicture(k(pictureX), k(pictureY))
 	r.buildWindow(openingX, openingY)
-
-	fadePoly(b, ink, 0.3, oval(k(tableX)+112, k(tableY+36)-4, 112, 10)...)
 	r.buildLamp(lampX, lampY)
 	for _, c := range chairs {
 		r.buildChair(c.x, furnitureY, c.left)
 	}
-	r.canvas.Draw(b, entity.Picture{X: tableX, Y: tableY, W: 56, H: 36, Outline: ink}, drawTable)
+	r.buildTable(tableX, tableY)
+}
+
+// buildTable draws the round table at (x, y) on the grid, in the room's
+// furniture colours, casting a soft shadow on the floor.
+func (r *SmoothRenderer) buildTable(x, y int) {
+	b, ink := r.back, r.scheme.Outline
+	fadePoly(b, ink, 0.3, oval(k(x)+112, k(y+36)-4, 112, 10)...)
+	r.canvas.Draw(b, entity.Picture{X: x, Y: y, W: 56, H: 36, Outline: ink}, func(p entity.Pen) { drawTable(p, r.fur) })
 }
 
 // buildWalls draws the room in perspective with the back wall from y0 to
@@ -398,21 +403,22 @@ func (r *SmoothRenderer) buildChair(x, y int, left bool) {
 	})
 }
 
-// drawTable draws the round table in a 224×144 box: its top seen from a
-// little above, the apron, and four legs, the far two darker.
-func drawTable(p entity.Pen) {
+// drawTable draws the round table in a 224×144 box, in furniture colours
+// f: its top seen from a little above, the apron, and four legs, the far
+// two darker.
+func drawTable(p entity.Pen, f furnish) {
 	for _, x := range []float64{74, 150} {
 		p.Stroke(resurrect64.Pine, 8, false, x, 30, x, 126)
 	}
 	for _, x := range []float64{22, 202} {
-		p.Stroke(resurrect64.Forest, 9, false, x, 30, x, 141)
-		p.Stroke(resurrect64.Emerald, 4, false, x-1.5, 32, x-1.5, 139)
+		p.Stroke(f.shade, 9, false, x, 30, x, 141)
+		p.Stroke(f.body, 4, false, x-1.5, 32, x-1.5, 139)
 	}
 	p.Stroke(resurrect64.DeepTeal, 12, false, 14, 29, 210, 29)
-	p.Stroke(resurrect64.Forest, 9, false, 6, 20, 218, 20)
-	p.Stroke(resurrect64.Emerald, 6, false, 6, 18, 168, 18)
-	p.Ellipse(112, 10, 110, 10, 0, resurrect64.Leaf)
-	p.Ellipse(80, 8, 50, 3, 0, resurrect64.Lime)
+	p.Stroke(f.shade, 9, false, 6, 20, 218, 20)
+	p.Stroke(f.body, 6, false, 6, 18, 168, 18)
+	p.Ellipse(112, 10, 110, 10, 0, f.light)
+	p.Ellipse(80, 8, 50, 3, 0, f.shine)
 }
 
 // drawBirdcage draws the cage on its table or, once it has fallen, its

@@ -19,15 +19,16 @@ func (r *SmoothRenderer) buildCheese() {
 	r.buildWindow(cheeseOpeningX, openingY)
 	fadePoly(b, ink, 0.3, oval(k(pedestalX)+76, k(pedestalY+34)-2, 48, 7)...)
 	r.buildChair(cheeseChairX, furnitureY, false)
-	r.buildPedestal()
+	r.buildPedestal(pedestalX, pedestalY)
 	r.buildWedge()
 }
 
-// buildPedestal draws the small round table in a 160×144 box: its top seen
-// from a little above, one column and a spreading foot.
-func (r *SmoothRenderer) buildPedestal() {
+// buildPedestal draws the small round table at (x, y) on the grid, in a
+// 160×144 box: its top seen from a little above, one column and a
+// spreading foot.
+func (r *SmoothRenderer) buildPedestal(x, y int) {
 	f := r.fur
-	r.canvas.Draw(r.back, entity.Picture{X: pedestalX, Y: pedestalY, W: 40, H: 36, Outline: r.scheme.Outline}, func(p entity.Pen) {
+	r.canvas.Draw(r.back, entity.Picture{X: x, Y: y, W: 40, H: 36, Outline: r.scheme.Outline}, func(p entity.Pen) {
 		p.Poly(resurrect64.DeepTeal, 68, 114, 84, 114, 112, 134, 40, 134)
 		p.Poly(f.body, 68, 114, 72, 114, 46, 134, 40, 134)
 		p.Stroke(f.shade, 3, false, 40, 135, 112, 135)
