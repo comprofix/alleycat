@@ -5,6 +5,15 @@ All notable changes to Alley Cat are listed here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1](https://github.com/comprofix/alleycat/compare/v1.2.0...v1.2.1) - 2026-10-25
+
+### Fixed
+
+- The mice in the alley and the caught mice at the top of the cheese room
+  had a light line along the back and a dark one along the belly. They
+  now catch the light on a few pixels of the back instead, as the cheese
+  room's mice do.
+
 ## [1.2.0](https://github.com/comprofix/alleycat/compare/v1.1.1...v1.2.0) - 2026-10-25
 
 ### Changed
