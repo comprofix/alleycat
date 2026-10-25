@@ -151,25 +151,25 @@ func drawCat(dst *ebiten.Image, ps pose) {
 			l.draw(legs)
 		}
 	}
-	drawHead(p, 78, 10, ps.ear)
+	drawHead(p, 78, 10, ps.ear, FreddyCoat)
 }
 
-// drawHead draws Freddy's head in profile, facing right, round (x, y): his
-// ears, flicked by ear, a honey eye and his muzzle, with whiskers.
-func drawHead(p Pen, x, y, ear float64) {
-	p.Poly(resurrect64.Ink, x-11, y-1, x-10-ear, y-10+ear, x-3, y-6)
-	p.Poly(resurrect64.Ink, x+2, y-7, x+6+ear, y-10-ear, x+8, y-1)
-	p.Poly(resurrect64.Mauve, x-9.5, y-3, x-9-ear*0.7, y-7.5+ear*0.7, x-5, y-5.5)
-	p.Poly(resurrect64.Mauve, x+3, y-5.5, x+5.5+ear*0.7, y-7.5-ear*0.7, x+6.5, y-3)
-	p.Circle(x-1, y+1, 9, resurrect64.Ink)
-	p.Ellipse(x+7, y+4, 5, 4, 0.1, resurrect64.Ink)
-	p.Stroke(resurrect64.Lilac, 1.8, true, x-9, y-5, x-6, y-8, x-1, y-8.5)
-	p.Circle(x+11, y+2.5, 1.4, resurrect64.Lilac) // the nose
-	p.Ellipse(x+2, y, 2.6, 2.9, 0, resurrect64.Honey)
+// drawHead draws Freddy's head in profile, facing right, round (x, y), in
+// coat co: his ears, flicked by ear, his eye and his muzzle, with whiskers.
+func drawHead(p Pen, x, y, ear float64, co Coat) {
+	p.Poly(co.Fur, x-11, y-1, x-10-ear, y-10+ear, x-3, y-6)
+	p.Poly(co.Fur, x+2, y-7, x+6+ear, y-10-ear, x+8, y-1)
+	p.Poly(co.Ear, x-9.5, y-3, x-9-ear*0.7, y-7.5+ear*0.7, x-5, y-5.5)
+	p.Poly(co.Ear, x+3, y-5.5, x+5.5+ear*0.7, y-7.5-ear*0.7, x+6.5, y-3)
+	p.Circle(x-1, y+1, 9, co.Fur)
+	p.Ellipse(x+7, y+4, 5, 4, 0.1, co.Fur)
+	p.Stroke(co.Light, 1.8, true, x-9, y-5, x-6, y-8, x-1, y-8.5)
+	p.Circle(x+11, y+2.5, 1.4, co.Light) // the nose
+	p.Ellipse(x+2, y, 2.6, 2.9, 0, co.Eye)
 	p.Stroke(resurrect64.Ink, 1.3, false, x+2.4, y-2, x+2.4, y+2)
 	p.Circle(x+1.3, y-1, 0.8, resurrect64.White)
-	p.Stroke(resurrect64.Lilac, 0.8, false, x+8, y+5, x+17, y+3)
-	p.Stroke(resurrect64.Lilac, 0.8, false, x+8, y+6, x+17, y+8)
+	p.Stroke(co.Light, 0.8, false, x+8, y+5, x+17, y+3)
+	p.Stroke(co.Light, 0.8, false, x+8, y+6, x+17, y+8)
 }
 
 // DrawSitting draws a cat in Freddy's sitting pose, facing out of the
@@ -186,8 +186,12 @@ func DrawSitting(p Pen, co Coat) {
 	for _, x := range []float64{38, 62} {
 		p.Ellipse(x, 50, 5, 3, 0, co.Fur)
 	}
-	// The head, face on: both ears and both eyes.
-	x, y := 50.0, 12.0
+	drawFace(p, 50, 12, co)
+}
+
+// drawFace draws a cat's head face on round (x, y), in coat co: both ears
+// and both eyes.
+func drawFace(p Pen, x, y float64, co Coat) {
 	p.Poly(co.Fur, x-10, y-1, x-9, y-12, x-2, y-7)
 	p.Poly(co.Fur, x+2, y-7, x+9, y-12, x+10, y-1)
 	p.Poly(co.Ear, x-8.5, y-3, x-8, y-9, x-4, y-6)
