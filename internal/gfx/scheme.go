@@ -2,9 +2,9 @@ package gfx
 
 import "github.com/comprofix/alleycat/internal/gfx/palettes/resurrect64"
 
-// Scheme is a scene's colour scheme: named roles, each a Resurrect 64 index
-// (DESIGN §2.3). Scenes keep a distinct mood within the one palette.
-type Scheme struct {
+// SceneScheme is a scene's colour scheme: named roles, each a Resurrect 64
+// index (DESIGN §2.3). Scenes keep a distinct mood within the one palette.
+type SceneScheme struct {
 	Wall        int // the main backdrop
 	WallShade   int // detail on the backdrop
 	WallLight   int // lit edges on the backdrop
@@ -30,7 +30,7 @@ type Scheme struct {
 // building above a teal fence, nodding to CGA's magenta/cyan set (§2.3).
 // Each surface is shaded along its own ramp: plum brick, teal boards, grey
 // cobbles.
-var AlleyScheme = Scheme{
+var AlleyScheme = SceneScheme{
 	Wall:        resurrect64.Grape,
 	WallShade:   resurrect64.Plum,
 	WallLight:   resurrect64.Violet,
@@ -50,7 +50,7 @@ var AlleyScheme = Scheme{
 // BirdcageScheme is the birdcage room: a red room with green furniture,
 // after the original's red/green set (DESIGN §2.3, §3.4). The red is a
 // ramp from Maroon to Red, calmer than Cerise across the whole screen.
-var BirdcageScheme = Scheme{
+var BirdcageScheme = SceneScheme{
 	Wall:        resurrect64.Crimson,
 	WallShade:   resurrect64.Maroon,
 	WallLight:   resurrect64.Red,
@@ -70,7 +70,7 @@ var BirdcageScheme = Scheme{
 // CheeseScheme is the cheese room: the birdcage room's red walls and green
 // furniture, with a yellow wedge and copper holes (DESIGN §3.4, "Cheese room
 // layout").
-var CheeseScheme = Scheme{
+var CheeseScheme = SceneScheme{
 	Wall:        resurrect64.Crimson,
 	WallShade:   resurrect64.Maroon,
 	WallLight:   resurrect64.Red,
@@ -93,7 +93,7 @@ var CheeseScheme = Scheme{
 // FishbowlScheme is the fishbowl room: a plum room with teal and cyan
 // furniture, after the original's magenta/cyan set (DESIGN §3.4,
 // "Fishbowl room layout").
-var FishbowlScheme = Scheme{
+var FishbowlScheme = SceneScheme{
 	Wall:        resurrect64.Grape,
 	WallShade:   resurrect64.Plum,
 	WallLight:   resurrect64.Violet,
@@ -112,7 +112,7 @@ var FishbowlScheme = Scheme{
 
 // UnderwaterScheme is the underwater scene: teal water under a plum
 // surface band (DESIGN §3.4, "Underwater layout").
-var UnderwaterScheme = Scheme{
+var UnderwaterScheme = SceneScheme{
 	Wall:      resurrect64.DeepTeal,
 	WallShade: resurrect64.Blue, // ripple marks
 	Trim:      resurrect64.Grape,
@@ -140,7 +140,7 @@ var BookshelfScheme = FishbowlScheme
 // HeartScheme is the heart room: a green backdrop, after the original's
 // red/green set (DESIGN §3.5, "Heart room layout"). The hearts, cats and
 // cherubs carry their own colours.
-var HeartScheme = Scheme{
+var HeartScheme = SceneScheme{
 	Wall:    resurrect64.Emerald,
 	Outline: resurrect64.Ink,
 }
@@ -148,7 +148,7 @@ var HeartScheme = Scheme{
 // KissScheme is the heart room at the kiss: the cyan/magenta set, with
 // teal ground, plum hearts and silver cats (DESIGN §3.5, "The kiss"). The
 // hearts are their own recolour, heart_kiss, so they keep their shading.
-var KissScheme = Scheme{
+var KissScheme = SceneScheme{
 	Wall:    resurrect64.DeepTeal,
 	Metal:   resurrect64.Fog, // the rivals
 	Outline: resurrect64.Ink,

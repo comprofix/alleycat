@@ -37,7 +37,7 @@ var broomPoses = [config.BroomFrames]int{0, 1, 2, 3, 4, 5, 6, 5, 4, 3, 2, 1}
 type Renderer struct {
 	sheet  *gfx.Sheet // room sprites
 	actors *gfx.Sheet // Freddy and the dog
-	scheme gfx.Scheme
+	scheme gfx.SceneScheme
 	back   *ebiten.Image
 	water  *ebiten.Image // the underwater backdrop
 	kiss   *ebiten.Image // the heart room backdrop in the kiss colours

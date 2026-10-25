@@ -43,7 +43,7 @@ var clutter = []struct {
 type Renderer struct {
 	sheet       *gfx.Sheet
 	font        *gfx.PixelFont
-	scheme      gfx.Scheme
+	scheme      gfx.SceneScheme
 	back, front *ebiten.Image
 	builtFor    []config.Can
 }

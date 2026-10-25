@@ -5,7 +5,7 @@ import "testing"
 // In every room with a broom, Freddy's footprints must show against the
 // floor (DESIGN §3.4): plum prints once vanished on the plum rooms' floor.
 func TestFootprintsShow(t *testing.T) {
-	for name, s := range map[string]Scheme{
+	for name, s := range map[string]SceneScheme{
 		"birdcage": BirdcageScheme, "cheese": CheeseScheme, "fishbowl": FishbowlScheme,
 		"sleeping dogs": DogsScheme, "bookshelf": BookshelfScheme,
 	} {
