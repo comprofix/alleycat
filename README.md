@@ -33,6 +33,21 @@ The remake keeps the original's 320×200 screen, a 16-colour palette (Sweetie 16
 | F11 or Alt+Enter | Fullscreen |
 | F10 | Quit |
 
+## Download
+
+Builds for Windows and Linux (64-bit) are on the
+[Releases](https://github.com/comprofix/alleycat/releases) page, with
+`SHA256SUMS.txt` to check them against.
+
+- **Windows:** unzip `alleycat-vX.Y.Z-windows-amd64.zip` and run
+  `alleycat.exe`.
+- **Linux:** extract `alleycat-vX.Y.Z-linux-amd64.tar.gz` and run
+  `./alleycat`. It needs OpenGL, X11 and ALSA, which desktop systems
+  already have.
+
+Settings and the high score are saved in the folder the game is in, so keep
+it somewhere you can write to.
+
 ## Building and running
 
 You need [Go](https://go.dev/dl/) 1.27 or later.
