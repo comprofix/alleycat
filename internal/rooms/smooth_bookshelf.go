@@ -16,21 +16,12 @@ import (
 // window with its curtains, two lamps, two chairs and the bookcase with
 // this visit's books, each casting a soft shadow on the floor.
 func (r *SmoothRenderer) buildBookshelf(room *BookshelfRoom) {
-	b, ink := r.back, r.scheme.Outline
 	r.buildWalls(wallY0, wallY1)
 	r.buildWindow(bookOpeningX, openingY)
-
-	floor := k(furnitureY + 52)
-	for _, x := range []int{bookLampLX, bookLampRX} {
-		fadePoly(b, ink, 0.3, oval(k(x)+52, k(lampY+64)-4, 44, 7)...)
-	}
-	for _, x := range []int{bookChairLX, bookChairRX} {
-		fadePoly(b, ink, 0.3, oval(k(x)+64, floor-4, 64, 9)...)
-	}
-	r.buildLamp(bookLampLX)
-	r.buildLamp(bookLampRX)
-	r.buildChair(bookChairLX, false)
-	r.buildChair(bookChairRX, true)
+	r.buildLamp(bookLampLX, lampY)
+	r.buildLamp(bookLampRX, lampY)
+	r.buildChair(bookChairLX, furnitureY, false)
+	r.buildChair(bookChairRX, furnitureY, true)
 	r.buildBookcase(room)
 }
 

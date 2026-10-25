@@ -50,7 +50,7 @@ func NewSmoothRenderer() *SmoothRenderer {
 // Drawn reports whether room has its new look yet.
 func (r *SmoothRenderer) Drawn(room Room) bool {
 	switch room.(type) {
-	case *BirdcageRoom, *BookshelfRoom, *CheeseRoom:
+	case *BirdcageRoom, *BookshelfRoom, *CheeseRoom, *DogsRoom:
 		return true
 	}
 	return false
@@ -67,6 +67,9 @@ func (r *SmoothRenderer) Draw(dst *ebiten.Image, room Room) {
 		case *CheeseRoom:
 			r.scheme = gfx.CheeseScheme
 			r.buildCheese()
+		case *DogsRoom:
+			r.scheme, r.fur = gfx.DogsScheme, tealFurnish
+			r.buildDogs()
 		default:
 			r.buildBirdcage()
 		}
@@ -83,10 +86,19 @@ func (r *SmoothRenderer) Draw(dst *ebiten.Image, room Room) {
 		r.drawBookshelf(dst, rm)
 	case *CheeseRoom:
 		r.drawCheese(dst, rm)
+	case *DogsRoom:
+		r.drawDogs(dst, rm)
 	}
 	r.dog.Draw(dst, &b.Dog, entity.OrangeDog)
 	r.drawBroom(dst, &b.Broom)
-	r.freddy.Draw(dst, b.Freddy)
+	if dr, ok := room.(*DogsRoom); ok && dr.Eating {
+		r.drawEating(dst, dr)
+	} else {
+		r.freddy.Draw(dst, b.Freddy)
+	}
+	if dr, ok := room.(*DogsRoom); ok {
+		r.drawBowlsFront(dst, dr)
+	}
 	if bs, ok := room.(*BookshelfRoom); ok {
 		r.drawBite(dst, bs)
 	}
@@ -144,16 +156,10 @@ func (r *SmoothRenderer) buildBirdcage() {
 	r.buildPicture(k(pictureX), k(pictureY))
 	r.buildWindow(openingX, openingY)
 
-	floor := k(furnitureY + 52)
-	fadePoly(b, ink, 0.3, oval(k(lampX)+52, k(lampY+64)-4, 44, 7)...)
-	for _, c := range chairs {
-		fadePoly(b, ink, 0.3, oval(k(c.x)+64, floor-4, 64, 9)...)
-	}
 	fadePoly(b, ink, 0.3, oval(k(tableX)+112, k(tableY+36)-4, 112, 10)...)
-
-	r.buildLamp(lampX)
+	r.buildLamp(lampX, lampY)
 	for _, c := range chairs {
-		r.buildChair(c.x, c.left)
+		r.buildChair(c.x, furnitureY, c.left)
 	}
 	r.canvas.Draw(b, entity.Picture{X: tableX, Y: tableY, W: 56, H: 36, Outline: ink}, drawTable)
 }
@@ -292,12 +298,14 @@ func (r *SmoothRenderer) buildWindow(x, y int) {
 	shapes.FillCircle(b, wx+ww+cw+6, cy, 6, f.rodEnd)
 }
 
-// buildLamp draws a standard lamp at x on the grid, in the room's
-// furniture colours: a striped shade lit underneath, a pole with its pull
-// cord, and a heavy base, in a 104×256 box.
-func (r *SmoothRenderer) buildLamp(x int) {
+// buildLamp draws a standard lamp at (x, y) on the grid, in the room's
+// furniture colours, casting a soft shadow on the floor: a striped shade
+// lit underneath, a pole with its pull cord, and a heavy base, in a
+// 104×256 box.
+func (r *SmoothRenderer) buildLamp(x, y int) {
 	f := r.fur
-	r.canvas.Draw(r.back, entity.Picture{X: x, Y: lampY, W: 26, H: 64, Outline: r.scheme.Outline}, func(p entity.Pen) {
+	fadePoly(r.back, r.scheme.Outline, 0.3, oval(k(x)+52, k(y+64)-4, 44, 7)...)
+	r.canvas.Draw(r.back, entity.Picture{X: x, Y: y, W: 26, H: 64, Outline: r.scheme.Outline}, func(p entity.Pen) {
 		p.Poly(f.body, 10, 0, 94, 0, 104, 36, 0, 36)
 		for i := range 7 {
 			tx, bx := 14+float64(i)*12.6, 6+float64(i)*15.4
@@ -317,12 +325,14 @@ func (r *SmoothRenderer) buildLamp(x int) {
 	})
 }
 
-// buildChair draws a balloon-backed chair at x on the grid, facing left
-// when left is set, in the room's furniture colours: the padded back, the
-// seat and four legs, the far two darker, in a 128×208 box.
-func (r *SmoothRenderer) buildChair(x int, left bool) {
+// buildChair draws a balloon-backed chair at (x, y) on the grid, facing
+// left when left is set, in the room's furniture colours, casting a soft
+// shadow on the floor: the padded back, the seat and four legs, the far two
+// darker, in a 128×208 box.
+func (r *SmoothRenderer) buildChair(x, y int, left bool) {
 	f := r.fur
-	r.canvas.Draw(r.back, entity.Picture{X: x, Y: furnitureY, W: 32, H: 52, Flip: left, Outline: r.scheme.Outline}, func(p entity.Pen) {
+	fadePoly(r.back, r.scheme.Outline, 0.3, oval(k(x)+64, k(y+52)-4, 64, 9)...)
+	r.canvas.Draw(r.back, entity.Picture{X: x, Y: y, W: 32, H: 52, Flip: left, Outline: r.scheme.Outline}, func(p entity.Pen) {
 		for _, l := range [][3]float64{{40, 200}, {88, 200}} {
 			p.Stroke(resurrect64.Pine, 7, false, l[0], 140, l[0], l[1])
 		}

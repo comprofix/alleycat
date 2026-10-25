@@ -17,9 +17,8 @@ func (r *SmoothRenderer) buildCheese() {
 	b, ink := r.back, r.scheme.Outline
 	r.buildWalls(wallY0, wallY1)
 	r.buildWindow(cheeseOpeningX, openingY)
-	fadePoly(b, ink, 0.3, oval(k(cheeseChairX)+64, k(furnitureY+52)-4, 64, 9)...)
 	fadePoly(b, ink, 0.3, oval(k(pedestalX)+76, k(pedestalY+34)-2, 48, 7)...)
-	r.buildChair(cheeseChairX, false)
+	r.buildChair(cheeseChairX, furnitureY, false)
 	r.buildPedestal()
 	r.buildWedge()
 }
