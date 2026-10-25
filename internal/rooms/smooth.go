@@ -1,7 +1,9 @@
 package rooms
 
 import (
+	"cmp"
 	"math"
+	"slices"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
@@ -79,6 +81,7 @@ func (r *SmoothRenderer) Draw(dst *ebiten.Image, room Room) {
 	for col, n := range b.Broom.Marks {
 		r.drawPrints(dst, col*8, config.FootprintY, n)
 	}
+	var floor []depthed
 	switch rm := room.(type) {
 	case *BirdcageRoom:
 		r.drawBirdcage(dst, rm)
@@ -87,21 +90,68 @@ func (r *SmoothRenderer) Draw(dst *ebiten.Image, room Room) {
 	case *CheeseRoom:
 		r.drawCheese(dst, rm)
 	case *DogsRoom:
-		r.drawDogs(dst, rm)
+		floor = r.dogsFloor(dst, rm)
 	}
-	r.dog.Draw(dst, &b.Dog, entity.OrangeDog)
-	r.drawBroom(dst, &b.Broom)
+
+	// The room dog, the broom and Freddy: on the floor, each in depth order
+	// among the room's floor things by the line it stands on, the nearest
+	// last, so things pass behind and in front of each other as the floor's
+	// perspective says; on one line, in the classic look's order, Freddy
+	// last, so he stays in view. Off the floor, up on the furniture or in
+	// the air, they are drawn over it in that order.
+	var up []func()
+	put := func(onFloor bool, line int, draw func()) {
+		if onFloor {
+			floor = append(floor, depthed{line, draw})
+		} else {
+			up = append(up, draw)
+		}
+	}
+	d, br, f := &b.Dog, &b.Broom, b.Freddy
+	put(d.Capture == 0, config.FloorY, func() { r.dog.Draw(dst, d, entity.OrangeDog) })
+	put(br.Y == config.BroomFloorY, config.FloorY, func() { r.drawBroom(dst, br) })
 	if dr, ok := room.(*DogsRoom); ok && dr.Eating {
-		r.drawEating(dst, dr)
+		put(true, f.Y, func() { r.drawEating(dst, dr) })
 	} else {
-		r.freddy.Draw(dst, b.Freddy)
+		put(onFloor(room, f), f.Y, func() { r.freddy.Draw(dst, f) })
+	}
+	slices.SortStableFunc(floor, func(a, b depthed) int { return cmp.Compare(a.line, b.line) })
+	for _, t := range floor {
+		t.draw()
 	}
 	if dr, ok := room.(*DogsRoom); ok {
-		r.drawBowlsFront(dst, dr)
+		r.drawSnores(dst, dr)
+	}
+	for _, draw := range up {
+		draw()
 	}
 	if bs, ok := room.(*BookshelfRoom); ok {
 		r.drawBite(dst, bs)
 	}
+}
+
+// depthed is something drawn in depth order on the floor: the line it
+// stands on, as the Y Freddy stands at there on the grid, and how to draw
+// it.
+type depthed struct {
+	line int
+	draw func()
+}
+
+// onFloor reports whether Freddy is standing on the room's floor, not up
+// on the furniture or in the air: at the floor, or on one of the sleeping
+// dogs room's floor rows.
+func onFloor(room Room, f *entity.Freddy) bool {
+	if f.Airborne() || f.Seat != entity.NotSeated {
+		return false
+	}
+	if f.Y >= config.FloorY {
+		return true
+	}
+	if _, ok := room.(*DogsRoom); ok {
+		return slices.Contains(dogsRows[:], f.Y)
+	}
+	return false
 }
 
 // fadePoly fills the polygon through the x, y pairs with palette colour c

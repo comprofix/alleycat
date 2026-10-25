@@ -25,39 +25,30 @@ func (r *SmoothRenderer) buildDogs() {
 	r.buildLamp(dogsLampX, dogsLampY)
 }
 
-// drawDogs draws the bowls behind Freddy and the sleeping dogs, row by row
-// from the back, as the classic look does, then the Z's over those sound
-// asleep. An empty bowl is gone.
-func (r *SmoothRenderer) drawDogs(dst *ebiten.Image, d *DogsRoom) {
-	ink := r.scheme.Outline
-	for _, row := range []int{136, 152, 168} {
-		for i, b := range config.FoodBowls {
-			if b.Y == row && !bowlInFront(d, i) && !eatenBowl(d, i) {
-				r.drawBowl(dst, d, i)
-			}
-		}
-		for i, s := range d.Sleepers {
-			if sl := config.Sleepers[i]; s.On && sl.Y == row {
-				sr := SleeperRect(i)
-				r.canvas.Draw(dst, entity.Picture{X: sr.X, Y: sr.Y, W: sr.W, H: sr.H, Flip: sl.Left, Outline: ink},
-					func(p entity.Pen) { drawSleeper(p, s.Alert, entity.WhiteDog) })
-			}
-		}
-	}
-	r.drawSnores(dst, d)
-}
+// dogsRows are the sleeping dogs room's floor rows, which Freddy walks.
+var dogsRows = [...]int{136, 152, 168}
 
-// bowlInFront reports whether bowl i stands nearer than Freddy's feet, so
-// is drawn over him and he passes behind it, where the classic look has him
-// walk over the bowls on his row. The bowl he eats from is neither: the
-// eating pose draws it between his body and his head.
-func bowlInFront(d *DogsRoom, i int) bool {
-	feet := d.Freddy.Y + config.FreddyH
-	if d.Eating {
-		feet = d.Freddy.Y + config.EatPoseDY + eatPoseH
+// dogsFloor is what stands on the sleeping dogs room's floor, for drawing
+// in depth order with Freddy: the bowls, a little in front of their row,
+// and the sleeping dogs, on theirs. An empty bowl is gone, and the bowl
+// Freddy eats from is drawn with him.
+func (r *SmoothRenderer) dogsFloor(dst *ebiten.Image, d *DogsRoom) []depthed {
+	var floor []depthed
+	for i, b := range config.FoodBowls {
+		if !eatenBowl(d, i) {
+			floor = append(floor, depthed{b.Y + config.FoodBowlDY, func() { r.drawBowl(dst, d, i) }})
+		}
 	}
-	b := config.FoodBowls[i]
-	return b.Y+config.FoodBowlDY+config.FoodBowlH > feet
+	for i, s := range d.Sleepers {
+		if sl := config.Sleepers[i]; s.On {
+			sr := SleeperRect(i)
+			floor = append(floor, depthed{sl.Y, func() {
+				r.canvas.Draw(dst, entity.Picture{X: sr.X, Y: sr.Y, W: sr.W, H: sr.H, Flip: sl.Left, Outline: r.scheme.Outline},
+					func(p entity.Pen) { drawSleeper(p, s.Alert, entity.WhiteDog) })
+			}})
+		}
+	}
+	return floor
 }
 
 // eatPoseH is the height of the eating pose's box.
@@ -74,16 +65,6 @@ func (r *SmoothRenderer) drawBowl(dst *ebiten.Image, d *DogsRoom, i int) {
 
 // eatenBowl reports whether Freddy is eating from bowl i.
 func eatenBowl(d *DogsRoom, i int) bool { return d.Eating && i == d.EatBowl }
-
-// drawBowlsFront draws, over Freddy, the bowls in front of him, so he
-// stands behind them.
-func (r *SmoothRenderer) drawBowlsFront(dst *ebiten.Image, d *DogsRoom) {
-	for i := range config.FoodBowls {
-		if bowlInFront(d, i) && !eatenBowl(d, i) {
-			r.drawBowl(dst, d, i)
-		}
-	}
-}
 
 // drawBowlArt draws a dog's bowl in a 64×32 box, holding milk to level 1–4
 // (full): a teal dish on a dark foot, the milk filling it.
