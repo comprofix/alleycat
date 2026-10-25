@@ -28,7 +28,7 @@ func (r *Renderer) buildHeart() {
 		for x := 4 + (row%2)*12; x < gfx.ScreenWidth; x += 24 {
 			fill(b, x, y, 1, 1, resurrect64.Leaf)
 			fill(b, x+2, y, 1, 1, resurrect64.Leaf)
-			fill(b, x+1, y+1, 1, 1, resurrect64.Leaf)
+			fill(b, x+1, y+1, 1, 1, resurrect64.Forest) // the point in shade
 		}
 	}
 	cherub := r.sheet.Sprite("cherub").Frame(0)
