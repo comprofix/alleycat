@@ -14,6 +14,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/comprofix/alleycat/internal/gfx"
 	"github.com/comprofix/alleycat/internal/spritegrid"
 )
 
@@ -49,11 +50,11 @@ func convert(src, outDir string) error {
 		return err
 	}
 	defer f.Close()
-	sprites, err := spritegrid.Parse(f)
+	sprites, err := spritegrid.Parse(f, gfx.Named)
 	if err != nil {
 		return err
 	}
-	img, index, err := spritegrid.Pack(sprites)
+	img, index, err := spritegrid.Pack(sprites, gfx.Named)
 	if err != nil {
 		return err
 	}

@@ -4,6 +4,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/comprofix/alleycat/internal/gfx"
 	"github.com/comprofix/alleycat/internal/spritegrid"
 )
 
@@ -16,7 +17,7 @@ func TestFreddySets(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer f.Close()
-	sprites, err := spritegrid.Parse(f)
+	sprites, err := spritegrid.Parse(f, gfx.Named)
 	if err != nil {
 		t.Fatal(err)
 	}

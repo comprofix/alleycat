@@ -1,16 +1,20 @@
 // Package spritegrid parses text-grid sprite sources and packs them into a
-// sheet (DESIGN §8). Format:
+// sprite sheet (DESIGN §8). Format:
 //
 //	; comment
+//	colours k=Ink g=Moss y=Gold          optional colour key, before any sprite
 //	sprite NAME WIDTH HEIGHT
-//	<HEIGHT rows of WIDTH characters>   frame 0
+//	<HEIGHT rows of WIDTH characters>    frame 0
 //	<blank line>
-//	<HEIGHT rows>                       frame 1, and so on
-//	recolour NEW from SRC 0=3 E=4 ...    a copy of sprite SRC (from the same file)
-//	                                     with palette indices swapped
+//	<HEIGHT rows>                        frame 1, and so on
+//	recolour NEW from SRC g=y            a copy of SRC (from the same file)
+//	                                     with colours swapped
 //
-// Each character is '.' for transparent or a hex digit 0–F naming a
-// Sweetie 16 palette index.
+// '.' is a see-through pixel. Without a colours line, every other character
+// is a hex digit 0–F naming a palette index, which suits palettes of up to
+// 16 colours. With one, every other character must be a key character, and
+// each key entry names a colour of the palette. recolour swaps use the same
+// characters as the pixels.
 package spritegrid
 
 import (
@@ -21,11 +25,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/comprofix/alleycat/internal/gfx"
+	"github.com/comprofix/alleycat/internal/gfx/palettes"
 )
 
 // Transparent marks an empty pixel.
 const Transparent = -1
+
+// MaxSize is the largest sprite width or height.
+const MaxSize = 1024
 
 // Sprite is one named sprite with one or more frames of equal size.
 type Sprite struct {
@@ -34,7 +41,8 @@ type Sprite struct {
 	Frames [][]int // each W*H palette indices, row-major
 }
 
-// Entry locates a sprite's frames in a packed sheet. Frames run left to right.
+// Entry locates a sprite's frames in a packed sheet. Frames run left to
+// right.
 type Entry struct {
 	X      int `json:"x"`
 	Y      int `json:"y"`
@@ -43,127 +51,213 @@ type Entry struct {
 	Frames int `json:"frames"`
 }
 
-// Parse reads all sprites from r.
-func Parse(r io.Reader) ([]Sprite, error) {
-	var sprites []Sprite
-	var cur *Sprite
-	var rows []string
-	lineNo := 0
+// parser holds the state while reading one file.
+type parser struct {
+	pal     palettes.Palette
+	key     map[rune]int // nil until a colours line is read
+	sprites []Sprite
+	cur     *Sprite
+	rows    []string
+	lineNo  int
+}
 
-	flush := func() error {
-		if cur == nil || len(rows) == 0 {
-			return nil
-		}
-		if len(rows) != cur.H {
-			return fmt.Errorf("line %d: sprite %q frame %d has %d rows, want %d", lineNo, cur.Name, len(cur.Frames), len(rows), cur.H)
-		}
-		frame := make([]int, 0, cur.W*cur.H)
-		for _, row := range rows {
-			for _, ch := range row {
-				if ch == '.' {
-					frame = append(frame, Transparent)
-					continue
-				}
-				v, err := strconv.ParseInt(string(ch), 16, 8)
-				if err != nil {
-					return fmt.Errorf("sprite %q: bad pixel %q", cur.Name, ch)
-				}
-				frame = append(frame, int(v))
-			}
-		}
-		cur.Frames = append(cur.Frames, frame)
-		rows = rows[:0]
-		return nil
-	}
+// recolour is a sprite made from another by swapping palette indices.
+type recolour struct {
+	line       int
+	name, from string
+	swap       map[int]int
+}
 
+// Parse reads all sprites from r, resolving colours against pal.
+func Parse(r io.Reader, pal palettes.Palette) ([]Sprite, error) {
+	p := &parser{pal: pal}
 	var recolours []recolour
+	names := map[string]int{} // name → line it was defined on
 
 	sc := bufio.NewScanner(r)
 	for sc.Scan() {
-		lineNo++
+		p.lineNo++
 		line := strings.TrimRight(sc.Text(), " \t\r")
 		switch {
 		case strings.HasPrefix(line, ";"):
 			continue
-		case strings.HasPrefix(line, "recolour "):
-			if err := flush(); err != nil {
+		case line == "colours" || strings.HasPrefix(line, "colours "):
+			if p.key != nil {
+				return nil, p.errorf("only one colours line is allowed")
+			}
+			if len(p.sprites) > 0 || len(recolours) > 0 {
+				return nil, p.errorf("the colours line must come before any sprite")
+			}
+			if err := p.parseKey(line); err != nil {
 				return nil, err
 			}
-			rc, err := parseRecolour(line)
-			if err != nil {
-				return nil, fmt.Errorf("line %d: %v", lineNo, err)
+		case strings.HasPrefix(line, "recolour "):
+			if err := p.flush(); err != nil {
+				return nil, err
 			}
+			rc, err := p.parseRecolour(line)
+			if err != nil {
+				return nil, err
+			}
+			if prev, dup := names[rc.name]; dup {
+				return nil, p.errorf("sprite %q is already defined on line %d", rc.name, prev)
+			}
+			names[rc.name] = p.lineNo
 			recolours = append(recolours, rc)
-			cur = nil
+			p.cur = nil
 		case strings.HasPrefix(line, "sprite "):
-			if err := flush(); err != nil {
+			if err := p.flush(); err != nil {
 				return nil, err
 			}
 			var s Sprite
-			if _, err := fmt.Sscanf(line, "sprite %s %d %d", &s.Name, &s.W, &s.H); err != nil {
-				return nil, fmt.Errorf("line %d: %v", lineNo, err)
+			var extra string
+			if n, _ := fmt.Sscanf(line, "sprite %s %d %d %s", &s.Name, &s.W, &s.H, &extra); n != 3 {
+				return nil, p.errorf("want \"sprite NAME WIDTH HEIGHT\", got %q", line)
 			}
-			if s.W <= 0 || s.H <= 0 {
-				return nil, fmt.Errorf("line %d: sprite %q has invalid size", lineNo, s.Name)
+			if s.W <= 0 || s.H <= 0 || s.W > MaxSize || s.H > MaxSize {
+				return nil, p.errorf("sprite %q is %d×%d; sizes must be 1–%d", s.Name, s.W, s.H, MaxSize)
 			}
-			sprites = append(sprites, s)
-			cur = &sprites[len(sprites)-1]
+			if prev, dup := names[s.Name]; dup {
+				return nil, p.errorf("sprite %q is already defined on line %d", s.Name, prev)
+			}
+			names[s.Name] = p.lineNo
+			p.sprites = append(p.sprites, s)
+			p.cur = &p.sprites[len(p.sprites)-1]
 		case line == "":
-			if err := flush(); err != nil {
+			if err := p.flush(); err != nil {
 				return nil, err
 			}
 		default:
-			if cur == nil {
-				return nil, fmt.Errorf("line %d: pixels before any sprite header", lineNo)
+			if p.cur == nil {
+				return nil, p.errorf("pixels before any sprite header")
 			}
-			if len(line) != cur.W {
-				return nil, fmt.Errorf("line %d: sprite %q row is %d wide, want %d", lineNo, cur.Name, len(line), cur.W)
+			if n := len([]rune(line)); n != p.cur.W {
+				return nil, p.errorf("sprite %q row is %d wide, want %d", p.cur.Name, n, p.cur.W)
 			}
-			rows = append(rows, line)
+			p.rows = append(p.rows, line)
 		}
 	}
 	if err := sc.Err(); err != nil {
 		return nil, err
 	}
-	if err := flush(); err != nil {
+	if err := p.flush(); err != nil {
 		return nil, err
 	}
-	for _, s := range sprites {
+	for _, s := range p.sprites {
 		if len(s.Frames) == 0 {
 			return nil, fmt.Errorf("sprite %q has no frames", s.Name)
 		}
 	}
 	for _, rc := range recolours {
-		s, err := rc.apply(sprites)
+		s, err := rc.apply(p.sprites)
 		if err != nil {
 			return nil, err
 		}
-		sprites = append(sprites, s)
+		p.sprites = append(p.sprites, s)
 	}
-	return sprites, nil
+	return p.sprites, nil
 }
 
-// recolour is a sprite made from another by swapping palette indices.
-type recolour struct {
-	name, from string
-	swap       map[int]int
+func (p *parser) errorf(format string, args ...any) error {
+	return fmt.Errorf("line %d: %s", p.lineNo, fmt.Sprintf(format, args...))
 }
 
-// parseRecolour reads "recolour NEW from SRC a=b ...", a and b hex digits.
-func parseRecolour(line string) (recolour, error) {
+// parseKey reads "colours a=Name b=Name ...".
+func (p *parser) parseKey(line string) error {
+	f := strings.Fields(line)
+	if f[0] != "colours" || len(f) < 2 {
+		return p.errorf("want \"colours c=Name ...\", got %q", line)
+	}
+	p.key = map[rune]int{}
+	for _, entry := range f[1:] {
+		ch, name, ok := strings.Cut(entry, "=")
+		r := []rune(ch)
+		if !ok || len(r) != 1 || name == "" {
+			return p.errorf("bad colour key entry %q: want c=Name", entry)
+		}
+		if r[0] == '.' || r[0] == ';' {
+			return p.errorf("%q cannot be a key character", r[0])
+		}
+		if _, dup := p.key[r[0]]; dup {
+			return p.errorf("key character %q is used twice", r[0])
+		}
+		idx, found := p.pal.Lookup(name)
+		if !found {
+			return p.errorf("palette %s has no colour named %q", p.pal.Name, name)
+		}
+		p.key[r[0]] = idx
+	}
+	return nil
+}
+
+// colour turns a pixel or swap character into a palette index.
+func (p *parser) colour(ch rune) (int, error) {
+	if p.key != nil {
+		idx, ok := p.key[ch]
+		if !ok {
+			return 0, fmt.Errorf("%q is not in the colours key", ch)
+		}
+		return idx, nil
+	}
+	v, err := strconv.ParseInt(string(ch), 16, 8)
+	if err != nil {
+		return 0, fmt.Errorf("bad pixel %q: want a hex digit, or add a colours line", ch)
+	}
+	if int(v) >= p.pal.Len() {
+		return 0, fmt.Errorf("colour %X is outside palette %s (%d colours)", v, p.pal.Name, p.pal.Len())
+	}
+	return int(v), nil
+}
+
+// flush ends the current frame, if any.
+func (p *parser) flush() error {
+	if p.cur == nil || len(p.rows) == 0 {
+		return nil
+	}
+	if len(p.rows) != p.cur.H {
+		return p.errorf("sprite %q frame %d has %d rows, want %d", p.cur.Name, len(p.cur.Frames), len(p.rows), p.cur.H)
+	}
+	frame := make([]int, 0, p.cur.W*p.cur.H)
+	for _, row := range p.rows {
+		for _, ch := range row {
+			if ch == '.' {
+				frame = append(frame, Transparent)
+				continue
+			}
+			idx, err := p.colour(ch)
+			if err != nil {
+				return p.errorf("sprite %q: %v", p.cur.Name, err)
+			}
+			frame = append(frame, idx)
+		}
+	}
+	p.cur.Frames = append(p.cur.Frames, frame)
+	p.rows = p.rows[:0]
+	return nil
+}
+
+// parseRecolour reads "recolour NEW from SRC a=b ...".
+func (p *parser) parseRecolour(line string) (recolour, error) {
 	f := strings.Fields(line)
 	if len(f) < 5 || f[2] != "from" {
-		return recolour{}, fmt.Errorf("want \"recolour NEW from SRC a=b ...\", got %q", line)
+		return recolour{}, p.errorf("want \"recolour NEW from SRC a=b ...\", got %q", line)
 	}
-	rc := recolour{name: f[1], from: f[3], swap: map[int]int{}}
-	for _, p := range f[4:] {
-		a, b, ok := strings.Cut(p, "=")
-		av, err1 := strconv.ParseInt(a, 16, 8)
-		bv, err2 := strconv.ParseInt(b, 16, 8)
-		if !ok || err1 != nil || err2 != nil || len(a) != 1 || len(b) != 1 {
-			return recolour{}, fmt.Errorf("bad colour swap %q", p)
+	rc := recolour{line: p.lineNo, name: f[1], from: f[3], swap: map[int]int{}}
+	for _, pair := range f[4:] {
+		a, b, ok := strings.Cut(pair, "=")
+		ra, rb := []rune(a), []rune(b)
+		if !ok || len(ra) != 1 || len(rb) != 1 {
+			return recolour{}, p.errorf("bad colour swap %q: want a=b", pair)
 		}
-		rc.swap[int(av)] = int(bv)
+		from, err := p.colour(ra[0])
+		if err != nil {
+			return recolour{}, p.errorf("colour swap %q: %v", pair, err)
+		}
+		to, err := p.colour(rb[0])
+		if err != nil {
+			return recolour{}, p.errorf("colour swap %q: %v", pair, err)
+		}
+		rc.swap[from] = to
 	}
 	return rc, nil
 }
@@ -187,12 +281,12 @@ func (rc recolour) apply(sprites []Sprite) (Sprite, error) {
 		}
 		return out, nil
 	}
-	return Sprite{}, fmt.Errorf("recolour %q: no sprite %q in this file", rc.name, rc.from)
+	return Sprite{}, fmt.Errorf("line %d: recolour %q: no sprite %q in this file", rc.line, rc.name, rc.from)
 }
 
 // Pack lays sprites out top to bottom, frames left to right, and returns
-// the sheet image and the location of each sprite.
-func Pack(sprites []Sprite) (*image.RGBA, map[string]Entry, error) {
+// the sheet image in pal's colours and the location of each sprite.
+func Pack(sprites []Sprite, pal palettes.Palette) (*image.RGBA, map[string]Entry, error) {
 	w, h := 1, 1
 	for _, s := range sprites {
 		w = max(w, s.W*len(s.Frames))
@@ -206,11 +300,14 @@ func Pack(sprites []Sprite) (*image.RGBA, map[string]Entry, error) {
 			return nil, nil, fmt.Errorf("duplicate sprite name %q", s.Name)
 		}
 		for f, frame := range s.Frames {
-			for i, p := range frame {
-				if p == Transparent {
+			for i, c := range frame {
+				if c == Transparent {
 					continue
 				}
-				img.SetRGBA(f*s.W+i%s.W, y+i/s.W, gfx.Palette[p])
+				if c < 0 || c >= pal.Len() {
+					return nil, nil, fmt.Errorf("sprite %q uses colour %d, outside palette %s", s.Name, c, pal.Name)
+				}
+				img.SetRGBA(f*s.W+i%s.W, y+i/s.W, pal.Colors[c])
 			}
 		}
 		index[s.Name] = Entry{X: 0, Y: y, W: s.W, H: s.H, Frames: len(s.Frames)}
