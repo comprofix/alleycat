@@ -7,6 +7,7 @@ import (
 
 	"github.com/comprofix/alleycat/internal/audio"
 	"github.com/comprofix/alleycat/internal/gfx"
+	"github.com/comprofix/alleycat/internal/gfx/palettes/resurrect64"
 )
 
 // FadeFrames is the length of each half of a transition (fade out, then fade
@@ -90,7 +91,7 @@ func (m *Manager) Draw(ctx *Context, dst *ebiten.Image) {
 	}
 	if m.overlay == nil {
 		m.overlay = ebiten.NewImage(1, 1)
-		m.overlay.Fill(gfx.Palette[gfx.Night])
+		m.overlay.Fill(gfx.Palette[resurrect64.Ink])
 	}
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Scale(gfx.ScreenWidth, gfx.ScreenHeight)

@@ -12,6 +12,7 @@ import (
 	"github.com/comprofix/alleycat/internal/config"
 	"github.com/comprofix/alleycat/internal/entity"
 	"github.com/comprofix/alleycat/internal/gfx"
+	"github.com/comprofix/alleycat/internal/gfx/palettes/resurrect64"
 )
 
 // Title is the title screen (M8g): a night sky over the town, Freddy
@@ -105,7 +106,7 @@ func (c *titleCat) draw(dst *ebiten.Image, sheet *gfx.Sheet) {
 	y := titleFenceY - img.Bounds().Dy() + 1
 	flip := c.facing < 0
 	for _, d := range [4][2]int{{-1, 0}, {1, 0}, {0, -1}, {0, 1}} {
-		entity.DrawFlat(dst, img, c.x+d[0], y+d[1], flip, gfx.Slate)
+		entity.DrawFlat(dst, img, c.x+d[0], y+d[1], flip, resurrect64.Lilac)
 	}
 	entity.DrawAt(dst, img, c.x, y, flip)
 }
@@ -134,24 +135,24 @@ func fillRect(dst *ebiten.Image, x, y, w, h, idx int) {
 func (t *Title) buildBack(ctx *Context) {
 	b := ebiten.NewImage(gfx.ScreenWidth, gfx.ScreenHeight)
 	// The sky in bands, darkest at the top.
-	fillRect(b, 0, 0, gfx.ScreenWidth, 118, gfx.Night)
-	fillRect(b, 0, 118, gfx.ScreenWidth, 16, gfx.Charcoal)
-	fillRect(b, 0, 134, gfx.ScreenWidth, gfx.ScreenHeight-134, gfx.Navy)
+	fillRect(b, 0, 0, gfx.ScreenWidth, 118, resurrect64.Ink)
+	fillRect(b, 0, 118, gfx.ScreenWidth, 16, resurrect64.Shadow)
+	fillRect(b, 0, 134, gfx.ScreenWidth, gfx.ScreenHeight-134, resurrect64.Navy)
 	for i, s := range titleStars {
-		idx := gfx.Silver
+		idx := resurrect64.Fog
 		if i%3 == 0 {
-			idx = gfx.White
+			idx = resurrect64.White
 		}
 		fillRect(b, s[0], s[1], 1, 1, idx)
 	}
 	entity.DrawAt(b, ctx.Alley.Sprite("moon").Frame(0), 262, 14, false)
 	for i, r := range titleRoofs {
-		fillRect(b, r.x, r.top, r.w, titleFenceY-r.top, gfx.Night)
-		fillRect(b, r.x+r.w/3, r.top-3, 2, 3, gfx.Night) // a chimney
+		fillRect(b, r.x, r.top, r.w, titleFenceY-r.top, resurrect64.Ink)
+		fillRect(b, r.x+r.w/3, r.top-3, 2, 3, resurrect64.Ink) // a chimney
 		for wy := r.top + 4; wy < titleFenceY-4; wy += 6 {
 			for wx := r.x + 3; wx < r.x+r.w-3; wx += 6 {
 				if (wx*7+wy*3+i)%5 == 0 {
-					fillRect(b, wx, wy, 2, 2, gfx.Yellow)
+					fillRect(b, wx, wy, 2, 2, resurrect64.Honey)
 				}
 			}
 		}
@@ -159,9 +160,9 @@ func (t *Title) buildBack(ctx *Context) {
 	// The fence along the bottom, its boards ragged at the top.
 	for i, x := 0, 0; x < gfx.ScreenWidth; i, x = i+1, x+8 {
 		top := titleFenceY + (i*37+i/3)%3
-		fillRect(b, x, top, 7, gfx.ScreenHeight-top, gfx.Teal)
-		fillRect(b, x, top+1, 1, gfx.ScreenHeight-top, gfx.Slate)
-		fillRect(b, x+7, top+2, 1, gfx.ScreenHeight-top, gfx.Charcoal)
+		fillRect(b, x, top, 7, gfx.ScreenHeight-top, resurrect64.DeepTeal)
+		fillRect(b, x, top+1, 1, gfx.ScreenHeight-top, resurrect64.Lilac)
+		fillRect(b, x+7, top+2, 1, gfx.ScreenHeight-top, resurrect64.Shadow)
 	}
 	t.back = b
 }
@@ -176,13 +177,13 @@ func (t *Title) Draw(ctx *Context, dst *ebiten.Image) {
 	f := ctx.Font
 	const name = "ALLEY CAT"
 	x := gfx.CentreX(name, 3)
-	f.Draw(dst, name, x+3, titleLogoY+3, gfx.Plum, 3) // a deep drop shadow
-	f.DrawOutlined(dst, name, x, titleLogoY, gfx.Orange, gfx.Night, 3)
-	f.DrawShadowed(dst, "a faithful remake", gfx.CentreX("a faithful remake", 1), titleLogoY+34, gfx.Silver, gfx.Night, 1)
+	f.Draw(dst, name, x+3, titleLogoY+3, resurrect64.Grape, 3) // a deep drop shadow
+	f.DrawOutlined(dst, name, x, titleLogoY, resurrect64.Coral, resurrect64.Ink, 3)
+	f.DrawShadowed(dst, "a faithful remake", gfx.CentreX("a faithful remake", 1), titleLogoY+34, resurrect64.Fog, resurrect64.Ink, 1)
 
 	const prompt = "PRESS ANY KEY"
 	y := 104
-	f.DrawShadowed(dst, prompt, gfx.CentreX(prompt, 1), y, gfx.White, gfx.Night, 1)
+	f.DrawShadowed(dst, prompt, gfx.CentreX(prompt, 1), y, resurrect64.White, resurrect64.Ink, 1)
 	ptr := ctx.UI.Sprite("pointer")
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(float64(gfx.CentreX(prompt, 1)-ptr.W-4), float64(y))

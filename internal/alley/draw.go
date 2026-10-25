@@ -9,6 +9,7 @@ import (
 	"github.com/comprofix/alleycat/internal/config"
 	"github.com/comprofix/alleycat/internal/entity"
 	"github.com/comprofix/alleycat/internal/gfx"
+	"github.com/comprofix/alleycat/internal/gfx/palettes/resurrect64"
 )
 
 // Layout positions, measured from the reference for layout only (DESIGN
@@ -104,7 +105,7 @@ const (
 )
 
 // skyBands are the night sky's colour bands, darkest at the top.
-var skyBands = []struct{ to, idx int }{{4, gfx.Night}, {8, gfx.Charcoal}, {skyBottom, gfx.Navy}}
+var skyBands = []struct{ to, idx int }{{4, resurrect64.Ink}, {8, resurrect64.Shadow}, {skyBottom, resurrect64.Navy}}
 
 // stars are single pixels in the upper sky.
 var stars = [][2]int{{12, 2}, {37, 5}, {71, 1}, {98, 6}, {133, 3}, {166, 1}, {188, 6}, {219, 2}, {241, 5}, {301, 3}}
@@ -133,28 +134,28 @@ func (r *Renderer) buildBack() {
 		from = band.to
 	}
 	for i, st := range stars {
-		idx := gfx.Silver
+		idx := resurrect64.Fog
 		if i%3 == 0 {
-			idx = gfx.White
+			idx = resurrect64.White
 		}
 		fill(b, st[0], st[1], 1, 1, idx)
 	}
 	entity.DrawAt(b, r.sheet.Sprite("moon").Frame(0), 268, 1, false)
 	for i, sk := range skyline {
-		fill(b, sk.x, sk.top, sk.w, skyBottom-sk.top, gfx.Night)
-		fill(b, sk.x+sk.w/3, sk.top-2, 2, 2, gfx.Night) // a chimney
+		fill(b, sk.x, sk.top, sk.w, skyBottom-sk.top, resurrect64.Ink)
+		fill(b, sk.x+sk.w/3, sk.top-2, 2, 2, resurrect64.Ink) // a chimney
 		if i%2 == 0 {
-			fill(b, sk.x+sk.w/2, sk.top+2, 1, 1, gfx.Yellow)
+			fill(b, sk.x+sk.w/2, sk.top+2, 1, 1, resurrect64.Honey)
 		}
 		if i%3 == 1 {
-			fill(b, sk.x+3, sk.top+3, 1, 1, gfx.Orange)
+			fill(b, sk.x+3, sk.top+3, 1, 1, resurrect64.Coral)
 		}
 	}
 	// A water tower on the far roofs.
-	fill(b, 150, 3, 9, 4, gfx.Night)
-	fill(b, 151, 2, 7, 1, gfx.Night)
-	fill(b, 151, 7, 1, 2, gfx.Night)
-	fill(b, 157, 7, 1, 2, gfx.Night)
+	fill(b, 150, 3, 9, 4, resurrect64.Ink)
+	fill(b, 151, 2, 7, 1, resurrect64.Ink)
+	fill(b, 151, 7, 1, 2, resurrect64.Ink)
+	fill(b, 157, 7, 1, 2, resurrect64.Ink)
 
 	// The cornice along our building's roof.
 	fill(b, 0, skyBottom, gfx.ScreenWidth, wallTop-skyBottom, s.WallShade)
@@ -204,7 +205,7 @@ func (r *Renderer) buildWindow(b *ebiten.Image, x, y int, lit bool) {
 			}
 		}
 	} else {
-		r.drawLamp(b, x, y, gfx.Yellow, gfx.Orange)
+		r.drawLamp(b, x, y, resurrect64.Honey, resurrect64.Coral)
 	}
 	fill(b, x+windowW/2-1, y+1, 2, windowH-2, s.Trim)
 }
@@ -217,7 +218,7 @@ func (r *Renderer) drawLamp(b *ebiten.Image, x, y, light, glow int) {
 	fill(b, x+3, y+windowH-6, windowW/2-4, 4, glow)
 	fill(b, x+windowW/2+1, y+windowH-6, windowW/2-4, 4, glow)
 	for _, cx := range []int{x + 3, x + windowW - 6} {
-		fill(b, cx, y+2, 3, windowH-4, gfx.Red) // curtains
+		fill(b, cx, y+2, 3, windowH-4, resurrect64.Cerise) // curtains
 	}
 }
 
@@ -226,7 +227,7 @@ func (r *Renderer) drawLamp(b *ebiten.Image, x, y, light, glow int) {
 func (r *Renderer) drawFlicker(dst *ebiten.Image, tick int) {
 	for i := range litWindows {
 		if flickering(tick, i) {
-			r.drawLamp(dst, windowLeft+i%4*windowPitchX, windowTop+i/4*windowPitchY, gfx.Orange, gfx.Red)
+			r.drawLamp(dst, windowLeft+i%4*windowPitchX, windowTop+i/4*windowPitchY, resurrect64.Coral, resurrect64.Cerise)
 		}
 	}
 }

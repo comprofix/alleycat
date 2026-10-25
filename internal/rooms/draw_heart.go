@@ -7,6 +7,7 @@ import (
 	"github.com/comprofix/alleycat/internal/config"
 	"github.com/comprofix/alleycat/internal/entity"
 	"github.com/comprofix/alleycat/internal/gfx"
+	"github.com/comprofix/alleycat/internal/gfx/palettes/resurrect64"
 )
 
 // Heart room layout, from the reference for layout only (DESIGN §3.5,
@@ -25,9 +26,9 @@ func (r *Renderer) buildHeart() {
 	// A faint lattice of tiny hearts behind the platforms (M8f).
 	for y, row := 4, 0; y < gfx.ScreenHeight; y, row = y+12, row+1 {
 		for x := 4 + (row%2)*12; x < gfx.ScreenWidth; x += 24 {
-			fill(b, x, y, 1, 1, gfx.Lime)
-			fill(b, x+2, y, 1, 1, gfx.Lime)
-			fill(b, x+1, y+1, 1, 1, gfx.Lime)
+			fill(b, x, y, 1, 1, resurrect64.Leaf)
+			fill(b, x+2, y, 1, 1, resurrect64.Leaf)
+			fill(b, x+1, y+1, 1, 1, resurrect64.Leaf)
 		}
 	}
 	cherub := r.sheet.Sprite("cherub").Frame(0)
@@ -108,28 +109,28 @@ func drawHeartDebug(dst *ebiten.Image, h *HeartRoom) {
 		vector.StrokeRect(dst, float32(x)+0.5, float32(y)+0.5, float32(w)-1, float32(hh)-1, 1, gfx.Palette[idx], false)
 	}
 	for _, line := range config.HeartRows {
-		box(config.HeartX, line+config.HeartStandDY, config.HeartCols*config.HeartW, 1, gfx.Yellow)
+		box(config.HeartX, line+config.HeartStandDY, config.HeartCols*config.HeartW, 1, resurrect64.Honey)
 	}
-	box(0, config.HeartFallOffY, gfx.ScreenWidth, 1, gfx.Red)
+	box(0, config.HeartFallOffY, gfx.ScreenWidth, 1, resurrect64.Cerise)
 	for i := range h.Cats {
 		if !h.Cats[i].Away {
 			cr := h.CatRect(i)
-			box(cr.X, cr.Y, cr.W, cr.H, gfx.White)
+			box(cr.X, cr.Y, cr.W, cr.H, resurrect64.White)
 		}
 	}
 	for g := range h.Gifts {
 		if h.Gifts[g].On {
 			gr := h.GiftRect(g)
-			box(gr.X, gr.Y, gr.W, gr.H, gfx.Cyan)
+			box(gr.X, gr.Y, gr.W, gr.H, resurrect64.Seafoam)
 		}
 	}
 	if h.Arrow.Active {
 		ar := h.ArrowRect()
-		box(ar.X, ar.Y, ar.W, ar.H, gfx.Orange)
+		box(ar.X, ar.Y, ar.W, ar.H, resurrect64.Coral)
 	}
 	if f := h.Freddy; !f.Gone {
 		hb := f.HitBox()
-		box(hb.X, hb.Y, hb.W, hb.H, gfx.Lime)
+		box(hb.X, hb.Y, hb.W, hb.H, resurrect64.Leaf)
 	}
 }
 

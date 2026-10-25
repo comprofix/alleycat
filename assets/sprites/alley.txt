@@ -1,6 +1,6 @@
 ; Alley sprites: Freddy and the laundry and clutter (placeholder art, M2).
 ; Freddy faces right; left-facing frames are mirrored when drawn.
-colours k=Night p=Plum r=Red o=Orange y=Yellow l=Lime g=Green t=Teal b=Blue s=Sky c=Cyan w=White v=Silver e=Slate h=Charcoal
+colours k=Ink p=Grape r=Cerise o=Coral y=Honey l=Leaf g=Emerald t=DeepTeal b=Cobalt s=Blue c=Seafoam w=White v=Fog e=Lilac h=Shadow
 
 ; Freddy walking: 6 frames, 24x11 (DESIGN §3.8).
 sprite freddy_walk 24 11

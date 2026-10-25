@@ -1,6 +1,6 @@
 ; Birdcage room sprites (M4, our own art). Generated once by a scratch
 ; script; edit freely by hand.
-colours k=Night p=Plum r=Red o=Orange y=Yellow l=Lime g=Green t=Teal n=Navy b=Blue s=Sky c=Cyan w=White v=Silver e=Slate h=Charcoal
+colours k=Ink p=Grape r=Cerise o=Coral y=Honey l=Leaf g=Emerald t=DeepTeal n=Navy b=Cobalt s=Blue c=Seafoam w=White v=Fog e=Lilac h=Shadow
 
 sprite chair 32 52
 .....kggggk.....................

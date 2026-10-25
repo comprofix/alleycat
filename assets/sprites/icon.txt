@@ -1,6 +1,6 @@
 ; Window and exe icon: Freddy's head against the moon.
 ; Each size is drawn by hand and only ever enlarged in whole steps.
-colours k=Night r=Red o=Orange y=Yellow e=Slate h=Charcoal
+colours k=Ink r=Cerise o=Coral y=Honey e=Lilac h=Shadow
 
 ; Small icon, for 16 and 48 pixels.
 sprite icon16 16 16

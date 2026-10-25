@@ -10,6 +10,7 @@ import (
 	"github.com/comprofix/alleycat/internal/config"
 	"github.com/comprofix/alleycat/internal/entity"
 	"github.com/comprofix/alleycat/internal/gfx"
+	"github.com/comprofix/alleycat/internal/gfx/palettes/resurrect64"
 	"github.com/comprofix/alleycat/internal/rooms"
 )
 
@@ -205,15 +206,15 @@ func (k *Kiss) Draw(ctx *Context, dst *ebiten.Image) {
 	}
 	f := ctx.Font
 	score := fmt.Sprint(k.bonus)
-	f.DrawShadowed(dst, score, gfx.CentreX(score, 1), config.KissScoreY, gfx.White, gfx.Night, 1)
+	f.DrawShadowed(dst, score, gfx.CentreX(score, 1), config.KissScoreY, resurrect64.White, resurrect64.Ink, 1)
 	text := fmt.Sprintf("BONUS MULTIPLIER: %02d", k.multiplier)
-	bar := gfx.Night
+	bar := resurrect64.Ink
 	if (k.ticks/config.KissFlashTicks)%2 == 1 {
-		bar = gfx.Blue
+		bar = resurrect64.Cobalt
 	}
 	w := len(text)*8 + 8
 	dst.SubImage(image.Rect((gfx.ScreenWidth-w)/2, config.KissBarY-2, (gfx.ScreenWidth+w)/2, config.KissBarY+10)).(*ebiten.Image).Fill(gfx.Palette[bar])
-	f.DrawShadowed(dst, text, gfx.CentreX(text, 1), config.KissBarY, gfx.White, gfx.Night, 1)
+	f.DrawShadowed(dst, text, gfx.CentreX(text, 1), config.KissBarY, resurrect64.White, resurrect64.Ink, 1)
 }
 
 func abs(v int) int {

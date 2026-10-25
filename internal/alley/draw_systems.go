@@ -9,6 +9,7 @@ import (
 	"github.com/comprofix/alleycat/internal/config"
 	"github.com/comprofix/alleycat/internal/entity"
 	"github.com/comprofix/alleycat/internal/gfx"
+	"github.com/comprofix/alleycat/internal/gfx/palettes/resurrect64"
 	"github.com/comprofix/alleycat/internal/session"
 )
 
@@ -44,10 +45,10 @@ func rows(img *ebiten.Image, from, n int) *ebiten.Image {
 func (r *Renderer) drawGraffiti(dst *ebiten.Image) {
 	for gi, g := range graffiti {
 		r.font.Draw(dst, g.text, g.x+1, g.y+1, r.scheme.Outline, 1)
-		r.font.Draw(dst, g.text, g.x, g.y, gfx.Orange, 1)
+		r.font.Draw(dst, g.text, g.x, g.y, resurrect64.Coral, 1)
 		for i := range len(g.text) {
 			if (i+gi)%3 == 1 {
-				fill(dst, g.x+i*gfx.GlyphSize+3, g.y+gfx.GlyphSize-1, 1, 2+(i+gi)%3, gfx.Orange)
+				fill(dst, g.x+i*gfx.GlyphSize+3, g.y+gfx.GlyphSize-1, 1, 2+(i+gi)%3, resurrect64.Coral)
 			}
 		}
 	}
@@ -59,7 +60,7 @@ func (r *Renderer) drawHUD(dst *ebiten.Image, a *Alley, high int) {
 	s := a.Session
 	write := func(text string, x, y int) {
 		r.font.Draw(dst, text, x+1, y+1, r.scheme.Outline, 1)
-		r.font.Draw(dst, text, x, y, gfx.White, 1)
+		r.font.Draw(dst, text, x, y, resurrect64.White, 1)
 	}
 	write("HI!", hudHighX-gfx.Width("HI! "), hudHighY)
 	write(session.FormatScore(high), hudHighX, hudHighY)
@@ -91,7 +92,7 @@ func (r *Renderer) drawMice(dst *ebiten.Image, a *Alley) {
 	for i, m := range a.Mice {
 		y := config.MouseY[i]
 		if m.Caught {
-			r.font.Draw(dst, fmt.Sprint(config.MousePoints[i]), m.X, y, gfx.White, 1)
+			r.font.Draw(dst, fmt.Sprint(config.MousePoints[i]), m.X, y, resurrect64.White, 1)
 			continue
 		}
 		img := r.sheet.Sprite("mouse_stand").Frame(0)

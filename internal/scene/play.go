@@ -10,6 +10,7 @@ import (
 	"github.com/comprofix/alleycat/internal/debug"
 	"github.com/comprofix/alleycat/internal/entity"
 	"github.com/comprofix/alleycat/internal/gfx"
+	"github.com/comprofix/alleycat/internal/gfx/palettes/resurrect64"
 	"github.com/comprofix/alleycat/internal/input"
 	"github.com/comprofix/alleycat/internal/rooms"
 	"github.com/comprofix/alleycat/internal/session"
@@ -104,7 +105,7 @@ func (p *Play) Draw(ctx *Context, dst *ebiten.Image) {
 	p.shake.draw(dst, func(d *ebiten.Image) { p.view.Draw(d, p.alley, ctx.HighScore) })
 	if debug.Enabled {
 		p.view.DrawDebug(dst, p.alley)
-		ctx.Font.Draw(dst, fmt.Sprintf("TPS %.1f FPS %.1f", ebiten.ActualTPS(), ebiten.ActualFPS()), 4, 190, gfx.White, 1)
+		ctx.Font.Draw(dst, fmt.Sprintf("TPS %.1f FPS %.1f", ebiten.ActualTPS(), ebiten.ActualFPS()), 4, 190, resurrect64.White, 1)
 	}
 
 	if p.paused {
@@ -137,6 +138,6 @@ func drawPaws(ctx *Context, dst *ebiten.Image) {
 	const msg = "PAWS MODE - Esc to continue"
 	w := gfx.Width(msg)
 	x := (gfx.ScreenWidth - w) / 2
-	dst.SubImage(image.Rect(x-4, 0, x+w+4, 12)).(*ebiten.Image).Fill(gfx.Palette[gfx.Night])
-	ctx.Font.Draw(dst, msg, x, 2, gfx.Yellow, 1)
+	dst.SubImage(image.Rect(x-4, 0, x+w+4, 12)).(*ebiten.Image).Fill(gfx.Palette[resurrect64.Ink])
+	ctx.Font.Draw(dst, msg, x, 2, resurrect64.Honey, 1)
 }

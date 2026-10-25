@@ -1,5 +1,5 @@
 ; User-interface sprites.
-colours w=White v=Silver
+colours w=White v=Fog
 
 ; Menu pointer: a small triangle arrow, two frames (white, silver) for a blink.
 sprite pointer 7 7

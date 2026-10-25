@@ -9,6 +9,7 @@ import (
 	"github.com/comprofix/alleycat/internal/config"
 	"github.com/comprofix/alleycat/internal/entity"
 	"github.com/comprofix/alleycat/internal/gfx"
+	"github.com/comprofix/alleycat/internal/gfx/palettes/resurrect64"
 )
 
 // Birdcage room layout, measured from the reference for layout only (DESIGN
@@ -222,67 +223,67 @@ func (r *Renderer) DrawDebug(dst *ebiten.Image, room Room) {
 		for i := range fb.Swimmers {
 			if !fb.Swimmers[i].Off {
 				sr := fb.SwimmerRect(i)
-				box(sr.X, sr.Y, sr.W, sr.H, gfx.White)
+				box(sr.X, sr.Y, sr.W, sr.H, resurrect64.White)
 			}
 		}
 		h := b.Freddy.HitBox()
-		box(h.X, h.Y, h.W, h.H, gfx.Lime)
+		box(h.X, h.Y, h.W, h.H, resurrect64.Leaf)
 		return
 	}
 	for _, s := range b.Layout.Surfaces {
-		idx := gfx.Yellow
+		idx := resurrect64.Honey
 		if s.Perch {
-			idx = gfx.Cyan
+			idx = resurrect64.Seafoam
 		}
 		box(s.X, s.Band, s.Reach+8, 8, idx)
 	}
 	e := b.ExitRect()
-	box(e.X, e.Y, e.W, e.H, gfx.Sky)
+	box(e.X, e.Y, e.W, e.H, resurrect64.Blue)
 	br := b.Broom.Rect()
-	box(br.X, br.Y, br.W, br.H, gfx.Orange)
+	box(br.X, br.Y, br.W, br.H, resurrect64.Coral)
 	switch rm := room.(type) {
 	case *BirdcageRoom:
 		if rm.Cage.Broken {
 			br := rm.birdRect()
-			box(br.X, br.Y, br.W, br.H, gfx.White)
+			box(br.X, br.Y, br.W, br.H, resurrect64.White)
 		} else {
 			cr := rm.cageRect()
-			box(cr.X, cr.Y, cr.W, cr.H, gfx.White)
+			box(cr.X, cr.Y, cr.W, cr.H, resurrect64.White)
 		}
 	case *FishbowlRoom:
 		br := rm.BowlRect()
-		box(br.X, br.Y, br.W, br.H, gfx.White)
+		box(br.X, br.Y, br.W, br.H, resurrect64.White)
 	case *BookshelfRoom:
 		if l := b.Layout.Ladder; l != nil {
 			for y := l.TopY; y <= l.BottomY; y += l.Gap {
-				box(l.MinX, y+l.Snap, l.MaxX-l.MinX+4, 8, gfx.Cyan)
+				box(l.MinX, y+l.Snap, l.MaxX-l.MinX+4, 8, resurrect64.Seafoam)
 			}
 		}
 		for i := range rm.Ferns {
 			if !rm.Ferns[i] {
 				fr := FernRect(i)
-				box(fr.X, fr.Y, fr.W, fr.H, gfx.Lime)
+				box(fr.X, fr.Y, fr.W, fr.H, resurrect64.Leaf)
 			}
 		}
 		sr := rm.SpiderRect()
-		box(sr.X, sr.Y, sr.W, sr.H, gfx.White)
+		box(sr.X, sr.Y, sr.W, sr.H, resurrect64.White)
 	case *DogsRoom:
 		for i, sd := range rm.Sleepers {
 			if sd.On {
 				sr := SleeperRect(i)
-				box(sr.X, sr.Y, sr.W, sr.H, []int{gfx.White, gfx.Yellow, gfx.Red}[sd.Alert])
+				box(sr.X, sr.Y, sr.W, sr.H, []int{resurrect64.White, resurrect64.Honey, resurrect64.Cerise}[sd.Alert])
 			}
 		}
 	case *CheeseRoom:
 		for i := range rm.Mice {
 			if rm.Mice[i].Visible() {
 				mr := rm.MouseRect(i)
-				box(mr.X, mr.Y, mr.W, mr.H, gfx.White)
+				box(mr.X, mr.Y, mr.W, mr.H, resurrect64.White)
 			}
 		}
 	}
 	if f := b.Freddy; !f.Gone {
 		h := f.HitBox()
-		box(h.X, h.Y, h.W, h.H, gfx.Lime)
+		box(h.X, h.Y, h.W, h.H, resurrect64.Leaf)
 	}
 }

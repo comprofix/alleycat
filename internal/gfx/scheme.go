@@ -1,6 +1,8 @@
 package gfx
 
-// Scheme is a scene's colour scheme: named roles, each a Sweetie 16 index
+import "github.com/comprofix/alleycat/internal/gfx/palettes/resurrect64"
+
+// Scheme is a scene's colour scheme: named roles, each a Resurrect 64 index
 // (DESIGN §2.3). Scenes keep a distinct mood within the one palette.
 type Scheme struct {
 	Wall      int // the main backdrop
@@ -23,88 +25,88 @@ type Scheme struct {
 // AlleyScheme is the alley at night (DESIGN §8): a cool magenta-plum
 // building above a teal fence, nodding to CGA's magenta/cyan set (§2.3).
 var AlleyScheme = Scheme{
-	Wall:      Plum,
-	WallShade: Charcoal,
-	Glass:     Navy,
-	Glint:     Sky,
-	Trim:      Silver,
-	Fence:     Teal,
-	Gap:       Charcoal,
-	Ground:    Charcoal,
-	Metal:     Silver,
-	Shade:     Slate,
-	Outline:   Night,
+	Wall:      resurrect64.Grape,
+	WallShade: resurrect64.Shadow,
+	Glass:     resurrect64.Navy,
+	Glint:     resurrect64.Blue,
+	Trim:      resurrect64.Fog,
+	Fence:     resurrect64.DeepTeal,
+	Gap:       resurrect64.Shadow,
+	Ground:    resurrect64.Shadow,
+	Metal:     resurrect64.Fog,
+	Shade:     resurrect64.Lilac,
+	Outline:   resurrect64.Ink,
 }
 
 // BirdcageScheme is the birdcage room: a red room with green furniture,
 // after the original's red/green set (DESIGN §2.3, §3.4).
 var BirdcageScheme = Scheme{
-	Wall:      Red,
-	WallShade: Plum,
-	Glass:     Night,
-	Glint:     Sky,
-	Trim:      Yellow,
-	Fence:     Green,
-	Gap:       Teal,
-	Ground:    Red,
-	Metal:     Silver,
-	Shade:     Plum,
-	Outline:   Night,
-	Prints:    Plum,
+	Wall:      resurrect64.Cerise,
+	WallShade: resurrect64.Grape,
+	Glass:     resurrect64.Ink,
+	Glint:     resurrect64.Blue,
+	Trim:      resurrect64.Honey,
+	Fence:     resurrect64.Emerald,
+	Gap:       resurrect64.DeepTeal,
+	Ground:    resurrect64.Cerise,
+	Metal:     resurrect64.Fog,
+	Shade:     resurrect64.Grape,
+	Outline:   resurrect64.Ink,
+	Prints:    resurrect64.Grape,
 }
 
 // CheeseScheme is the cheese room: the birdcage room's red walls and green
 // furniture, with a yellow wedge and orange holes (DESIGN §3.4, "Cheese room
 // layout").
 var CheeseScheme = Scheme{
-	Wall:      Red,
-	WallShade: Plum,
-	Glass:     Night,
-	Glint:     Sky,
-	Trim:      Yellow,
-	Fence:     Green,
-	Gap:       Teal,
-	Ground:    Red,
-	Metal:     Silver,
-	Shade:     Plum,
-	Outline:   Night,
-	Prints:    Plum,
-	Cheese:    Yellow,
-	Hole:      Orange,
+	Wall:      resurrect64.Cerise,
+	WallShade: resurrect64.Grape,
+	Glass:     resurrect64.Ink,
+	Glint:     resurrect64.Blue,
+	Trim:      resurrect64.Honey,
+	Fence:     resurrect64.Emerald,
+	Gap:       resurrect64.DeepTeal,
+	Ground:    resurrect64.Cerise,
+	Metal:     resurrect64.Fog,
+	Shade:     resurrect64.Grape,
+	Outline:   resurrect64.Ink,
+	Prints:    resurrect64.Grape,
+	Cheese:    resurrect64.Honey,
+	Hole:      resurrect64.Coral,
 }
 
 // FishbowlScheme is the fishbowl room: a plum room with teal and cyan
 // furniture, after the original's magenta/cyan set (DESIGN §3.4,
 // "Fishbowl room layout").
 var FishbowlScheme = Scheme{
-	Wall:      Plum,
-	WallShade: Charcoal,
-	Glass:     Night,
-	Glint:     Sky,
-	Trim:      Cyan,
-	Fence:     Teal,
-	Gap:       Cyan,
-	Ground:    Plum,
-	Metal:     Silver,
-	Shade:     Charcoal,
-	Outline:   Night,
-	Prints:    Night, // Plum prints vanished on the Plum floor
+	Wall:      resurrect64.Grape,
+	WallShade: resurrect64.Shadow,
+	Glass:     resurrect64.Ink,
+	Glint:     resurrect64.Blue,
+	Trim:      resurrect64.Seafoam,
+	Fence:     resurrect64.DeepTeal,
+	Gap:       resurrect64.Seafoam,
+	Ground:    resurrect64.Grape,
+	Metal:     resurrect64.Fog,
+	Shade:     resurrect64.Shadow,
+	Outline:   resurrect64.Ink,
+	Prints:    resurrect64.Ink, // Grape prints vanished on the Grape floor
 }
 
 // UnderwaterScheme is the underwater scene: teal water under a plum
 // surface band (DESIGN §3.4, "Underwater layout").
 var UnderwaterScheme = Scheme{
-	Wall:      Teal,
-	WallShade: Sky, // ripple marks
-	Trim:      Plum,
-	Shade:     Charcoal,
-	Outline:   Night,
-	Water:     Teal,
+	Wall:      resurrect64.DeepTeal,
+	WallShade: resurrect64.Blue, // ripple marks
+	Trim:      resurrect64.Grape,
+	Shade:     resurrect64.Shadow,
+	Outline:   resurrect64.Ink,
+	Water:     resurrect64.DeepTeal,
 }
 
 // AirColours are Freddy's and the eels' colours underwater by air warning
 // stage 0–3 (DESIGN §3.4, "Underwater": the remake's recolouring).
-var AirColours = [4]int{Night, Navy, Plum, Red}
+var AirColours = [4]int{resurrect64.Ink, resurrect64.Navy, resurrect64.Grape, resurrect64.Cerise}
 
 // DogsScheme is the sleeping dogs room: the fishbowl room's plum walls and
 // teal furniture (DESIGN §3.4, "Sleeping dogs room layout").
@@ -118,16 +120,16 @@ var BookshelfScheme = FishbowlScheme
 // red/green set (DESIGN §3.5, "Heart room layout"). The hearts, cats and
 // cherubs carry their own colours.
 var HeartScheme = Scheme{
-	Wall:    Green,
-	Outline: Night,
+	Wall:    resurrect64.Emerald,
+	Outline: resurrect64.Ink,
 }
 
 // KissScheme is the heart room at the kiss: the cyan/magenta set, with
 // teal ground, plum hearts and silver cats (DESIGN §3.5, "The kiss").
 var KissScheme = Scheme{
-	Wall:    Teal,
-	Shade:   Plum,   // intact hearts
-	Gap:     Night,  // broken hearts
-	Metal:   Silver, // the rivals
-	Outline: Night,
+	Wall:    resurrect64.DeepTeal,
+	Shade:   resurrect64.Grape, // intact hearts
+	Gap:     resurrect64.Ink,   // broken hearts
+	Metal:   resurrect64.Fog,   // the rivals
+	Outline: resurrect64.Ink,
 }

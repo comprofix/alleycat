@@ -7,6 +7,7 @@ import (
 	"github.com/comprofix/alleycat/internal/config"
 	"github.com/comprofix/alleycat/internal/entity"
 	"github.com/comprofix/alleycat/internal/gfx"
+	"github.com/comprofix/alleycat/internal/gfx/palettes/resurrect64"
 )
 
 // Fishbowl room layout, measured from the reference for layout only (DESIGN
@@ -50,10 +51,10 @@ func (r *Renderer) buildWater() {
 	for y := 120; y < gfx.ScreenHeight; y++ {
 		for x := (y / 2) % 2 * 2; x < gfx.ScreenWidth; x += 4 {
 			if y%2 == 0 {
-				fill(b, x+(y/2)%2, y, 1, 1, gfx.Navy)
+				fill(b, x+(y/2)%2, y, 1, 1, resurrect64.Navy)
 			}
 			if y >= 170 && y%2 == 1 {
-				fill(b, x+2, y, 1, 1, gfx.Navy)
+				fill(b, x+2, y, 1, 1, resurrect64.Navy)
 			}
 		}
 	}
@@ -61,22 +62,22 @@ func (r *Renderer) buildWater() {
 	for _, rx := range []int{40, 112, 196, 268} {
 		for y := 8; y < 90; y++ {
 			if y%3 == 0 {
-				fill(b, rx+y/3, y, 2, 1, gfx.Sky)
+				fill(b, rx+y/3, y, 2, 1, resurrect64.Blue)
 			}
 		}
 	}
 	// The sandy bottom, below Freddy's deepest dive, with pebbles and weed.
 	const sandY = 194
-	fill(b, 0, sandY, gfx.ScreenWidth, gfx.ScreenHeight-sandY, gfx.Yellow)
+	fill(b, 0, sandY, gfx.ScreenWidth, gfx.ScreenHeight-sandY, resurrect64.Honey)
 	for x := 3; x < gfx.ScreenWidth; x += 11 {
-		fill(b, x, sandY+1+x%4, 1, 1, gfx.Orange)
+		fill(b, x, sandY+1+x%4, 1, 1, resurrect64.Coral)
 		if x%3 == 0 {
-			fill(b, x+4, sandY+2, 2, 1, gfx.Slate)
+			fill(b, x+4, sandY+2, 2, 1, resurrect64.Lilac)
 		}
 	}
 	for _, wx := range []int{18, 74, 150, 233, 297} {
 		for y := sandY - 1; y > sandY-14-wx%9; y-- {
-			fill(b, wx+(y/3)%2, y, 1, 1, gfx.Green)
+			fill(b, wx+(y/3)%2, y, 1, 1, resurrect64.Emerald)
 		}
 	}
 	for y := 16; y < gfx.ScreenHeight-4; y += rippleCell {
@@ -128,9 +129,9 @@ func (r *Renderer) drawUnderwater(dst *ebiten.Image, fb *FishbowlRoom) {
 
 	ink := gfx.AirColours[fb.AirStage()]
 	if fb.Phase == Zapped {
-		ink = gfx.White
+		ink = resurrect64.White
 		if fb.Zap%2 == 0 {
-			ink = gfx.Blue
+			ink = resurrect64.Cobalt
 		}
 	}
 	fish, eel := r.sheet.Sprite("fish"), r.sheet.Sprite("eel")

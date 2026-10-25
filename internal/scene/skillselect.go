@@ -7,6 +7,7 @@ import (
 
 	"github.com/comprofix/alleycat/internal/config"
 	"github.com/comprofix/alleycat/internal/gfx"
+	"github.com/comprofix/alleycat/internal/gfx/palettes/resurrect64"
 	"github.com/comprofix/alleycat/internal/input"
 	"github.com/comprofix/alleycat/internal/session"
 )
@@ -50,37 +51,37 @@ func startGame(ctx *Context, skill config.Skill) {
 // Draw implements Scene.
 func (s *SkillSelect) Draw(ctx *Context, dst *ebiten.Image) {
 	// A framed navy panel (M8g); the text keeps the plain font for reading.
-	dst.Fill(gfx.Palette[gfx.Night])
+	dst.Fill(gfx.Palette[resurrect64.Ink])
 	panel := func(x, y, w, h, idx int) {
 		dst.SubImage(image.Rect(x, y, x+w, y+h)).(*ebiten.Image).Fill(gfx.Palette[idx])
 	}
-	panel(2, 2, gfx.ScreenWidth-4, gfx.ScreenHeight-4, gfx.Slate)
-	panel(3, 3, gfx.ScreenWidth-6, gfx.ScreenHeight-6, gfx.Navy)
+	panel(2, 2, gfx.ScreenWidth-4, gfx.ScreenHeight-4, resurrect64.Lilac)
+	panel(3, 3, gfx.ScreenWidth-6, gfx.ScreenHeight-6, resurrect64.Navy)
 	f := ctx.Font
 	y := 10
 	line := func(text string, idx int) {
-		if idx == gfx.Yellow {
-			f.DrawShadowed(dst, text, 10, y, idx, gfx.Night, 1)
+		if idx == resurrect64.Honey {
+			f.DrawShadowed(dst, text, 10, y, idx, resurrect64.Ink, 1)
 		} else {
 			f.Draw(dst, text, 10, y, idx, 1)
 		}
 		y += 10
 	}
-	line("Choose your skill level:", gfx.Yellow)
+	line("Choose your skill level:", resurrect64.Honey)
 	y += 2
 	for i, sk := range config.Skills {
-		line("  ("+string(sk.Letter())+") or "+string(rune('1'+i))+"  "+sk.String(), gfx.White)
+		line("  ("+string(sk.Letter())+") or "+string(rune('1'+i))+"  "+sk.String(), resurrect64.White)
 	}
 	y += 8
-	line("During play:", gfx.Yellow)
-	line("  Ctrl+S  sound on/off", gfx.Silver)
-	line("  Ctrl+R  restart the game", gfx.Silver)
-	line("  Ctrl+M  back to this menu", gfx.Silver)
-	line("  Esc     paws (pause)", gfx.Silver)
-	line("  F9 aspect  F10 quit  F11 fullscreen", gfx.Silver)
+	line("During play:", resurrect64.Honey)
+	line("  Ctrl+S  sound on/off", resurrect64.Fog)
+	line("  Ctrl+R  restart the game", resurrect64.Fog)
+	line("  Ctrl+M  back to this menu", resurrect64.Fog)
+	line("  Esc     paws (pause)", resurrect64.Fog)
+	line("  F9 aspect  F10 quit  F11 fullscreen", resurrect64.Fog)
 	y += 8
-	line("Arrow keys move the cat.", gfx.Cyan)
-	line("Alt does special actions.", gfx.Cyan)
+	line("Arrow keys move the cat.", resurrect64.Seafoam)
+	line("Alt does special actions.", resurrect64.Seafoam)
 	y += 6
-	line("Esc returns to the title.", gfx.Slate)
+	line("Esc returns to the title.", resurrect64.Lilac)
 }

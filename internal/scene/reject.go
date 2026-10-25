@@ -6,6 +6,7 @@ import (
 	"github.com/comprofix/alleycat/internal/config"
 	"github.com/comprofix/alleycat/internal/entity"
 	"github.com/comprofix/alleycat/internal/gfx"
+	"github.com/comprofix/alleycat/internal/gfx/palettes/resurrect64"
 )
 
 // Reject is the heart room's rejection scene (DESIGN §3.5, "Failing"): on
@@ -55,7 +56,7 @@ func (r *Reject) Update(ctx *Context) error {
 
 // Draw implements Scene.
 func (r *Reject) Draw(ctx *Context, dst *ebiten.Image) {
-	dst.Fill(gfx.Palette[gfx.Night])
+	dst.Fill(gfx.Palette[resurrect64.Ink])
 	if r.landed {
 		entity.DrawAt(dst, ctx.Rooms.Sprite("reject_face").Frame(0), config.RejectX, config.RejectLandY, false)
 		return

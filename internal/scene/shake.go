@@ -5,6 +5,7 @@ import (
 
 	"github.com/comprofix/alleycat/internal/config"
 	"github.com/comprofix/alleycat/internal/gfx"
+	"github.com/comprofix/alleycat/internal/gfx/palettes/resurrect64"
 )
 
 // shaker gives the screen a small shake each time Freddy takes a new knock
@@ -53,7 +54,7 @@ func (s *shaker) draw(dst *ebiten.Image, scene func(*ebiten.Image)) {
 	}
 	s.buf.Clear()
 	scene(s.buf)
-	dst.Fill(gfx.Palette[gfx.Night])
+	dst.Fill(gfx.Palette[resurrect64.Ink])
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(float64(dx), 0)
 	dst.DrawImage(s.buf, op)

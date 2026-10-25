@@ -10,6 +10,7 @@ import (
 	"github.com/comprofix/alleycat/internal/config"
 	"github.com/comprofix/alleycat/internal/debug"
 	"github.com/comprofix/alleycat/internal/gfx"
+	"github.com/comprofix/alleycat/internal/gfx/palettes/resurrect64"
 	"github.com/comprofix/alleycat/internal/rooms"
 )
 
@@ -82,7 +83,7 @@ func (r *RoomScene) Draw(ctx *Context, dst *ebiten.Image) {
 	r.shake.draw(dst, func(d *ebiten.Image) { r.view.Draw(d, r.room) })
 	if debug.Enabled {
 		r.view.DrawDebug(dst, r.room)
-		ctx.Font.Draw(dst, fmt.Sprintf("TPS %.1f FPS %.1f", ebiten.ActualTPS(), ebiten.ActualFPS()), 4, 190, gfx.White, 1)
+		ctx.Font.Draw(dst, fmt.Sprintf("TPS %.1f FPS %.1f", ebiten.ActualTPS(), ebiten.ActualFPS()), 4, 190, resurrect64.White, 1)
 	}
 	if r.paused {
 		drawPaws(ctx, dst)
@@ -117,7 +118,7 @@ const (
 var lostWords = []string{"OUCH!", "ALAS!", "PITY!", "ARGH!"}
 
 // resultInks are the colours the word may appear in (DESIGN §3.7).
-var resultInks = []int{gfx.White, gfx.Cyan, gfx.Red}
+var resultInks = []int{resurrect64.White, resurrect64.Seafoam, resurrect64.Cerise}
 
 // Result shows the result word for 28 ticks, then moves on (DESIGN §3.8,
 // "Returning from a room").
@@ -164,12 +165,12 @@ const (
 )
 
 func (r *Result) Draw(ctx *Context, dst *ebiten.Image) {
-	dst.Fill(gfx.Palette[gfx.Night])
+	dst.Fill(gfx.Palette[resurrect64.Ink])
 	if r.ink < 0 {
 		return
 	}
 	x := gfx.CentreX(r.text, resultScale)
-	ctx.Font.DrawShadowed(dst, r.text, x, resultY, r.ink, gfx.Charcoal, resultScale)
+	ctx.Font.DrawShadowed(dst, r.text, x, resultY, r.ink, resurrect64.Shadow, resultScale)
 	glyph := gfx.GlyphSize * resultScale
 	for i := range len(r.text) {
 		if i%2 == 0 {

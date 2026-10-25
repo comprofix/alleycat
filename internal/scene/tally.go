@@ -9,6 +9,7 @@ import (
 	"github.com/comprofix/alleycat/internal/config"
 	"github.com/comprofix/alleycat/internal/entity"
 	"github.com/comprofix/alleycat/internal/gfx"
+	"github.com/comprofix/alleycat/internal/gfx/palettes/resurrect64"
 )
 
 // Tally screen layout: columns of cat faces either side, rows 8 px apart
@@ -64,9 +65,9 @@ func (t *Tally) Update(ctx *Context) error {
 
 // Draw implements Scene.
 func (t *Tally) Draw(ctx *Context, dst *ebiten.Image) {
-	bg := gfx.Night
+	bg := resurrect64.Ink
 	if t.lit >= t.rows() && t.held/4%2 == 1 {
-		bg = gfx.Navy // the flashing at the end
+		bg = resurrect64.Navy // the flashing at the end
 	}
 	dst.Fill(gfx.Palette[bg])
 	face := ctx.Rooms.Sprite("tally_face")
@@ -82,7 +83,7 @@ func (t *Tally) Draw(ctx *Context, dst *ebiten.Image) {
 	if t.lit >= t.rows() {
 		// The bonus, big and shadowed (M8g), centred between the columns.
 		text := fmt.Sprintf("%04d", t.bonus%10000)
-		ctx.Font.DrawShadowed(dst, text, gfx.CentreX(text, 2), t.stopY, gfx.Yellow, gfx.Night, 2)
+		ctx.Font.DrawShadowed(dst, text, gfx.CentreX(text, 2), t.stopY, resurrect64.Honey, resurrect64.Ink, 2)
 	}
 }
 
@@ -111,7 +112,7 @@ func (h *HereKitty) Update(ctx *Context) error {
 
 // Draw implements Scene.
 func (h *HereKitty) Draw(ctx *Context, dst *ebiten.Image) {
-	dst.Fill(gfx.Palette[gfx.Night])
+	dst.Fill(gfx.Palette[resurrect64.Ink])
 	frame := h.ticks / 4 // 8 frames of 4 ticks
 	entity.DrawAt(dst, ctx.Rooms.Sprite("kitty_dog").Frame(frame%2), kittyDogX, kittyDogY, false)
 	for _, w := range kittyWords {
@@ -141,6 +142,6 @@ var kittyWords = []struct {
 func drawSlanted(ctx *Context, dst *ebiten.Image, text string, x, y int) {
 	const rise = 3
 	for i, r := range text {
-		ctx.Font.Draw(dst, string(r), x+i*8, y-i*rise, gfx.Cyan, 1)
+		ctx.Font.Draw(dst, string(r), x+i*8, y-i*rise, resurrect64.Seafoam, 1)
 	}
 }

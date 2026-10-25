@@ -16,7 +16,7 @@ You are Freddy, an alley cat. Climb the fences, trash cans and clotheslines, and
 
 Clear enough rooms and Felicia appears in a window. Win her over in the heart room for a big bonus, and the next level begins.
 
-The remake keeps the original's 320×200 screen, a 16-colour palette (Sweetie 16) and a PC-speaker-style sound made in code.
+The remake keeps the original's 320×200 screen and a PC-speaker-style sound made in code, with art in a 64-colour palette (Resurrect 64).
 
 ## Controls
 

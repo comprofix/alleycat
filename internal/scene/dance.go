@@ -7,6 +7,7 @@ import (
 	"github.com/comprofix/alleycat/internal/config"
 	"github.com/comprofix/alleycat/internal/entity"
 	"github.com/comprofix/alleycat/internal/gfx"
+	"github.com/comprofix/alleycat/internal/gfx/palettes/resurrect64"
 )
 
 // Dance is the dancing-cats interlude after a kiss (DESIGN §3.5): on a
@@ -42,7 +43,7 @@ func (d *Dance) Update(ctx *Context) error {
 
 // Draw implements Scene.
 func (d *Dance) Draw(ctx *Context, dst *ebiten.Image) {
-	dst.Fill(gfx.Palette[gfx.Night])
+	dst.Fill(gfx.Palette[resurrect64.Ink])
 	cat := ctx.Rooms.Sprite("dance_cat")
 	step := (d.ticks / config.DanceFrameTicks) % 2
 	for _, c := range d.dancers {
