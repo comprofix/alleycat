@@ -23,39 +23,67 @@ func k(v int) float64 { return float64(v * entity.K) }
 type SmoothRenderer struct {
 	freddy entity.SmoothFreddy
 	dog    entity.SmoothDog
-	canvas entity.Canvas // for the room's things, drawn one at a time
+	canvas entity.Canvas   // for the room's things, drawn one at a time
+	text   *gfx.VectorFont // "BYTE!"
 	scheme gfx.SceneScheme
+	fur    furnish
 	back   *ebiten.Image
 }
 
+// furnish is a room's furniture colours, as its sprites are recoloured:
+// the body, its lit edge and its shade, the shade under the trim, and the
+// curtain rod and its ends.
+type furnish struct {
+	body, light, shade, trimShade, rod, rodEnd int
+}
+
+var (
+	greenFurnish = furnish{resurrect64.Emerald, resurrect64.Leaf, resurrect64.Forest, resurrect64.Caramel, resurrect64.Copper, resurrect64.Coral}
+	tealFurnish  = furnish{resurrect64.Seafoam, resurrect64.White, resurrect64.Jade, resurrect64.Jade, resurrect64.Indigo, resurrect64.Cobalt}
+)
+
 // NewSmoothRenderer returns the new look's room renderer.
 func NewSmoothRenderer() *SmoothRenderer {
-	return &SmoothRenderer{scheme: gfx.BirdcageScheme}
+	return &SmoothRenderer{text: gfx.NewVectorFont(36), scheme: gfx.BirdcageScheme, fur: greenFurnish}
 }
 
 // Drawn reports whether room has its new look yet.
 func (r *SmoothRenderer) Drawn(room Room) bool {
-	_, ok := room.(*BirdcageRoom)
-	return ok
+	switch room.(type) {
+	case *BirdcageRoom, *BookshelfRoom:
+		return true
+	}
+	return false
 }
 
 // Draw renders the room, as Renderer.Draw does, onto a 1280×800 dst.
 func (r *SmoothRenderer) Draw(dst *ebiten.Image, room Room) {
 	if r.back == nil {
 		r.back = ebiten.NewImage(gfx.ScreenWidth*entity.K, gfx.ScreenHeight*entity.K)
-		r.buildBirdcage()
+		if bs, ok := room.(*BookshelfRoom); ok {
+			r.scheme, r.fur = gfx.BookshelfScheme, tealFurnish
+			r.buildBookshelf(bs)
+		} else {
+			r.buildBirdcage()
+		}
 	}
 	dst.DrawImage(r.back, nil)
 	b := room.Shared()
 	for col, n := range b.Broom.Marks {
 		r.drawPrints(dst, col*8, config.FootprintY, n)
 	}
-	if bc, ok := room.(*BirdcageRoom); ok {
-		r.drawBirdcage(dst, bc)
+	switch rm := room.(type) {
+	case *BirdcageRoom:
+		r.drawBirdcage(dst, rm)
+	case *BookshelfRoom:
+		r.drawBookshelf(dst, rm)
 	}
 	r.dog.Draw(dst, &b.Dog, entity.OrangeDog)
 	r.drawBroom(dst, &b.Broom)
 	r.freddy.Draw(dst, b.Freddy)
+	if bs, ok := room.(*BookshelfRoom); ok {
+		r.drawBite(dst, bs)
+	}
 }
 
 // fadePoly fills the polygon through the x, y pairs with palette colour c
@@ -107,9 +135,9 @@ func (r *SmoothRenderer) buildBirdcage() {
 	}
 	fadePoly(b, ink, 0.3, oval(k(tableX)+112, k(tableY+36)-4, 112, 10)...)
 
-	r.canvas.Draw(b, entity.Picture{X: lampX, Y: lampY, W: 26, H: 64, Outline: ink}, drawLamp)
+	r.buildLamp(lampX)
 	for _, c := range chairs {
-		r.canvas.Draw(b, entity.Picture{X: c.x, Y: furnitureY, W: 32, H: 52, Flip: c.left, Outline: ink}, drawChair)
+		r.buildChair(c.x, c.left)
 	}
 	r.canvas.Draw(b, entity.Picture{X: tableX, Y: tableY, W: 56, H: 36, Outline: ink}, drawTable)
 }
@@ -147,7 +175,7 @@ func (r *SmoothRenderer) buildWalls(y0, y1 int) {
 	shapes.FillRect(b, shapes.R(x0, k(y0+3), x1-x0, 5), s.WallLight)
 	shapes.FillRect(b, shapes.R(x0, k(y0+3)+5, x1-x0, 3), s.WallShade)
 	shapes.FillRect(b, shapes.R(x0, k(y1-3), x1-x0, 8), s.Trim)
-	shapes.FillRect(b, shapes.R(x0, k(y1-3)+8, x1-x0, 2), resurrect64.Caramel)
+	shapes.FillRect(b, shapes.R(x0, k(y1-3)+8, x1-x0, 2), r.fur.trimShade)
 	shapes.FillRect(b, shapes.R(x0, bot-4, x1-x0, 4), s.Outline)
 
 	// The side walls, in shade, with the rail and skirting carried round.
@@ -209,10 +237,10 @@ func (r *SmoothRenderer) buildPicture(x, y float64) {
 // through the glass, a frame and sill, and the curtains either side on
 // their rod, where the classic look hangs them.
 func (r *SmoothRenderer) buildWindow(x, y int) {
-	s, b := r.scheme, r.back
+	s, b, f := r.scheme, r.back, r.fur
 	wx, wy, ww, wh := k(x), k(y), k(openingW), k(openingH)
 	shapes.FillRoundRect(b, shapes.R(wx-6, wy-6, ww+12, wh+12), 2, s.Trim)
-	shapes.FillRect(b, shapes.R(wx-2, wy-2, ww+4, wh+4), resurrect64.Caramel)
+	shapes.FillRect(b, shapes.R(wx-2, wy-2, ww+4, wh+4), f.trimShade)
 	shapes.FillRect(b, shapes.R(wx, wy, ww, wh), s.Glass)
 	fadeRect(b, wx, wy+wh/2, ww, wh/2, resurrect64.Indigo, 0.5)
 	for _, st := range [][2]float64{{14, 10}, {40, 24}, {92, 8}, {110, 30}, {70, 16}} {
@@ -223,67 +251,75 @@ func (r *SmoothRenderer) buildWindow(x, y int) {
 	shapes.FillRect(b, shapes.R(wx+ww/2-3, wy, 6, wh), s.Trim)
 	sill := shapes.R(wx-12, wy+wh+6, ww+24, 8)
 	shapes.FillRoundRect(b, sill, 2, s.Trim)
-	shapes.FillRect(b, shapes.R(sill.X, sill.Y+6, sill.W, 2), resurrect64.Caramel)
+	shapes.FillRect(b, shapes.R(sill.X, sill.Y+6, sill.W, 2), f.trimShade)
 	fadeRect(b, sill.X+4, sill.Y+sill.H, sill.W-8, 5, s.Outline, 0.4)
 
 	// The curtains, gathered in folds and scalloped at the hem.
 	cy, cw, ch := wy-k(curtainDY), k(curtainW), k(26)
 	for _, cx := range []float64{wx - cw + 6, wx + ww - 6} {
-		shapes.FillPoly(b, resurrect64.Emerald, cx, cy, cx+cw, cy, cx+cw+2, cy+ch-4, cx-2, cy+ch-4)
+		shapes.FillPoly(b, f.body, cx, cy, cx+cw, cy, cx+cw+2, cy+ch-4, cx-2, cy+ch-4)
 		for i := range 5 {
 			hx := cx + float64(i)*cw/4
-			shapes.FillCircle(b, hx, cy+ch-4, 7, resurrect64.Emerald)
+			shapes.FillCircle(b, hx, cy+ch-4, 7, f.body)
 		}
-		for _, f := range []float64{12, 32, 52} {
-			shapes.Line(b, cx+f, cy+8, cx+f+1, cy+ch, 4, resurrect64.Forest)
-			shapes.Line(b, cx+f-5, cy+8, cx+f-5, cy+ch-6, 2, resurrect64.Leaf)
+		for _, fold := range []float64{12, 32, 52} {
+			shapes.Line(b, cx+fold, cy+8, cx+fold+1, cy+ch, 4, f.shade)
+			shapes.Line(b, cx+fold-5, cy+8, cx+fold-5, cy+ch-6, 2, f.light)
 		}
 		fadeRect(b, cx, cy+ch+4, cw, 4, s.Outline, 0.25)
 		for i := range 4 {
-			shapes.FillCircle(b, cx+8+float64(i)*16, cy+3, 3.5, resurrect64.Copper)
+			shapes.FillCircle(b, cx+8+float64(i)*16, cy+3, 3.5, f.rod)
 		}
 	}
-	shapes.Line(b, wx-cw-4, cy, wx+ww+cw+4, cy, 5, resurrect64.Copper)
-	shapes.FillCircle(b, wx-cw-6, cy, 6, resurrect64.Coral)
-	shapes.FillCircle(b, wx+ww+cw+6, cy, 6, resurrect64.Coral)
+	shapes.Line(b, wx-cw-4, cy, wx+ww+cw+4, cy, 5, f.rod)
+	shapes.FillCircle(b, wx-cw-6, cy, 6, f.rodEnd)
+	shapes.FillCircle(b, wx+ww+cw+6, cy, 6, f.rodEnd)
 }
 
-// drawLamp draws a standard lamp in a 104×256 box: a striped shade lit
-// underneath, a pole with its pull cord, and a heavy base.
-func drawLamp(p entity.Pen) {
-	p.Poly(resurrect64.Emerald, 10, 0, 94, 0, 104, 36, 0, 36)
-	for i := range 7 {
-		tx, bx := 14+float64(i)*12.6, 6+float64(i)*15.4
-		p.Stroke(resurrect64.Forest, 3, false, tx+4, 1, bx+5, 35)
-		p.Stroke(resurrect64.Leaf, 2.5, false, tx, 1, bx, 35)
-	}
-	p.Stroke(resurrect64.Leaf, 3, false, 11, 1.5, 93, 1.5)
-	p.Stroke(resurrect64.Forest, 4, false, 1, 34, 103, 34)
-	p.Ellipse(52, 38, 22, 3.5, 0, resurrect64.Honey)
-	p.Stroke(resurrect64.DeepTeal, 12, false, 50, 38, 50, 232)
-	p.Stroke(resurrect64.Emerald, 3, false, 47, 40, 47, 230)
-	p.Stroke(resurrect64.Honey, 2, false, 74, 36, 74, 74)
-	p.Circle(74, 78, 4, resurrect64.Coral)
-	p.Poly(resurrect64.Emerald, 26, 232, 74, 232, 80, 254, 20, 254)
-	p.Poly(resurrect64.Forest, 60, 232, 74, 232, 80, 254, 64, 254)
-	p.Ellipse(50, 232, 25, 5, 0, resurrect64.Leaf)
+// buildLamp draws a standard lamp at x on the grid, in the room's
+// furniture colours: a striped shade lit underneath, a pole with its pull
+// cord, and a heavy base, in a 104×256 box.
+func (r *SmoothRenderer) buildLamp(x int) {
+	f := r.fur
+	r.canvas.Draw(r.back, entity.Picture{X: x, Y: lampY, W: 26, H: 64, Outline: r.scheme.Outline}, func(p entity.Pen) {
+		p.Poly(f.body, 10, 0, 94, 0, 104, 36, 0, 36)
+		for i := range 7 {
+			tx, bx := 14+float64(i)*12.6, 6+float64(i)*15.4
+			p.Stroke(f.shade, 3, false, tx+4, 1, bx+5, 35)
+			p.Stroke(f.light, 2.5, false, tx, 1, bx, 35)
+		}
+		p.Stroke(f.light, 3, false, 11, 1.5, 93, 1.5)
+		p.Stroke(f.shade, 4, false, 1, 34, 103, 34)
+		p.Ellipse(52, 38, 22, 3.5, 0, resurrect64.Honey)
+		p.Stroke(resurrect64.DeepTeal, 12, false, 50, 38, 50, 232)
+		p.Stroke(f.body, 3, false, 47, 40, 47, 230)
+		p.Stroke(resurrect64.Honey, 2, false, 74, 36, 74, 74)
+		p.Circle(74, 78, 4, resurrect64.Coral)
+		p.Poly(f.body, 26, 232, 74, 232, 80, 254, 20, 254)
+		p.Poly(f.shade, 60, 232, 74, 232, 80, 254, 64, 254)
+		p.Ellipse(50, 232, 25, 5, 0, f.light)
+	})
 }
 
-// drawChair draws a balloon-backed chair facing right in a 128×208 box:
-// the padded back, the seat and four legs, the far two darker.
-func drawChair(p entity.Pen) {
-	for _, l := range [][3]float64{{40, 200}, {88, 200}} {
-		p.Stroke(resurrect64.Pine, 7, false, l[0], 140, l[0], l[1])
-	}
-	p.Ellipse(32, 64, 28, 64, 0, resurrect64.Forest)
-	p.Ellipse(29, 63, 24, 60, 0, resurrect64.Emerald)
-	p.Ellipse(18, 60, 7, 46, 0, resurrect64.Leaf)
-	p.Stroke(resurrect64.Forest, 14, false, 14, 137, 120, 137)
-	p.Stroke(resurrect64.Emerald, 11, false, 14, 132, 120, 132)
-	p.Stroke(resurrect64.Leaf, 4, false, 16, 127, 118, 127)
-	p.Stroke(resurrect64.DeepTeal, 8, false, 20, 142, 19, 205)
-	p.Stroke(resurrect64.DeepTeal, 8, false, 108, 142, 109, 205)
-	p.Stroke(resurrect64.Emerald, 2.5, false, 106, 144, 107, 202)
+// buildChair draws a balloon-backed chair at x on the grid, facing left
+// when left is set, in the room's furniture colours: the padded back, the
+// seat and four legs, the far two darker, in a 128×208 box.
+func (r *SmoothRenderer) buildChair(x int, left bool) {
+	f := r.fur
+	r.canvas.Draw(r.back, entity.Picture{X: x, Y: furnitureY, W: 32, H: 52, Flip: left, Outline: r.scheme.Outline}, func(p entity.Pen) {
+		for _, l := range [][3]float64{{40, 200}, {88, 200}} {
+			p.Stroke(resurrect64.Pine, 7, false, l[0], 140, l[0], l[1])
+		}
+		p.Ellipse(32, 64, 28, 64, 0, f.shade)
+		p.Ellipse(29, 63, 24, 60, 0, f.body)
+		p.Ellipse(18, 60, 7, 46, 0, f.light)
+		p.Stroke(f.shade, 14, false, 14, 137, 120, 137)
+		p.Stroke(f.body, 11, false, 14, 132, 120, 132)
+		p.Stroke(f.light, 4, false, 16, 127, 118, 127)
+		p.Stroke(resurrect64.DeepTeal, 8, false, 20, 142, 19, 205)
+		p.Stroke(resurrect64.DeepTeal, 8, false, 108, 142, 109, 205)
+		p.Stroke(f.body, 2.5, false, 106, 144, 107, 202)
+	})
 }
 
 // drawTable draws the round table in a 224×144 box: its top seen from a
