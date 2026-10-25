@@ -54,14 +54,21 @@ func (r *Renderer) buildCheese() {
 	for y := wedgeY0; y < wedgeY1; y++ {
 		x1 := wedgeRight(y)
 		fill(b, wedgeX0, y, x1-wedgeX0, 1, s.Cheese)
+		// The far side in shade: solid by the edge, dithered further in.
+		for x := x1 - 8 + y%2; x < x1-4; x += 2 {
+			fill(b, x, y, 1, 1, s.CheeseShade)
+		}
+		fill(b, x1-4, y, 3, 1, s.CheeseShade)
 		fill(b, x1-1, y, 1, 1, s.Hole)
 	}
 	fill(b, wedgeX0, wedgeY0, wedgeRight(wedgeY0)-wedgeX0, 1, s.Hole)
+	fill(b, wedgeX0, wedgeY1, wedgeRight(wedgeY1-1)-wedgeX0, 1, s.WallShade) // its shadow
 	// A fixed scatter of small pits; drawing never uses the game's RNG.
 	for y := wedgeY0 + 4; y < wedgeY1-4; y += pitCell {
 		for x := wedgeX0 + 4; x < wedgeRight(y)-6; x += pitCell {
 			if h := (x*7 + y*13) % 11; h < 3 {
 				fill(b, x+h, y+h, 2, 1, s.Hole)
+				fill(b, x+h, y+h+1, 2, 1, s.CheeseShade)
 			}
 		}
 	}

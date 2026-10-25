@@ -20,6 +20,7 @@ type Scheme struct {
 	Shade       int // shading on props
 	Outline     int
 	Cheese      int // the cheese room's wedge
+	CheeseShade int // its shaded side and the lit lip of its pits
 	Hole        int // its holes and pits
 	Water       int // the underwater scene's water
 	Prints      int // Freddy's footprints on a room's floor, darker than Ground
@@ -47,44 +48,46 @@ var AlleyScheme = Scheme{
 }
 
 // BirdcageScheme is the birdcage room: a red room with green furniture,
-// after the original's red/green set (DESIGN §2.3, §3.4).
+// after the original's red/green set (DESIGN §2.3, §3.4). The red is a
+// ramp from Maroon to Red, calmer than Cerise across the whole screen.
 var BirdcageScheme = Scheme{
-	Wall:        resurrect64.Cerise,
-	WallShade:   resurrect64.Grape,
-	WallLight:   resurrect64.Cerise, // unlit until the red rooms are shaded
+	Wall:        resurrect64.Crimson,
+	WallShade:   resurrect64.Maroon,
+	WallLight:   resurrect64.Red,
 	Glass:       resurrect64.Ink,
 	Glint:       resurrect64.Blue,
 	Trim:        resurrect64.Honey,
 	Fence:       resurrect64.Emerald,
 	Gap:         resurrect64.DeepTeal,
-	Ground:      resurrect64.Cerise,
-	GroundLight: resurrect64.Cerise,
+	Ground:      resurrect64.Crimson,
+	GroundLight: resurrect64.Brick,
 	Metal:       resurrect64.Fog,
 	Shade:       resurrect64.Grape,
 	Outline:     resurrect64.Ink,
-	Prints:      resurrect64.Grape,
+	Prints:      resurrect64.Maroon,
 }
 
 // CheeseScheme is the cheese room: the birdcage room's red walls and green
-// furniture, with a yellow wedge and orange holes (DESIGN §3.4, "Cheese room
+// furniture, with a yellow wedge and copper holes (DESIGN §3.4, "Cheese room
 // layout").
 var CheeseScheme = Scheme{
-	Wall:        resurrect64.Cerise,
-	WallShade:   resurrect64.Grape,
-	WallLight:   resurrect64.Cerise, // unlit until the red rooms are shaded
+	Wall:        resurrect64.Crimson,
+	WallShade:   resurrect64.Maroon,
+	WallLight:   resurrect64.Red,
 	Glass:       resurrect64.Ink,
 	Glint:       resurrect64.Blue,
 	Trim:        resurrect64.Honey,
 	Fence:       resurrect64.Emerald,
 	Gap:         resurrect64.DeepTeal,
-	Ground:      resurrect64.Cerise,
-	GroundLight: resurrect64.Cerise,
+	Ground:      resurrect64.Crimson,
+	GroundLight: resurrect64.Brick,
 	Metal:       resurrect64.Fog,
 	Shade:       resurrect64.Grape,
 	Outline:     resurrect64.Ink,
-	Prints:      resurrect64.Grape,
+	Prints:      resurrect64.Maroon,
 	Cheese:      resurrect64.Honey,
-	Hole:        resurrect64.Coral,
+	CheeseShade: resurrect64.Caramel,
+	Hole:        resurrect64.Copper,
 }
 
 // FishbowlScheme is the fishbowl room: a plum room with teal and cyan
