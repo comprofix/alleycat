@@ -1,3 +1,7 @@
+# Builds a release when a version tag such as v1.1.1 is pushed: checks on
+# Linux and Windows, a Windows zip and a Linux tarball, and a GitHub release
+# holding both with that version's notes from CHANGELOG.md. The builds run
+# on Ubuntu; the Windows build needs no cgo, so it is cross-built.
 name: Release
 
 on:
@@ -39,6 +43,7 @@ jobs:
 
   build:
     needs: check
+    # Building on an older Ubuntu lets the Linux build run on older systems.
     runs-on: ubuntu-22.04
     strategy:
       matrix:
@@ -102,12 +107,26 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GH_REPO: ${{ github.repository }}
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           path: dist
           merge-multiple: true
       - name: Checksums
         run: cd dist && sha256sum * > SHA256SUMS.txt
+      # The notes are this version's section of CHANGELOG.md, as committed
+      # in the release commit, without its heading.
+      - name: Release notes
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v h="## [$version]" '
+            index($0, "## ") == 1 { if (on) exit; on = index($0, h) == 1; next }
+            on
+          ' CHANGELOG.md | sed -e '/./,$!d' > notes.md
+          if [ ! -s notes.md ]; then
+            echo "CHANGELOG.md has no section for $version" >&2
+            exit 1
+          fi
       - name: Publish release
         run: |
           # A re-run replaces the files on the existing release.
@@ -116,6 +135,6 @@ jobs:
           else
             gh release create "$GITHUB_REF_NAME" dist/* \
               --title "Alley Cat $GITHUB_REF_NAME" \
-              --generate-notes \
+              --notes-file notes.md \
               --verify-tag
           fi
