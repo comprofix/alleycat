@@ -5,6 +5,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 
+	"github.com/comprofix/alleycat/internal/audio"
 	"github.com/comprofix/alleycat/internal/config"
 	"github.com/comprofix/alleycat/internal/gfx"
 	"github.com/comprofix/alleycat/internal/input"
@@ -50,6 +51,12 @@ func updateMenu(ctx *Context, m *ui.Menu, y func(gfx.Fonts) int) {
 	m.Update(ctx.Input)
 }
 
+// menuSounds gives m the menus' sounds, as Night Crossing's (DESIGN §7.4).
+func menuSounds(ctx *Context, m *ui.Menu) {
+	m.OnMove = func() { ctx.Audio.PlayMenu(audio.MenuMove()) }
+	m.OnConfirm = func() { ctx.Audio.PlayMenu(audio.MenuConfirm()) }
+}
+
 // drawMenuPanel draws m in a panel centred across the screen, its top at y.
 func drawMenuPanel(ctx *Context, dst *ebiten.Image, m *ui.Menu, y int) {
 	sc, f := ctx.Scheme, ctx.Fonts
@@ -75,6 +82,7 @@ func (s *MainMenu) Update(ctx *Context) error {
 			{Label: "Help", Confirm: func() { ctx.Switch(NewHelp()) }},
 			{Label: "Quit", Confirm: ctx.Quit},
 		}
+		menuSounds(ctx, &s.menu)
 	}
 	if ctx.Input.JustPressed(input.Back) {
 		ctx.Switch(NewTitle())
@@ -113,6 +121,7 @@ func (s *SkillSelect) Update(ctx *Context) error {
 		for _, sk := range config.Skills {
 			s.menu.Items = append(s.menu.Items, ui.Item{Label: sk.String(), Confirm: func() { startGame(ctx, sk) }})
 		}
+		menuSounds(ctx, &s.menu)
 	}
 	if ctx.Input.JustPressed(input.Back) {
 		ctx.Switch(NewMainMenu())
@@ -120,6 +129,7 @@ func (s *SkillSelect) Update(ctx *Context) error {
 	}
 	for k, skill := range skillKeys {
 		if ctx.Input.KeyJustPressed(k) {
+			ctx.Audio.PlayMenu(audio.MenuConfirm())
 			startGame(ctx, skill)
 			return nil
 		}
@@ -157,6 +167,7 @@ const VolumeSteps = 10
 func (s *Options) Update(ctx *Context) error {
 	if s.menu.Items == nil {
 		s.menu.Items = s.items(ctx)
+		menuSounds(ctx, &s.menu)
 	}
 	if ctx.Input.JustPressed(input.Back) {
 		ctx.Switch(s.back())
@@ -253,6 +264,7 @@ const helpKeyCells = 12
 // Update implements Scene.
 func (h *Help) Update(ctx *Context) error {
 	if ctx.Input.AnyJustPressed() {
+		ctx.Audio.PlayMenu(audio.MenuConfirm())
 		ctx.Switch(NewMainMenu())
 	}
 	return nil
@@ -306,6 +318,7 @@ func (p *Pause) Update(ctx *Context) error {
 			{Label: "Options", Confirm: func() { ctx.Switch(NewOptions(func() Scene { return p })) }},
 			{Label: "Quit to menu", Confirm: func() { ctx.Switch(NewMainMenu()) }},
 		}
+		menuSounds(ctx, &p.menu)
 	}
 	if ctx.Input.JustPressed(input.Back) || ctx.Input.JustPressed(input.Pause) {
 		resume()

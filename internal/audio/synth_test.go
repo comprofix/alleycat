@@ -356,3 +356,50 @@ func TestStopIsImmediate(t *testing.T) {
 		t.Error("sound after Stop: the effect went on, or the queued tune still played")
 	}
 }
+
+// A menu sound plays over the effect and through paws mode, while the
+// paused effect stands still and carries on after it (DESIGN §7.4).
+func TestMenuSoundsThroughPaws(t *testing.T) {
+	s := NewSynth()
+	s.SetSoften(false)
+	s.PlaySFX([]Note{{800, ms(100)}})
+	render(t, s, ms(60))
+	s.SetPaused(true)
+	s.PlayMenu([]Note{{2000, ms(100)}})
+	if got := pitch(render(t, s, ms(100))[100:]); !near(got, 2000, 20) {
+		t.Errorf("menu sound in paws mode pitch = %.0f, want 2000", got)
+	}
+	if !toneless(render(t, s, ms(200))[samples(ms(5)):]) {
+		t.Error("tone after the menu sound while still paused")
+	}
+	s.SetPaused(false)
+	// 40 ms of the effect were left when it paused.
+	if got := pitch(render(t, s, ms(35))[samples(ms(5)):]); !near(got, 800, 30) {
+		t.Errorf("after resuming pitch = %.0f, want the paused effect at 800", got)
+	}
+}
+
+// A scene change's Stop leaves a menu sound to finish, so the item chosen is
+// heard as the screen changes.
+func TestStopLeavesMenuSound(t *testing.T) {
+	s := NewSynth()
+	s.SetSoften(false)
+	s.PlayMenu([]Note{{2000, ms(200)}})
+	render(t, s, ms(20))
+	s.Stop()
+	if got := pitch(render(t, s, ms(100))); !near(got, 2000, 20) {
+		t.Errorf("after Stop pitch = %.0f, want the menu sound at 2000", got)
+	}
+}
+
+// The menu sounds are the skeleton's: E6 for the move, C6 then G6 for the
+// choice, rising.
+func TestMenuSounds(t *testing.T) {
+	m, c := MenuMove(), MenuConfirm()
+	if len(m) != 1 || len(c) != 2 || c[1].Hz <= c[0].Hz {
+		t.Fatalf("move %v, confirm %v", m, c)
+	}
+	if !near(m[0].Hz, 1318.5, 0.5) || !near(c[0].Hz, 1046.5, 0.5) || !near(c[1].Hz, 1568, 0.5) {
+		t.Errorf("pitches %.1f, %.1f, %.1f, want E6, C6, G6", m[0].Hz, c[0].Hz, c[1].Hz)
+	}
+}

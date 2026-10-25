@@ -8,6 +8,7 @@ import (
 	"github.com/comprofix/alleycat/internal/alley"
 	"github.com/comprofix/alleycat/internal/config"
 	"github.com/comprofix/alleycat/internal/session"
+	"github.com/comprofix/alleycat/internal/ui"
 )
 
 // menuContext is a context for driving the menus by key.
@@ -159,5 +160,21 @@ func TestHelp(t *testing.T) {
 	ctx, keys := menuContext()
 	if _, ok := press(ctx, keys, NewHelp(), ebiten.KeyQ).(*MainMenu); !ok {
 		t.Error("a key did not leave the help")
+	}
+}
+
+// Every menu moves and chooses with the menu sounds (DESIGN §7.4).
+func TestMenusHaveSounds(t *testing.T) {
+	ctx, _ := menuContext()
+	main, skill := NewMainMenu(), NewSkillSelect(config.Kitten)
+	opts, paws := NewOptions(func() Scene { return main }), NewPause(main)
+	for _, c := range []struct {
+		s    Scene
+		menu *ui.Menu
+	}{{main, &main.menu}, {skill, &skill.menu}, {opts, &opts.menu}, {paws, &paws.menu}} {
+		step(ctx, c.s)
+		if c.menu.OnMove == nil || c.menu.OnConfirm == nil {
+			t.Errorf("%T has no menu sounds", c.s)
+		}
 	}
 }

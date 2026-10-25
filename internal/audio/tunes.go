@@ -113,6 +113,20 @@ func Wipe(d time.Duration) []Note {
 	return n
 }
 
+// The menus' sounds, as the Game Skeleton's (DESIGN §7.4): a blip as the
+// cursor moves or a value changes, and two notes rising as an item is
+// chosen.
+var (
+	menuMove    = []Note{{Hz: noteHz("E6"), Dur: 50 * time.Millisecond}}
+	menuConfirm = []Note{{Hz: noteHz("C6"), Dur: 50 * time.Millisecond}, {Hz: noteHz("G6"), Dur: 100 * time.Millisecond}}
+)
+
+// MenuMove is the cursor moving or a value changing.
+func MenuMove() []Note { return menuMove }
+
+// MenuConfirm is a menu item chosen.
+func MenuConfirm() []Note { return menuConfirm }
+
 // tallyScale is the rising series the tally's rows step up.
 var tallyScale = []string{"C5", "D5", "E5", "F5", "G5", "A5", "B5", "C6", "D6", "E6", "F6", "G6", "A6", "B6"}
 
