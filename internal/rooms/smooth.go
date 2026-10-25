@@ -26,10 +26,11 @@ type SmoothRenderer struct {
 	freddy entity.SmoothFreddy
 	dog    entity.SmoothDog
 	canvas entity.Canvas   // for the room's things, drawn one at a time
-	text   *gfx.VectorFont // "BYTE!"
+	text   *gfx.VectorFont // "BYTE!", "ZAP!"
 	scheme gfx.SceneScheme
 	fur    furnish
 	back   *ebiten.Image
+	water  *ebiten.Image // the underwater scene's backdrop
 }
 
 // furnish is a room's furniture colours, as its sprites are recoloured:
@@ -52,7 +53,7 @@ func NewSmoothRenderer() *SmoothRenderer {
 // Drawn reports whether room has its new look yet.
 func (r *SmoothRenderer) Drawn(room Room) bool {
 	switch room.(type) {
-	case *BirdcageRoom, *BookshelfRoom, *CheeseRoom, *DogsRoom:
+	case *BirdcageRoom, *BookshelfRoom, *CheeseRoom, *DogsRoom, *FishbowlRoom:
 		return true
 	}
 	return false
@@ -60,6 +61,10 @@ func (r *SmoothRenderer) Drawn(room Room) bool {
 
 // Draw renders the room, as Renderer.Draw does, onto a 1280×800 dst.
 func (r *SmoothRenderer) Draw(dst *ebiten.Image, room Room) {
+	if fb, ok := room.(*FishbowlRoom); ok && fb.Phase != InRoom {
+		r.drawUnderwater(dst, fb)
+		return
+	}
 	if r.back == nil {
 		r.back = ebiten.NewImage(gfx.ScreenWidth*entity.K, gfx.ScreenHeight*entity.K)
 		switch rm := room.(type) {
@@ -72,6 +77,9 @@ func (r *SmoothRenderer) Draw(dst *ebiten.Image, room Room) {
 		case *DogsRoom:
 			r.scheme, r.fur = gfx.DogsScheme, tealFurnish
 			r.buildDogs()
+		case *FishbowlRoom:
+			r.scheme, r.fur = gfx.FishbowlScheme, tealFurnish
+			r.buildFishbowl()
 		default:
 			r.buildBirdcage()
 		}
@@ -91,6 +99,8 @@ func (r *SmoothRenderer) Draw(dst *ebiten.Image, room Room) {
 		r.drawCheese(dst, rm)
 	case *DogsRoom:
 		floor = r.dogsFloor(dst, rm)
+	case *FishbowlRoom:
+		r.drawFishbowl(dst, rm)
 	}
 
 	// The room dog, the broom and Freddy: on the floor, each in depth order
