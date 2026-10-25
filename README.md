@@ -16,7 +16,7 @@ You are Freddy, an alley cat. Climb the fences, trash cans and clotheslines, and
 
 Clear enough rooms and Felicia appears in a window. Win her over in the heart room for a big bonus, and the next level begins.
 
-The remake keeps the original's 320×200 screen and a PC-speaker-style sound made in code, with art in a 64-colour palette (Resurrect 64).
+The remake keeps a PC-speaker-style sound made in code, with art in a 64-colour palette (Resurrect 64). It has two looks, chosen under Options: the new look, drawn smoothly at a higher resolution, and the classic look, the original's 320×200 screen in pixels.
 
 ## Controls
 
@@ -29,7 +29,7 @@ The remake keeps the original's 320×200 screen and a PC-speaker-style sound mad
 | Ctrl+S | Sound on and off |
 | Ctrl+R | Restart the game |
 | Ctrl+M | Back to the main menu |
-| F9 | Square pixels or a 4:3 CRT shape |
+| F9 | Square pixels or a 4:3 CRT shape (classic look) |
 | F11 or Alt+Enter | Fullscreen |
 | F10 | Quit |
 
@@ -79,7 +79,7 @@ sudo apt install libc6-dev libgl1-mesa-dev libxcursor-dev libxi-dev libxinerama-
 
 The game keeps two small files in the folder it runs from:
 
-- `settings.json`: the scale, fullscreen, window size and sound;
+- `settings.json`: the look, the scale, fullscreen, window size and sound;
 - `scores.json`: the high score.
 
 Delete either one to go back to the defaults.

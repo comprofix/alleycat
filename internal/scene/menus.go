@@ -92,6 +92,12 @@ func (s *MainMenu) Update(ctx *Context) error {
 	return nil
 }
 
+func (*MainMenu) native()    {}
+func (*SkillSelect) native() {}
+func (*Options) native()     {}
+func (*Help) native()        {}
+func (*Pause) native()       {}
+
 // Draw implements Scene.
 func (s *MainMenu) Draw(ctx *Context, dst *ebiten.Image) {
 	drawMenuScreen(ctx, dst, "ALLEY CAT", &s.menu, "Enter: choose   Esc: back")
@@ -183,17 +189,17 @@ func (s *Options) items(ctx *Context) []ui.Item {
 		return func(int) { *v = !*v; ctx.SettingsChanged() }
 	}
 	soundOff := func() bool { return !set.SoundOn }
-	modes := config.Project.ScaleModes
 	return []ui.Item{
-		{Label: "Scale", Value: func() string { return ScaleModeName(set.ScaleMode) }, Disabled: len(modes) < 2,
+		{Label: "Look", Value: func() string { return set.Look.Name() },
 			Adjust: func(d int) {
-				i := 0
-				for j, m := range modes {
-					if m == set.ScaleMode {
-						i = j
-					}
-				}
-				set.ScaleMode = modes[(i+d+len(modes))%len(modes)]
+				set.Look = next(config.Looks, set.Look, d)
+				ctx.SettingsChanged()
+			}},
+		// The new look has one scale mode, so Scale is dimmed under it.
+		{Label: "Scale", Value: func() string { return ScaleModeName(set.Mode()) },
+			DisabledIf: func() bool { return len(set.Look.Preset().ScaleModes) < 2 },
+			Adjust: func(d int) {
+				set.ScaleMode = next(set.Look.Preset().ScaleModes, set.ScaleMode, d)
 				ctx.SettingsChanged()
 			}},
 		{Label: "Fullscreen", Value: ui.OnOff(&set.Fullscreen), Adjust: toggle(&set.Fullscreen)},
@@ -217,6 +223,18 @@ func (s *Options) items(ctx *Context) []ui.Item {
 		{Label: "Soften beeper", Value: ui.OnOff(&set.Soften), DisabledIf: soundOff, Adjust: toggle(&set.Soften)},
 		{Label: "Back", Confirm: func() { ctx.Switch(s.back()) }},
 	}
+}
+
+// next is the item d places after v in list, wrapping round; the first if
+// v is not in it.
+func next[T comparable](list []T, v T, d int) T {
+	i := 0
+	for j, x := range list {
+		if x == v {
+			i = j + d
+		}
+	}
+	return list[(i%len(list)+len(list))%len(list)]
 }
 
 // steps is a 0–1 volume as a whole number of steps.
@@ -339,7 +357,7 @@ func pauseMenuTop(f gfx.Fonts) int { return pauseTop(f) + 2*f.Large.LineHeight()
 // Draw implements Scene.
 func (p *Pause) Draw(ctx *Context, dst *ebiten.Image) {
 	sc, f := ctx.Scheme, ctx.Fonts
-	p.under.Draw(ctx, dst)
+	drawScene(ctx, p.under, dst)
 	Dim(dst, sc.Shadow, PauseDim)
 	ui.TextCentred(dst, f.Large, "PAWS", pauseTop(f), sc.Title, sc.Shadow)
 	drawMenuPanel(ctx, dst, &p.menu, pauseMenuTop(f))

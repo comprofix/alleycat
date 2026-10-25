@@ -53,10 +53,34 @@ type Context struct {
 	TickCount   int64 // master ticks so far, this frame's included
 	FreddySteps int   // Freddy updates (2 per tick)
 
+	pixel           *ebiten.Image // the pixel scenes' canvas in the new look; a render cache
 	next            Scene
 	cut             bool
 	quit            bool
 	settingsChanged bool
+}
+
+// native is a scene that draws at the screen's own size in either look:
+// the menus. Every other scene draws the pixel art on the 320×200 grid.
+type native interface{ native() }
+
+// drawScene draws s onto the screen dst. A pixel scene shown in the new
+// look is drawn on a 320×200 canvas and enlarged four times, pixels kept
+// square and sharp, until its new art is drawn (DESIGN §2.1).
+func drawScene(ctx *Context, s Scene, dst *ebiten.Image) {
+	if _, ok := s.(native); ok || dst.Bounds().Dx() == gfx.ScreenWidth {
+		s.Draw(ctx, dst)
+		return
+	}
+	if ctx.pixel == nil {
+		ctx.pixel = ebiten.NewImage(gfx.ScreenWidth, gfx.ScreenHeight)
+	}
+	ctx.pixel.Clear()
+	s.Draw(ctx, ctx.pixel)
+	op := &ebiten.DrawImageOptions{}
+	op.GeoM.Scale(float64(dst.Bounds().Dx())/gfx.ScreenWidth, float64(dst.Bounds().Dy())/gfx.ScreenHeight)
+	op.Filter = ebiten.FilterNearest
+	dst.DrawImage(ctx.pixel, op)
 }
 
 // Switch asks the manager to fade to s at the end of this frame.

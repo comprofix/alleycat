@@ -25,7 +25,7 @@ const quiet = 50
 // The sound settings reach the synth (DESIGN §9): off or muted is silent,
 // and the volume scales the level.
 func TestApplySound(t *testing.T) {
-	set := config.DefaultSettings(config.Classic)
+	set := config.DefaultSettings()
 	ctx := &Context{Audio: audio.NewSynth(), Settings: &set}
 	ctx.ApplySound()
 	full := loudness(ctx)

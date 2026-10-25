@@ -16,6 +16,8 @@ const (
 // Settings are the player's choices saved between runs (DESIGN §9). They
 // are presentation and sound only and never touch the rules.
 type Settings struct {
+	Look Look `json:"look"`
+	// ScaleMode is the classic look's choice; the new look has one mode.
 	ScaleMode  ScaleMode `json:"scale_mode"`
 	Fullscreen bool      `json:"fullscreen"`
 	WindowW    int       `json:"window_width"`
@@ -26,22 +28,24 @@ type Settings struct {
 	Soften     bool      `json:"soften_beeper"`
 }
 
-// DefaultSettings are the settings for preset p with no file.
-func DefaultSettings(p Preset) Settings {
-	w, h := p.DefaultWindow()
+// DefaultSettings are the settings with no file: the new look, which
+// players see first, players of v1.2.1 included.
+func DefaultSettings() Settings {
+	w, h := Smooth.DefaultWindow()
 	return Settings{
-		ScaleMode: p.ScaleModes[0],
+		Look:      LookNew,
+		ScaleMode: Classic.ScaleModes[0],
 		WindowW:   w, WindowH: h,
 		SoundOn: true, Volume: DefaultVolume, Soften: true,
 	}
 }
 
-// LoadSettings reads the settings at path for preset p. A missing or
-// corrupt file gives the defaults, a missing field keeps its default, and
-// values out of range are clamped, so it never fails. A file from v1.2.1
-// or before keeps its aspect, saved then as "aspect": "crt".
-func LoadSettings(path string, p Preset) Settings {
-	s := DefaultSettings(p)
+// LoadSettings reads the settings at path. A missing or corrupt file gives
+// the defaults, a missing field keeps its default, and values out of range
+// are clamped, so it never fails. A file from v1.2.1 or before keeps its
+// aspect, saved then as "aspect": "crt".
+func LoadSettings(path string) Settings {
+	s := DefaultSettings()
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return s
@@ -61,15 +65,18 @@ func LoadSettings(path string, p Preset) Settings {
 	case got.Aspect == string(ScaleCRT):
 		got.ScaleMode = ScaleCRT
 	}
-	return got.Settings.Clamped(p)
+	return got.Settings.Clamped()
 }
 
-// Clamped returns s with every value made valid for preset p.
-func (s Settings) Clamped(p Preset) Settings {
-	if !p.HasMode(s.ScaleMode) {
-		s.ScaleMode = p.ScaleModes[0]
+// Clamped returns s with every value made valid.
+func (s Settings) Clamped() Settings {
+	if s.Look != LookClassic {
+		s.Look = LookNew
 	}
-	minW, minH := p.MinWindow()
+	if !Classic.HasMode(s.ScaleMode) {
+		s.ScaleMode = Classic.ScaleModes[0]
+	}
+	minW, minH := s.Look.Preset().MinWindow()
 	s.WindowW = min(max(s.WindowW, minW), MaxWindowW)
 	s.WindowH = min(max(s.WindowH, minH), MaxWindowH)
 	if !(s.Volume >= 0) { // also catches NaN
@@ -77,6 +84,15 @@ func (s Settings) Clamped(p Preset) Settings {
 	}
 	s.Volume = min(s.Volume, 1)
 	return s
+}
+
+// Mode is the scale mode the look shows the screen in: the classic look's
+// choice, or the new look's one mode.
+func (s Settings) Mode() ScaleMode {
+	if p := s.Look.Preset(); !p.HasMode(s.ScaleMode) {
+		return p.ScaleModes[0]
+	}
+	return s.ScaleMode
 }
 
 // SaveSettings writes the settings to path.

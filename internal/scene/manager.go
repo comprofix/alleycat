@@ -91,7 +91,7 @@ func (m *Manager) Darkness() float32 {
 
 // Draw renders the current scene and the fade.
 func (m *Manager) Draw(ctx *Context, dst *ebiten.Image) {
-	m.cur.Draw(ctx, dst)
+	drawScene(ctx, m.cur, dst)
 	if d := m.Darkness(); d > 0 {
 		Dim(dst, resurrect64.Ink, d)
 	}

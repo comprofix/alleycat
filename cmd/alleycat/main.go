@@ -18,7 +18,7 @@ func main() {
 	// The settings and high score live beside the game (DESIGN §9).
 	dir := config.SaveDir()
 	saved := game.Saved{
-		Settings: config.LoadSettings(filepath.Join(dir, config.SettingsFile), config.Project),
+		Settings: config.LoadSettings(filepath.Join(dir, config.SettingsFile)),
 		High:     score.LoadHigh(filepath.Join(dir, config.ScoresFile)),
 		Dir:      dir,
 	}

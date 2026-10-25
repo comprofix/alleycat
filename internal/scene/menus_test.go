@@ -14,7 +14,7 @@ import (
 // menuContext is a context for driving the menus by key.
 func menuContext() (*Context, *heldKeys) {
 	ctx, keys := titleContext()
-	set := config.DefaultSettings(config.Classic)
+	set := config.DefaultSettings()
 	ctx.Settings = &set
 	return ctx, keys
 }
@@ -136,18 +136,31 @@ func TestOptions(t *testing.T) {
 	ctx, keys := menuContext()
 	o := NewOptions(func() Scene { return NewMainMenu() })
 	set := ctx.Settings
+	press(ctx, keys, o, ebiten.KeyArrowRight) // Look
+	if set.Look != config.LookClassic || !ctx.TakeSettingsChanged() {
+		t.Errorf("look %q, want classic and the change noted", set.Look)
+	}
+	press(ctx, keys, o, ebiten.KeyArrowDown)
 	press(ctx, keys, o, ebiten.KeyArrowRight) // Scale
 	if set.ScaleMode != config.ScaleCRT || !ctx.TakeSettingsChanged() {
 		t.Errorf("scale %q, want CRT and the change noted", set.ScaleMode)
 	}
-	press(ctx, keys, o, ebiten.KeyArrowDown)
+	press(ctx, keys, o, ebiten.KeyArrowUp)
+	press(ctx, keys, o, ebiten.KeyArrowLeft) // Look, back to new
+	if set.Look != config.LookNew || set.Mode() != config.ScaleSmooth || !ctx.TakeSettingsChanged() {
+		t.Errorf("look %q in mode %q, want new and smooth", set.Look, set.Mode())
+	}
+	press(ctx, keys, o, ebiten.KeyArrowDown) // skips Scale under the new look
+	if o.menu.Cursor != 2 {
+		t.Errorf("cursor on %d under the new look, want Fullscreen", o.menu.Cursor)
+	}
 	press(ctx, keys, o, ebiten.KeyArrowDown)
 	press(ctx, keys, o, ebiten.KeyEnter) // Sound
 	if set.SoundOn || !ctx.TakeSettingsChanged() {
 		t.Error("sound not switched off")
 	}
 	press(ctx, keys, o, ebiten.KeyArrowDown) // skips the volume and softening while sound is off
-	if o.menu.Cursor != 5 {
+	if o.menu.Cursor != 6 {
 		t.Errorf("cursor on %d with sound off, want Back", o.menu.Cursor)
 	}
 	if _, ok := press(ctx, keys, o, ebiten.KeyEnter).(*MainMenu); !ok {

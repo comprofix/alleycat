@@ -58,8 +58,51 @@ var Classic = Preset{
 	Art:        ArtPixel,
 }
 
-// Project is the preset the game uses: its resolution, scale modes and
-// palette.
+// Smooth is the new look: the screen four times the 320×200 grid, so the
+// game's coordinates are unchanged, with Resurrect 64 and smooth art,
+// scaled by any factor.
+var Smooth = Preset{
+	Name:        "Smooth",
+	ScreenWidth: 1280, ScreenHeight: 800,
+	ScaleModes: []ScaleMode{ScaleSmooth},
+	Palette:    resurrect64.Palette,
+	Art:        ArtSmooth,
+}
+
+// Look is which of the game's two looks is shown. The values are what
+// settings.json stores.
+type Look string
+
+const (
+	// LookNew is the smooth look, what players see first.
+	LookNew Look = "new"
+	// LookClassic is the 320×200 pixel look of v1.2.1, after the 1984
+	// game.
+	LookClassic Look = "classic"
+)
+
+// Looks lists the looks in the options menu's order.
+var Looks = []Look{LookNew, LookClassic}
+
+// Preset is the look's preset.
+func (l Look) Preset() Preset {
+	if l == LookClassic {
+		return Classic
+	}
+	return Smooth
+}
+
+// Name is the look as the options menu shows it.
+func (l Look) Name() string {
+	if l == LookClassic {
+		return "Classic"
+	}
+	return "New"
+}
+
+// Project is the preset of the look being shown: its resolution, scale
+// modes and palette. The game sets it from the settings at start and when
+// the look changes, and nothing else does.
 var Project = Classic
 
 // HasMode reports whether the preset offers mode m.

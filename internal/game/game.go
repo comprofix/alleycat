@@ -15,6 +15,7 @@ import (
 
 	"github.com/comprofix/alleycat/assets"
 	"github.com/comprofix/alleycat/internal/audio"
+	"github.com/comprofix/alleycat/internal/bitfont"
 	"github.com/comprofix/alleycat/internal/clock"
 	"github.com/comprofix/alleycat/internal/config"
 	"github.com/comprofix/alleycat/internal/gfx"
@@ -25,12 +26,13 @@ import (
 
 // Game is the top-level ebiten.Game.
 type Game struct {
-	preset   config.Preset
-	screen   *ebiten.Image // the internal screen
+	preset   config.Preset // the look's: Project, kept to see it change
+	screen   *ebiten.Image // the internal screen, the preset's size
 	prescale *ebiten.Image // whole-number upscale used for CRT presentation
 	outW     int
 	outH     int
 
+	font   *bitfont.Font // the 8×8 font, for the classic look's menus
 	clock  *clock.Clock
 	ctx    *scene.Context
 	scenes *scene.Manager
@@ -77,10 +79,8 @@ func New(seed uint64, saved Saved) (*Game, error) {
 		return nil, fmt.Errorf("audio: %w", err)
 	}
 
-	p := config.Project
 	g := &Game{
-		preset:    p,
-		screen:    ebiten.NewImage(p.ScreenWidth, p.ScreenHeight),
+		font:      font,
 		clock:     clock.New(config.TPS),
 		speaker:   speaker,
 		dir:       saved.Dir,
@@ -89,7 +89,6 @@ func New(seed uint64, saved Saved) (*Game, error) {
 		ctx: &scene.Context{
 			Input:     input.New(&input.Ebiten{}),
 			RNG:       rand.New(rand.NewPCG(seed, seed^0x9e3779b97f4a7c15)),
-			Fonts:     gfx.NewFonts(font),
 			PixelFont: gfx.NewPixelFont(font),
 			UI:        ui,
 			Alley:     alleySheet,
@@ -104,6 +103,7 @@ func New(seed uint64, saved Saved) (*Game, error) {
 		},
 	}
 	g.ctx.Settings = &g.settings
+	g.applyLook()
 	g.ctx.ApplySound()
 	g.scenes = scene.NewManager(scene.NewTitle())
 	return g, nil
@@ -116,7 +116,7 @@ func (g *Game) Update() error {
 	// The pointer is turned into screen pixels through where present will
 	// show the screen.
 	sw, sh := g.preset.ScreenWidth, g.preset.ScreenHeight
-	r := gfx.Fit(g.settings.ScaleMode, sw, sh, g.outW, g.outH)
+	r := gfx.Fit(g.settings.Mode(), sw, sh, g.outW, g.outH)
 	in.SetView(input.View{X: r.X, Y: r.Y, W: r.W, H: r.H, Width: sw, Height: sh})
 	in.Update()
 
@@ -129,7 +129,7 @@ func (g *Game) Update() error {
 		s.Fullscreen = !s.Fullscreen
 		g.ctx.SettingsChanged()
 	}
-	if in.JustPressed(input.ScaleMode) {
+	if in.JustPressed(input.ScaleMode) && len(g.preset.ScaleModes) > 1 {
 		s.ScaleMode = g.preset.NextMode(s.ScaleMode)
 		g.ctx.SettingsChanged()
 	}
@@ -149,6 +149,7 @@ func (g *Game) Update() error {
 		return ebiten.Termination
 	}
 	if g.ctx.TakeSettingsChanged() {
+		g.applyLook()
 		g.ctx.ApplySound()
 		if ebiten.IsFullscreen() != s.Fullscreen {
 			ebiten.SetFullscreen(s.Fullscreen)
@@ -164,6 +165,25 @@ func (g *Game) Update() error {
 		}
 	}
 	return nil
+}
+
+// applyLook shows the look the settings choose (DESIGN §2.1): its preset,
+// a screen of its size and the menus' fonts, the 8×8 font for the classic
+// look and Go Mono Bold for the new. Nothing changes if the look has not.
+func (g *Game) applyLook() {
+	p := g.settings.Look.Preset()
+	if g.screen != nil && p.Name == g.preset.Name {
+		return
+	}
+	config.Project, g.preset = p, p
+	if g.screen != nil {
+		g.screen.Deallocate()
+	}
+	g.screen = ebiten.NewImage(p.ScreenWidth, p.ScreenHeight)
+	g.ctx.Fonts = gfx.NewFonts(g.font)
+	if p.Art == config.ArtSmooth {
+		g.ctx.Fonts = gfx.SmoothFonts(p.ScreenHeight)
+	}
 }
 
 // saveSettings writes the current settings (DESIGN §9). A failure is
@@ -194,13 +214,14 @@ func (g *Game) Draw(out *ebiten.Image) {
 func (g *Game) present(out *ebiten.Image) {
 	sw, sh := g.preset.ScreenWidth, g.preset.ScreenHeight
 	out.Fill(color.Black)
-	r := gfx.Fit(g.settings.ScaleMode, sw, sh, g.outW, g.outH)
-	if g.settings.ScaleMode != config.ScaleCRT {
+	mode := g.settings.Mode()
+	r := gfx.Fit(mode, sw, sh, g.outW, g.outH)
+	if mode != config.ScaleCRT {
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Scale(r.W/float64(sw), r.H/float64(sh))
 		op.GeoM.Translate(r.X, r.Y)
 		op.Filter = ebiten.FilterNearest
-		if g.settings.ScaleMode == config.ScaleSmooth {
+		if mode == config.ScaleSmooth {
 			op.Filter = ebiten.FilterLinear
 		}
 		out.DrawImage(g.screen, op)
