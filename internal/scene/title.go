@@ -134,10 +134,17 @@ func fillRect(dst *ebiten.Image, x, y, w, h, idx int) {
 // buildBack draws the night scene behind the title.
 func (t *Title) buildBack(ctx *Context) {
 	b := ebiten.NewImage(gfx.ScreenWidth, gfx.ScreenHeight)
-	// The sky in bands, darkest at the top.
+	// The sky in bands, darkest at the top, dithered where they meet.
 	fillRect(b, 0, 0, gfx.ScreenWidth, 118, resurrect64.Ink)
 	fillRect(b, 0, 118, gfx.ScreenWidth, 16, resurrect64.Shadow)
 	fillRect(b, 0, 134, gfx.ScreenWidth, gfx.ScreenHeight-134, resurrect64.Navy)
+	for _, band := range [2]struct{ y, idx int }{{118, resurrect64.Shadow}, {134, resurrect64.Navy}} {
+		for y := band.y - 4; y < band.y; y++ {
+			for x := y % 2; x < gfx.ScreenWidth; x += 2 {
+				fillRect(b, x, y, 1, 1, band.idx)
+			}
+		}
+	}
 	for i, s := range titleStars {
 		idx := resurrect64.Fog
 		if i%3 == 0 {
@@ -149,20 +156,28 @@ func (t *Title) buildBack(ctx *Context) {
 	for i, r := range titleRoofs {
 		fillRect(b, r.x, r.top, r.w, titleFenceY-r.top, resurrect64.Ink)
 		fillRect(b, r.x+r.w/3, r.top-3, 2, 3, resurrect64.Ink) // a chimney
+		fillRect(b, r.x, r.top, r.w, 1, resurrect64.Shadow)    // the roofline catching the moon
 		for wy := r.top + 4; wy < titleFenceY-4; wy += 6 {
 			for wx := r.x + 3; wx < r.x+r.w-3; wx += 6 {
 				if (wx*7+wy*3+i)%5 == 0 {
-					fillRect(b, wx, wy, 2, 2, resurrect64.Honey)
+					fillRect(b, wx, wy, 2, 1, resurrect64.Honey)
+					fillRect(b, wx, wy+1, 2, 1, resurrect64.Amber)
 				}
 			}
 		}
 	}
-	// The fence along the bottom, its boards ragged at the top.
+	// The fence along the bottom, its boards ragged at the top, lit on the
+	// left edge and in shade near the ground, as in the alley.
 	for i, x := 0, 0; x < gfx.ScreenWidth; i, x = i+1, x+8 {
 		top := titleFenceY + (i*37+i/3)%3
 		fillRect(b, x, top, 7, gfx.ScreenHeight-top, resurrect64.DeepTeal)
-		fillRect(b, x, top+1, 1, gfx.ScreenHeight-top, resurrect64.Lilac)
+		fillRect(b, x, top+1, 1, gfx.ScreenHeight-top, resurrect64.Teal)
 		fillRect(b, x+7, top+2, 1, gfx.ScreenHeight-top, resurrect64.Shadow)
+		for y := gfx.ScreenHeight - 8; y < gfx.ScreenHeight; y++ {
+			for bx := x + 1 + y%2; bx < x+7; bx += 2 {
+				fillRect(b, bx, y, 1, 1, resurrect64.Shadow)
+			}
+		}
 	}
 	t.back = b
 }

@@ -55,7 +55,8 @@ func (s *SkillSelect) Draw(ctx *Context, dst *ebiten.Image) {
 	panel := func(x, y, w, h, idx int) {
 		dst.SubImage(image.Rect(x, y, x+w, y+h)).(*ebiten.Image).Fill(gfx.Palette[idx])
 	}
-	panel(2, 2, gfx.ScreenWidth-4, gfx.ScreenHeight-4, resurrect64.Lilac)
+	panel(2, 2, gfx.ScreenWidth-4, gfx.ScreenHeight-4, resurrect64.Dusk)  // the frame, in shade
+	panel(2, 2, gfx.ScreenWidth-5, gfx.ScreenHeight-5, resurrect64.Lilac) // lit top and left
 	panel(3, 3, gfx.ScreenWidth-6, gfx.ScreenHeight-6, resurrect64.Navy)
 	f := ctx.Font
 	y := 10
