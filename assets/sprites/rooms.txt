@@ -1185,6 +1185,8 @@ recolour curtain_teal from curtain g=c l=w o=b F=j u=i
 ; bow-string Ink.
 recolour cherub_kiss from cherub o=p r=k u=L
 
+; The heart platforms at the kiss: intact Grape, broken Ink (DESIGN §3.5).
+recolour heart_kiss from heart r=p f=V w=V U=L n=k i=h
 
 ; Sleeping dogs room sprites (M5c, our own placeholder art in the M3 bulldog
 ; style). Generated once by a scratch script; edit freely by hand.

@@ -152,14 +152,14 @@ func (r *Renderer) DrawHeartKiss(dst *ebiten.Image, h *HeartRoom) {
 		}
 	}
 	dst.DrawImage(r.kiss, nil)
-	heart := r.sheet.Sprite("heart")
+	heart := r.sheet.Sprite("heart_kiss")
 	for row, line := range config.HeartRows {
 		for col := range config.HeartCols {
-			frame, ink := 0, s.Shade
+			frame := 0
 			if h.Broken[row][col] {
-				frame, ink = 1, s.Gap
+				frame = 1
 			}
-			drawTinted(dst, heart.Frame(frame), config.HeartX+col*config.HeartW, line+config.HeartDrawDY, false, ink)
+			entity.DrawAt(dst, heart.Frame(frame), config.HeartX+col*config.HeartW, line+config.HeartDrawDY, false)
 		}
 	}
 	gift := r.sheet.Sprite("gift").Frame(0)

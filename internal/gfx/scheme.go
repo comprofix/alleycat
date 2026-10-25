@@ -146,11 +146,10 @@ var HeartScheme = Scheme{
 }
 
 // KissScheme is the heart room at the kiss: the cyan/magenta set, with
-// teal ground, plum hearts and silver cats (DESIGN §3.5, "The kiss").
+// teal ground, plum hearts and silver cats (DESIGN §3.5, "The kiss"). The
+// hearts are their own recolour, heart_kiss, so they keep their shading.
 var KissScheme = Scheme{
 	Wall:    resurrect64.DeepTeal,
-	Shade:   resurrect64.Grape, // intact hearts
-	Gap:     resurrect64.Ink,   // broken hearts
-	Metal:   resurrect64.Fog,   // the rivals
+	Metal:   resurrect64.Fog, // the rivals
 	Outline: resurrect64.Ink,
 }
