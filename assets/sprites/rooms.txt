@@ -769,10 +769,10 @@ k...vvvvrrvee..k
 sprite mouse_icon 14 8
 .........vv...
 ........vrv...
-...mmmmmmmmm..
-.vvvvvvvvkvv..
+...mmmvvvvvv..
+.mvvvvvvvkvv..
 vvvvvvvvvvvvvr
-.veeeeeeeeee..
+.vvvvvveeeee..
 e..ee...ee....
 .ee...........
 
