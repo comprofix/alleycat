@@ -35,7 +35,8 @@ const letterPitch = gfx.GlyphSize * K
 // its place among them. It caches the backdrop as the pixel Renderer does
 // and holds no game state.
 type SmoothRenderer struct {
-	pixel       *Renderer       // the pixel art still in use
+	pixel       *Renderer // the pixel art still in use
+	freddy      entity.SmoothFreddy
 	text        *gfx.VectorFont // the lettering on the fence
 	scheme      gfx.SceneScheme // the alley's colours, as the classic look
 	back, front *ebiten.Image   // the backdrop, behind and in front of Freddy
@@ -67,20 +68,20 @@ func (r *SmoothRenderer) Draw(dst *ebiten.Image, a *Alley, high int) {
 		}
 		p.drawMice(l, a)
 		p.drawThrown(l, &a.Thrown)
-		if f.Depth == entity.Behind {
-			entity.DrawFreddyRimmed(l, p.sheet, f, p.scheme.Shade)
-		}
 	})
+	if f.Depth == entity.Behind {
+		r.freddy.Draw(dst, f)
+	}
 	dst.DrawImage(r.front, nil)
 	r.drawHUD(dst, a, high)
 	r.layer(dst, r.top, func(l *ebiten.Image) {
 		p.drawTrashCat(l, &a.TrashCat)
 		entity.DrawDog(l, p.sheet, &a.Dog, "dog_run")
-		if f.Depth != entity.Behind {
-			entity.DrawFreddyRimmed(l, p.sheet, f, p.scheme.Shade)
-		}
-		p.drawImpact(l, a.Impact)
 	})
+	if f.Depth != entity.Behind {
+		r.freddy.Draw(dst, f)
+	}
+	r.layer(dst, r.top, func(l *ebiten.Image) { p.drawImpact(l, a.Impact) })
 }
 
 // layer draws pixel art on the 320×200 layer l and lays it over dst,
