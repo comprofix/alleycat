@@ -5,6 +5,28 @@ All notable changes to Alley Cat are listed here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0](https://github.com/comprofix/alleycat/compare/v1.1.1...v1.2.0) - 2026-10-25
+
+### Changed
+
+- A new look: the game moves from the Sweetie 16 palette to Resurrect 64,
+  and every scene is shaded along its own ramp of colours, lit from the
+  top left. Gameplay, timings and sound are unchanged.
+- The alley: a dithered night sky, lit and shaded brick, lamp-lit windows
+  behind curtains, shaded fence boards, cobbles and round trash cans.
+- Freddy and every character, from the mice and the dogs to Felicia and
+  the rival cats, are redrawn by hand with light and shade.
+- The rooms: shaded walls, floorboards and furniture; the red rooms calmed
+  to a deeper red; a shaded cheese wedge with deep holes.
+- Underwater, Freddy and the eels keep their shading as the air runs low,
+  and Freddy swims as the same cat seen in the alley, not the old longer
+  figure. The sand and weed are shaded too.
+- The heart room and the kiss: shaded hearts, cherubs and gifts, and the
+  hearts keep their shading at the kiss.
+- The title, tally and other screens: a shaded skyline and fence, and the
+  name and the result words painted in bands of light and shade.
+- The program icon's moon is shaded, and Freddy's ears match the game.
+
 ## [1.1.1](https://github.com/comprofix/alleycat/compare/v1.1.0...v1.1.1) - 2026-10-24
 
 ### Fixed
