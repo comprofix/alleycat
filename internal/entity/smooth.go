@@ -59,11 +59,13 @@ func (l leg) draw(p Pen) {
 }
 
 // pose is everything that changes between Freddy's poses: his turn, his
-// legs and the line of his tail.
+// legs and the line of his tail, how far his body bobs up or down, and
+// how far his ears flick.
 type pose struct {
-	angle float64
-	legs  [4]leg
-	tail  []float64
+	angle    float64
+	legs     [4]leg
+	tail     []float64
+	bob, ear float64
 }
 
 // joints are where the legs join the body: hind near and far, front near
@@ -105,12 +107,21 @@ func freddyPose(f *Freddy) pose {
 		// The walk: each leg swings in turn, hind then front, near then
 		// far, a quarter of a stride apart, its paw lifted as it swings
 		// forward.
+		// His body bobs as the dog's does, highest as a leg passes under,
+		// his ears flick and his tail swings, all with the stride; his
+		// paws stay on the ground.
 		phi := 2 * math.Pi * float64(f.WalkFrame) / 6 // six walk frames
+		bob := -1.2 * math.Cos(2*phi)
 		var off [4][2]float64
 		for i, ph := range [4]float64{0, math.Pi, math.Pi / 2, 3 * math.Pi / 2} {
-			off[i] = [2]float64{7 * math.Sin(phi+ph), -4 * max(0, math.Cos(phi+ph))}
+			off[i] = [2]float64{7 * math.Sin(phi+ph), -4*max(0, math.Cos(phi+ph)) - bob}
 		}
-		return pose{legs: legsAt(off), tail: tailUp(2 * math.Sin(phi))}
+		legs := legsAt(off)
+		for i := range legs {
+			legs[i].jy += bob
+			legs[i].fy += bob
+		}
+		return pose{legs: legs, tail: tailUp(4 * math.Sin(phi)), bob: bob, ear: 1.5 * math.Sin(phi)}
 	}
 	return pose{legs: legsAt([4][2]float64{{-2, 0}, {0, 0}, {0, 0}, {2, 0}}), tail: tailUp(0)}
 }
@@ -118,12 +129,13 @@ func freddyPose(f *Freddy) pose {
 // drawCat draws Freddy standing, walking or in the air, facing right in a
 // 96×44 box.
 func drawCat(dst *ebiten.Image, ps pose) {
-	p := NewPen(dst, 52, 30, ps.angle)
+	legs := NewPen(dst, 52, 30, ps.angle)
 	for _, l := range ps.legs {
 		if l.far {
-			l.draw(p)
+			l.draw(legs)
 		}
 	}
+	p := legs.At(0, ps.bob, 1) // the body, bobbing over the legs
 	// The tail, then the body: haunch and chest joined along the back.
 	p.Stroke(resurrect64.Ink, 5.5, true, ps.tail...)
 	tx, ty := ps.tail[len(ps.tail)-4], ps.tail[len(ps.tail)-3]
@@ -136,19 +148,19 @@ func drawCat(dst *ebiten.Image, ps pose) {
 	p.Stroke(resurrect64.Lilac, 2.5, true, 30, 14.5, 44, 13.8, 58, 14, 66, 12.8)
 	for _, l := range ps.legs {
 		if !l.far {
-			l.draw(p)
+			l.draw(legs)
 		}
 	}
-	drawHead(p, 78, 10)
+	drawHead(p, 78, 10, ps.ear)
 }
 
 // drawHead draws Freddy's head in profile, facing right, round (x, y): his
-// ears, a honey eye and his muzzle, with whiskers.
-func drawHead(p Pen, x, y float64) {
-	p.Poly(resurrect64.Ink, x-11, y-1, x-10, y-10, x-3, y-6)
-	p.Poly(resurrect64.Ink, x+2, y-7, x+6, y-10, x+8, y-1)
-	p.Poly(resurrect64.Mauve, x-9.5, y-3, x-9, y-7.5, x-5, y-5.5)
-	p.Poly(resurrect64.Mauve, x+3, y-5.5, x+5.5, y-7.5, x+6.5, y-3)
+// ears, flicked by ear, a honey eye and his muzzle, with whiskers.
+func drawHead(p Pen, x, y, ear float64) {
+	p.Poly(resurrect64.Ink, x-11, y-1, x-10-ear, y-10+ear, x-3, y-6)
+	p.Poly(resurrect64.Ink, x+2, y-7, x+6+ear, y-10-ear, x+8, y-1)
+	p.Poly(resurrect64.Mauve, x-9.5, y-3, x-9-ear*0.7, y-7.5+ear*0.7, x-5, y-5.5)
+	p.Poly(resurrect64.Mauve, x+3, y-5.5, x+5.5+ear*0.7, y-7.5-ear*0.7, x+6.5, y-3)
 	p.Circle(x-1, y+1, 9, resurrect64.Ink)
 	p.Ellipse(x+7, y+4, 5, 4, 0.1, resurrect64.Ink)
 	p.Stroke(resurrect64.Lilac, 1.8, true, x-9, y-5, x-6, y-8, x-1, y-8.5)
