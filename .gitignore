@@ -1,7 +1,11 @@
-# Local planning / assistant docs (not tracked)
+# Personal working documents (not tracked)
+CLAUDE.md
+CLAUDE.local.md
+AGENTS.md
 DESIGN.md
 PLAN.md
-CLAUDE.md
+.mcp.json
+.worktreeinclude
 .claude/
 
 # Build output
