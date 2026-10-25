@@ -8,6 +8,7 @@ import (
 	"github.com/comprofix/alleycat/internal/alley"
 	"github.com/comprofix/alleycat/internal/debug"
 	"github.com/comprofix/alleycat/internal/entity"
+	"github.com/comprofix/alleycat/internal/gfx"
 	"github.com/comprofix/alleycat/internal/gfx/palettes/resurrect64"
 	"github.com/comprofix/alleycat/internal/input"
 	"github.com/comprofix/alleycat/internal/rooms"
@@ -18,8 +19,9 @@ import (
 // he goes in through a window, and ends the game when the lives run out. It
 // also handles paws mode, restart and menu.
 type Play struct {
-	alley *alley.Alley
-	view  *alley.Renderer
+	alley  *alley.Alley
+	view   *alley.Renderer
+	smooth *alley.SmoothRenderer // the new look's
 
 	fighting bool // the dog-fight sound is playing
 	shake    shaker
@@ -29,16 +31,18 @@ type Play struct {
 // in from the left.
 func NewPlay(ctx *Context) *Play {
 	return &Play{
-		alley: alley.New(ctx.Session, ctx.RNG),
-		view:  alley.NewRenderer(ctx.Alley, ctx.PixelFont),
+		alley:  alley.New(ctx.Session, ctx.RNG),
+		view:   alley.NewRenderer(ctx.Alley, ctx.PixelFont),
+		smooth: alley.NewSmoothRenderer(ctx.Alley, ctx.PixelFont),
 	}
 }
 
 // newReturnPlay is the alley with Freddy back from a room at x, y.
 func newReturnPlay(ctx *Context, x, y int) *Play {
 	return &Play{
-		alley: alley.NewReturning(ctx.Session, ctx.RNG, x, y),
-		view:  alley.NewRenderer(ctx.Alley, ctx.PixelFont),
+		alley:  alley.NewReturning(ctx.Session, ctx.RNG, x, y),
+		view:   alley.NewRenderer(ctx.Alley, ctx.PixelFont),
+		smooth: alley.NewSmoothRenderer(ctx.Alley, ctx.PixelFont),
 	}
 }
 
@@ -97,12 +101,20 @@ func controls(in *input.Input) entity.Controls {
 	return entity.Controls{H: axis(input.Left, input.Right), V: axis(input.Up, input.Down), Act: in.Held(input.Act)}
 }
 
-// Draw implements Scene.
+func (*Play) native() {}
+
+// Draw implements Scene: the alley in the look dst is the size of.
 func (p *Play) Draw(ctx *Context, dst *ebiten.Image) {
-	p.shake.draw(dst, func(d *ebiten.Image) { p.view.Draw(d, p.alley, ctx.HighScore) })
+	draw := func(d *ebiten.Image) { p.view.Draw(d, p.alley, ctx.HighScore) }
+	if dst.Bounds().Dx() != gfx.ScreenWidth {
+		draw = func(d *ebiten.Image) { p.smooth.Draw(d, p.alley, ctx.HighScore) }
+	}
+	p.shake.draw(dst, draw)
 	if debug.Enabled {
-		p.view.DrawDebug(dst, p.alley)
-		ctx.PixelFont.Draw(dst, fmt.Sprintf("TPS %.1f FPS %.1f", ebiten.ActualTPS(), ebiten.ActualFPS()), 4, 190, resurrect64.White, 1)
+		drawPixels(ctx, dst, func(d *ebiten.Image) {
+			p.view.DrawDebug(d, p.alley)
+			ctx.PixelFont.Draw(d, fmt.Sprintf("TPS %.1f FPS %.1f", ebiten.ActualTPS(), ebiten.ActualFPS()), 4, 190, resurrect64.White, 1)
+		})
 	}
 }
 

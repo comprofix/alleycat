@@ -61,22 +61,34 @@ type Context struct {
 }
 
 // native is a scene that draws at the screen's own size in either look:
-// the menus. Every other scene draws the pixel art on the 320×200 grid.
+// the menus, and the scenes with the new look's art. Every other scene
+// draws the pixel art on the 320×200 grid.
 type native interface{ native() }
 
 // drawScene draws s onto the screen dst. A pixel scene shown in the new
-// look is drawn on a 320×200 canvas and enlarged four times, pixels kept
-// square and sharp, until its new art is drawn (DESIGN §2.1).
+// look is enlarged four times, pixels kept square and sharp, until its new
+// art is drawn (DESIGN §2.1).
 func drawScene(ctx *Context, s Scene, dst *ebiten.Image) {
-	if _, ok := s.(native); ok || dst.Bounds().Dx() == gfx.ScreenWidth {
+	if _, ok := s.(native); ok {
 		s.Draw(ctx, dst)
+		return
+	}
+	drawPixels(ctx, dst, func(l *ebiten.Image) { s.Draw(ctx, l) })
+}
+
+// drawPixels has draw draw pixel art on the 320×200 grid onto dst: straight
+// onto it in the classic look, or in the new look on a 320×200 canvas laid
+// over it enlarged four times.
+func drawPixels(ctx *Context, dst *ebiten.Image, draw func(*ebiten.Image)) {
+	if dst.Bounds().Dx() == gfx.ScreenWidth {
+		draw(dst)
 		return
 	}
 	if ctx.pixel == nil {
 		ctx.pixel = ebiten.NewImage(gfx.ScreenWidth, gfx.ScreenHeight)
 	}
 	ctx.pixel.Clear()
-	s.Draw(ctx, ctx.pixel)
+	draw(ctx.pixel)
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Scale(float64(dst.Bounds().Dx())/gfx.ScreenWidth, float64(dst.Bounds().Dy())/gfx.ScreenHeight)
 	op.Filter = ebiten.FilterNearest

@@ -42,15 +42,19 @@ func (s *shaker) offset() int {
 	return d
 }
 
-// draw calls scene to draw the frame, shifted while shaking.
+// draw calls scene to draw the frame, shifted while shaking. The shift is
+// in the 320×200 grid's pixels, whatever size dst is.
 func (s *shaker) draw(dst *ebiten.Image, scene func(*ebiten.Image)) {
-	dx := s.offset()
+	dx := s.offset() * dst.Bounds().Dx() / gfx.ScreenWidth
 	if dx == 0 {
 		scene(dst)
 		return
 	}
-	if s.buf == nil {
-		s.buf = ebiten.NewImage(gfx.ScreenWidth, gfx.ScreenHeight)
+	if s.buf == nil || s.buf.Bounds() != dst.Bounds() {
+		if s.buf != nil {
+			s.buf.Deallocate()
+		}
+		s.buf = ebiten.NewImage(dst.Bounds().Dx(), dst.Bounds().Dy())
 	}
 	s.buf.Clear()
 	scene(s.buf)
