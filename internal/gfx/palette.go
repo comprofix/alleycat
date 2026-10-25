@@ -2,6 +2,8 @@
 package gfx
 
 import (
+	"image/color"
+
 	"github.com/comprofix/alleycat/internal/gfx/palettes"
 	"github.com/comprofix/alleycat/internal/gfx/palettes/resurrect64"
 )
@@ -21,3 +23,6 @@ var Named palettes.Palette = resurrect64.Palette
 
 // Palette is the colours of Named, by index.
 var Palette = Named.Colors
+
+// RGBA returns colour i of the palette.
+func RGBA(i int) color.RGBA { return Palette[i] }

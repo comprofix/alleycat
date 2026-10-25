@@ -24,17 +24,18 @@ type Scene interface {
 
 // Context is the shared state handed to scenes.
 type Context struct {
-	Input   *input.Input
-	RNG     *rand.Rand
-	Session *session.Session // nil outside a game
-	Font    *gfx.Font
-	UI      *gfx.Sheet
-	Alley   *gfx.Sheet    // alley sprites: Freddy, laundry, litter
-	Rooms   *gfx.Sheet    // room sprites: furniture, broom, cage, bird
-	Audio   *audio.Synth  // nil in headless tests; every call is then ignored
-	Patter  *audio.Patter // the background patter (DESIGN §7.2); nil in tests too
-	FX      *audio.FX     // the sound effects (DESIGN §7.3); nil in tests too
-	Sound   SoundSettings // applied to Audio by ApplySound
+	Input     *input.Input
+	RNG       *rand.Rand
+	Session   *session.Session // nil outside a game
+	Fonts     gfx.Fonts        // the menus' fonts
+	PixelFont *gfx.PixelFont   // the pixel look's lettering
+	UI        *gfx.Sheet
+	Alley     *gfx.Sheet    // alley sprites: Freddy, laundry, litter
+	Rooms     *gfx.Sheet    // room sprites: furniture, broom, cage, bird
+	Audio     *audio.Synth  // nil in headless tests; every call is then ignored
+	Patter    *audio.Patter // the background patter (DESIGN §7.2); nil in tests too
+	FX        *audio.FX     // the sound effects (DESIGN §7.3); nil in tests too
+	Sound     SoundSettings // applied to Audio by ApplySound
 
 	// HighScore is the best score this run; it updates when a game ends
 	// (DESIGN §3.8, "Lives and game over"). Saving it is M9 work.

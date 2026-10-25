@@ -42,14 +42,14 @@ var clutter = []struct {
 // change with the can layout; it holds no game state.
 type Renderer struct {
 	sheet       *gfx.Sheet
-	font        *gfx.Font
+	font        *gfx.PixelFont
 	scheme      gfx.Scheme
 	back, front *ebiten.Image
 	builtFor    []config.Can
 }
 
 // NewRenderer returns a renderer using the alley sprite sheet and the font.
-func NewRenderer(sheet *gfx.Sheet, font *gfx.Font) *Renderer {
+func NewRenderer(sheet *gfx.Sheet, font *gfx.PixelFont) *Renderer {
 	return &Renderer{sheet: sheet, font: font, scheme: gfx.AlleyScheme}
 }
 

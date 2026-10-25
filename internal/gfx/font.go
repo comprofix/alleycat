@@ -1,119 +1,155 @@
 package gfx
 
 import (
-	"bufio"
 	"fmt"
 	"image"
 	"image/color"
-	"io"
-	"strings"
+	"io/fs"
 	"unicode/utf8"
 
 	"github.com/hajimehoshi/ebiten/v2"
+
+	"github.com/comprofix/alleycat/internal/bitfont"
+	"github.com/comprofix/alleycat/internal/config"
 )
 
-// GlyphSize is the font cell size in pixels.
-const GlyphSize = 8
-
-// Glyph is one 8×8 character; bit 7 of each row is the leftmost pixel.
-type Glyph [GlyphSize]uint8
-
-// ParseFont reads the text-grid font format: "@" plus the character on its
-// own line ("@space" for space), then 8 rows of 8 '#'/'.' characters.
-// Lines starting with ';' are comments.
-func ParseFont(r io.Reader) (map[rune]Glyph, error) {
-	glyphs := map[rune]Glyph{}
-	sc := bufio.NewScanner(r)
-	lineNo := 0
-	var cur rune
-	var g Glyph
-	row := -1
-	for sc.Scan() {
-		lineNo++
-		line := strings.TrimSuffix(sc.Text(), "\r")
-		if strings.HasPrefix(line, ";") {
-			continue
-		}
-		if row < 0 {
-			switch {
-			case line == "@space":
-				cur = ' '
-			case strings.HasPrefix(line, "@") && utf8.RuneCountInString(line) == 2:
-				cur, _ = utf8.DecodeRuneInString(line[1:])
-			default:
-				return nil, fmt.Errorf("line %d: want glyph header like \"@A\" or \"@space\", got %q", lineNo, line)
-			}
-			if _, dup := glyphs[cur]; dup {
-				return nil, fmt.Errorf("line %d: duplicate glyph %q", lineNo, cur)
-			}
-			g, row = Glyph{}, 0
-			continue
-		}
-		if len(line) != GlyphSize {
-			return nil, fmt.Errorf("line %d: glyph %q row is %d wide, want 8", lineNo, cur, len(line))
-		}
-		for x, ch := range line {
-			switch ch {
-			case '#':
-				g[row] |= 0x80 >> x
-			case '.':
-			default:
-				return nil, fmt.Errorf("line %d: glyph %q has bad pixel %q", lineNo, cur, ch)
-			}
-		}
-		row++
-		if row == GlyphSize {
-			glyphs[cur] = g
-			row = -1
-		}
-	}
-	if err := sc.Err(); err != nil {
-		return nil, err
-	}
-	if row >= 0 {
-		return nil, fmt.Errorf("glyph %q is incomplete", cur)
-	}
-	return glyphs, nil
+// Font draws text in any palette colour, as the Game Skeleton's: the menus
+// use it. Every character is CellWidth pixels wide and each line
+// LineHeight pixels tall, so text lays out in character cells.
+type Font interface {
+	// CellWidth is how far each character moves the next one on, in pixels.
+	CellWidth() int
+	// LineHeight is the height of one line of text, in pixels.
+	LineHeight() int
+	// Width is the width of s in pixels.
+	Width(s string) int
+	// Draw renders s with its top-left corner at (x, y) in palette colour c.
+	Draw(dst *ebiten.Image, s string, x, y, c int)
+	// DrawShadowed renders s with a drop shadow in palette colour shadow.
+	DrawShadowed(dst *ebiten.Image, s string, x, y, c, shadow int)
+	// CentreX is the x that centres s on the screen.
+	CentreX(s string) int
 }
 
-// Font draws text from an 8×8 glyph atlas in any palette colour.
-type Font struct {
+// Fonts are the menus' two fonts.
+type Fonts struct {
+	Small Font // 8×8
+	Large Font // 16×16, made from Small with Scale2x
+}
+
+// LoadFont reads the 8×8 bitmap font at path in fsys (DESIGN §8).
+func LoadFont(fsys fs.FS, path string) (*bitfont.Font, error) {
+	f, err := fsys.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	bf, err := bitfont.Parse(f)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", path, err)
+	}
+	return bf, nil
+}
+
+// NewFonts makes the menus' fonts from the 8×8 font.
+func NewFonts(small *bitfont.Font) Fonts {
+	return Fonts{Small: NewFont(small), Large: NewFont(bitfont.Scale2x(small))}
+}
+
+// atlas draws each of bf's glyphs into a row of cells, ink white so it can
+// be tinted when drawn, and returns it with each rune's cell.
+func atlas(bf *bitfont.Font) (*ebiten.Image, map[rune]int) {
+	runes := bf.Runes()
+	n := bf.Size
+	img := image.NewRGBA(image.Rect(0, 0, n*len(runes), n))
+	index := make(map[rune]int, len(runes))
+	for i, r := range runes {
+		bf.Draw(img.SubImage(image.Rect(i*n, 0, (i+1)*n, n)).(*image.RGBA), string(r), i*n, 0, color.RGBA{0xff, 0xff, 0xff, 0xff})
+		index[r] = i
+	}
+	return ebiten.NewImageFromImage(img), index
+}
+
+// BitmapFont is a Font drawn from a bitmap font's glyphs.
+type BitmapFont struct {
+	bf    *bitfont.Font
 	atlas *ebiten.Image
 	index map[rune]int
 }
 
-// NewFont builds the glyph atlas. Ink is stored white and tinted at draw time.
-func NewFont(glyphs map[rune]Glyph) *Font {
-	f := &Font{index: make(map[rune]int, len(glyphs))}
-	img := image.NewRGBA(image.Rect(0, 0, GlyphSize*len(glyphs), GlyphSize))
-	i := 0
-	for r := rune(0); r < utf8.MaxRune && len(f.index) < len(glyphs); r++ {
-		g, ok := glyphs[r]
-		if !ok {
-			continue
-		}
-		for y, bits := range g {
-			for x := range GlyphSize {
-				if bits&(0x80>>x) != 0 {
-					img.SetRGBA(i*GlyphSize+x, y, color.RGBA{0xff, 0xff, 0xff, 0xff})
-				}
-			}
-		}
-		f.index[r] = i
-		i++
-	}
-	f.atlas = ebiten.NewImageFromImage(img)
-	return f
+// NewFont builds a glyph atlas for bf.
+func NewFont(bf *bitfont.Font) *BitmapFont {
+	a, index := atlas(bf)
+	return &BitmapFont{bf: bf, atlas: a, index: index}
 }
 
-// Width returns the width of s in pixels.
+// CellWidth is the font's cell size: 8 or 16, as its cells are square.
+func (f *BitmapFont) CellWidth() int { return f.bf.Size }
+
+// LineHeight is the font's cell size: 8 or 16, as its cells are square.
+func (f *BitmapFont) LineHeight() int { return f.bf.Size }
+
+// Width is the width of s in pixels.
+func (f *BitmapFont) Width(s string) int { return f.bf.Width(s) }
+
+// Draw renders s at (x, y) in palette colour c. Characters missing from the
+// font are drawn as '?'.
+func (f *BitmapFont) Draw(dst *ebiten.Image, s string, x, y, c int) {
+	n := f.bf.Size
+	op := &ebiten.DrawImageOptions{}
+	op.ColorScale.ScaleWithColor(RGBA(c))
+	for _, r := range s {
+		i, ok := f.index[r]
+		if !ok {
+			i, ok = f.index['?']
+		}
+		if ok && r != ' ' {
+			src := f.atlas.SubImage(image.Rect(i*n, 0, (i+1)*n, n)).(*ebiten.Image)
+			op.GeoM.Reset()
+			op.GeoM.Translate(float64(x), float64(y))
+			dst.DrawImage(src, op)
+		}
+		x += n
+	}
+}
+
+// DrawShadowed renders s with a drop shadow in palette colour shadow, offset
+// down and right by one pixel per 8 pixels of font size.
+func (f *BitmapFont) DrawShadowed(dst *ebiten.Image, s string, x, y, c, shadow int) {
+	d := max(1, f.bf.Size/8)
+	f.Draw(dst, s, x+d, y+d, shadow)
+	f.Draw(dst, s, x, y, c)
+}
+
+// CentreX is the x that centres s on the screen.
+func (f *BitmapFont) CentreX(s string) int {
+	return (config.Project.ScreenWidth - f.Width(s)) / 2
+}
+
+// GlyphSize is the pixel font's cell size in pixels.
+const GlyphSize = 8
+
+// PixelFont draws the 8×8 font at whole-number scales, with the lettering
+// of the pixel look: shadows, outlines and bands of colour (DESIGN §8).
+type PixelFont struct {
+	atlas *ebiten.Image
+	index map[rune]int
+}
+
+// NewPixelFont builds the glyph atlas for the 8×8 font bf.
+func NewPixelFont(bf *bitfont.Font) *PixelFont {
+	a, index := atlas(bf)
+	return &PixelFont{atlas: a, index: index}
+}
+
+// Width returns the width of s in pixels at scale 1.
 func Width(s string) int {
 	return utf8.RuneCountInString(s) * GlyphSize
 }
 
 // Draw renders s at (x, y) in palette colour idx, scaled by an integer factor.
 // Characters missing from the font are drawn as '?'.
-func (f *Font) Draw(dst *ebiten.Image, s string, x, y, idx, scale int) {
+func (f *PixelFont) Draw(dst *ebiten.Image, s string, x, y, idx, scale int) {
 	scale = max(scale, 1)
 	op := &ebiten.DrawImageOptions{}
 	op.ColorScale.ScaleWithColor(Palette[idx])
@@ -134,13 +170,13 @@ func (f *Font) Draw(dst *ebiten.Image, s string, x, y, idx, scale int) {
 }
 
 // DrawCentred renders s horizontally centred on the logical screen.
-func (f *Font) DrawCentred(dst *ebiten.Image, s string, y, idx, scale int) {
+func (f *PixelFont) DrawCentred(dst *ebiten.Image, s string, y, idx, scale int) {
 	f.Draw(dst, s, (ScreenWidth-Width(s)*max(scale, 1))/2, y, idx, scale)
 }
 
 // DrawShadowed renders s with a drop shadow, one pixel per scale step down
 // and right, in palette colour shadow.
-func (f *Font) DrawShadowed(dst *ebiten.Image, s string, x, y, idx, shadow, scale int) {
+func (f *PixelFont) DrawShadowed(dst *ebiten.Image, s string, x, y, idx, shadow, scale int) {
 	d := max(scale, 1)
 	f.Draw(dst, s, x+d, y+d, shadow, scale)
 	f.Draw(dst, s, x, y, idx, scale)
@@ -148,7 +184,7 @@ func (f *Font) DrawShadowed(dst *ebiten.Image, s string, x, y, idx, shadow, scal
 
 // DrawOutlined renders s with a one-pixel outline round every letter in
 // palette colour outline.
-func (f *Font) DrawOutlined(dst *ebiten.Image, s string, x, y, idx, outline, scale int) {
+func (f *PixelFont) DrawOutlined(dst *ebiten.Image, s string, x, y, idx, outline, scale int) {
 	for _, d := range [8][2]int{{-1, -1}, {0, -1}, {1, -1}, {-1, 0}, {1, 0}, {-1, 1}, {0, 1}, {1, 1}} {
 		f.Draw(dst, s, x+d[0], y+d[1], outline, scale)
 	}
@@ -159,7 +195,7 @@ func (f *Font) DrawOutlined(dst *ebiten.Image, s string, x, y, idx, outline, sca
 // lettering catches the light: the top quarter in light, the middle in
 // idx and the lower three eighths in dark. Each band is the text drawn
 // again through a clip of its rows.
-func (f *Font) DrawBanded(dst *ebiten.Image, s string, x, y, light, idx, dark, scale int) {
+func (f *PixelFont) DrawBanded(dst *ebiten.Image, s string, x, y, light, idx, dark, scale int) {
 	h := GlyphSize * max(scale, 1)
 	cuts := [4]int{0, h / 4, h * 5 / 8, h}
 	b := dst.Bounds()

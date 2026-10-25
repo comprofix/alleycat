@@ -83,7 +83,7 @@ func (t *Tally) Draw(ctx *Context, dst *ebiten.Image) {
 	if t.lit >= t.rows() {
 		// The bonus, big and shadowed (M8g), centred between the columns.
 		text := fmt.Sprintf("%04d", t.bonus%10000)
-		ctx.Font.DrawShadowed(dst, text, gfx.CentreX(text, 2), t.stopY, resurrect64.Honey, resurrect64.Ink, 2)
+		ctx.PixelFont.DrawShadowed(dst, text, gfx.CentreX(text, 2), t.stopY, resurrect64.Honey, resurrect64.Ink, 2)
 	}
 }
 
@@ -142,6 +142,6 @@ var kittyWords = []struct {
 func drawSlanted(ctx *Context, dst *ebiten.Image, text string, x, y int) {
 	const rise = 3
 	for i, r := range text {
-		ctx.Font.Draw(dst, string(r), x+i*8, y-i*rise, resurrect64.Seafoam, 1)
+		ctx.PixelFont.Draw(dst, string(r), x+i*8, y-i*rise, resurrect64.Seafoam, 1)
 	}
 }

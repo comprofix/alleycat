@@ -58,7 +58,7 @@ func (s *SkillSelect) Draw(ctx *Context, dst *ebiten.Image) {
 	panel(2, 2, gfx.ScreenWidth-4, gfx.ScreenHeight-4, resurrect64.Dusk)  // the frame, in shade
 	panel(2, 2, gfx.ScreenWidth-5, gfx.ScreenHeight-5, resurrect64.Lilac) // lit top and left
 	panel(3, 3, gfx.ScreenWidth-6, gfx.ScreenHeight-6, resurrect64.Navy)
-	f := ctx.Font
+	f := ctx.PixelFont
 	y := 10
 	line := func(text string, idx int) {
 		if idx == resurrect64.Honey {

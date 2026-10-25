@@ -33,7 +33,7 @@ type Play struct {
 func NewPlay(ctx *Context) *Play {
 	return &Play{
 		alley: alley.New(ctx.Session, ctx.RNG),
-		view:  alley.NewRenderer(ctx.Alley, ctx.Font),
+		view:  alley.NewRenderer(ctx.Alley, ctx.PixelFont),
 	}
 }
 
@@ -41,7 +41,7 @@ func NewPlay(ctx *Context) *Play {
 func newReturnPlay(ctx *Context, x, y int) *Play {
 	return &Play{
 		alley: alley.NewReturning(ctx.Session, ctx.RNG, x, y),
-		view:  alley.NewRenderer(ctx.Alley, ctx.Font),
+		view:  alley.NewRenderer(ctx.Alley, ctx.PixelFont),
 	}
 }
 
@@ -105,7 +105,7 @@ func (p *Play) Draw(ctx *Context, dst *ebiten.Image) {
 	p.shake.draw(dst, func(d *ebiten.Image) { p.view.Draw(d, p.alley, ctx.HighScore) })
 	if debug.Enabled {
 		p.view.DrawDebug(dst, p.alley)
-		ctx.Font.Draw(dst, fmt.Sprintf("TPS %.1f FPS %.1f", ebiten.ActualTPS(), ebiten.ActualFPS()), 4, 190, resurrect64.White, 1)
+		ctx.PixelFont.Draw(dst, fmt.Sprintf("TPS %.1f FPS %.1f", ebiten.ActualTPS(), ebiten.ActualFPS()), 4, 190, resurrect64.White, 1)
 	}
 
 	if p.paused {
@@ -139,5 +139,5 @@ func drawPaws(ctx *Context, dst *ebiten.Image) {
 	w := gfx.Width(msg)
 	x := (gfx.ScreenWidth - w) / 2
 	dst.SubImage(image.Rect(x-4, 0, x+w+4, 12)).(*ebiten.Image).Fill(gfx.Palette[resurrect64.Ink])
-	ctx.Font.Draw(dst, msg, x, 2, resurrect64.Honey, 1)
+	ctx.PixelFont.Draw(dst, msg, x, 2, resurrect64.Honey, 1)
 }

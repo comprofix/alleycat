@@ -204,7 +204,7 @@ func (k *Kiss) Draw(ctx *Context, dst *ebiten.Image) {
 	if k.stage != kissText {
 		return
 	}
-	f := ctx.Font
+	f := ctx.PixelFont
 	score := fmt.Sprint(k.bonus)
 	f.DrawShadowed(dst, score, gfx.CentreX(score, 1), config.KissScoreY, resurrect64.White, resurrect64.Ink, 1)
 	text := fmt.Sprintf("BONUS MULTIPLIER: %02d", k.multiplier)

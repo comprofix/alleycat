@@ -189,7 +189,7 @@ func (t *Title) Draw(ctx *Context, dst *ebiten.Image) {
 	}
 	dst.DrawImage(t.back, nil)
 	t.cat.draw(dst, ctx.Alley)
-	f := ctx.Font
+	f := ctx.PixelFont
 	const name = "ALLEY CAT"
 	x := gfx.CentreX(name, 3)
 	f.Draw(dst, name, x+3, titleLogoY+3, resurrect64.Grape, 3) // a deep drop shadow

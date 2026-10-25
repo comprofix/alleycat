@@ -83,7 +83,7 @@ func (r *RoomScene) Draw(ctx *Context, dst *ebiten.Image) {
 	r.shake.draw(dst, func(d *ebiten.Image) { r.view.Draw(d, r.room) })
 	if debug.Enabled {
 		r.view.DrawDebug(dst, r.room)
-		ctx.Font.Draw(dst, fmt.Sprintf("TPS %.1f FPS %.1f", ebiten.ActualTPS(), ebiten.ActualFPS()), 4, 190, resurrect64.White, 1)
+		ctx.PixelFont.Draw(dst, fmt.Sprintf("TPS %.1f FPS %.1f", ebiten.ActualTPS(), ebiten.ActualFPS()), 4, 190, resurrect64.White, 1)
 	}
 	if r.paused {
 		drawPaws(ctx, dst)
@@ -177,9 +177,9 @@ func (r *Result) Draw(ctx *Context, dst *ebiten.Image) {
 		return
 	}
 	x := gfx.CentreX(r.text, resultScale)
-	ctx.Font.DrawShadowed(dst, r.text, x, resultY, r.ink, resurrect64.Shadow, resultScale)
+	ctx.PixelFont.DrawShadowed(dst, r.text, x, resultY, r.ink, resurrect64.Shadow, resultScale)
 	band := resultBands[r.ink]
-	ctx.Font.DrawBanded(dst, r.text, x, resultY, band[0], r.ink, band[1], resultScale)
+	ctx.PixelFont.DrawBanded(dst, r.text, x, resultY, band[0], r.ink, band[1], resultScale)
 	glyph := gfx.GlyphSize * resultScale
 	for i := range len(r.text) {
 		if i%2 == 0 {

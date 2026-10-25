@@ -54,12 +54,7 @@ type Saved struct {
 // New loads the assets and starts at the title screen. seed initialises the
 // game's random number generator.
 func New(seed uint64, saved Saved) (*Game, error) {
-	f, err := assets.FS.Open("font/font8x8.txt")
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-	glyphs, err := gfx.ParseFont(f)
+	font, err := gfx.LoadFont(assets.FS, "font/font8x8.txt")
 	if err != nil {
 		return nil, fmt.Errorf("font: %w", err)
 	}
@@ -93,13 +88,14 @@ func New(seed uint64, saved Saved) (*Game, error) {
 		settings:  set,
 		savedHigh: saved.High,
 		ctx: &scene.Context{
-			Input: input.New(&input.Ebiten{}),
-			RNG:   rand.New(rand.NewPCG(seed, seed^0x9e3779b97f4a7c15)),
-			Font:  gfx.NewFont(glyphs),
-			UI:    ui,
-			Alley: alleySheet,
-			Rooms: roomSheet,
-			Audio: synth,
+			Input:     input.New(&input.Ebiten{}),
+			RNG:       rand.New(rand.NewPCG(seed, seed^0x9e3779b97f4a7c15)),
+			Fonts:     gfx.NewFonts(font),
+			PixelFont: gfx.NewPixelFont(font),
+			UI:        ui,
+			Alley:     alleySheet,
+			Rooms:     roomSheet,
+			Audio:     synth,
 			// The patter and the effects have their own RNGs so audio never
 			// shifts the game's random sequence (DESIGN §7.2).
 			Patter:    audio.NewPatter(rand.New(rand.NewPCG(seed^0x5eed0a0d10, seed))),
