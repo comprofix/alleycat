@@ -69,6 +69,11 @@ func (r *Renderer) buildWater() {
 	// The sandy bottom, below Freddy's deepest dive, with pebbles and weed.
 	const sandY = 194
 	fill(b, 0, sandY, gfx.ScreenWidth, gfx.ScreenHeight-sandY, resurrect64.Honey)
+	for y := sandY + 3; y < gfx.ScreenHeight; y++ { // deeper sand in shade
+		for x := y % 2; x < gfx.ScreenWidth; x += 2 {
+			fill(b, x, y, 1, 1, resurrect64.Caramel)
+		}
+	}
 	for x := 3; x < gfx.ScreenWidth; x += 11 {
 		fill(b, x, sandY+1+x%4, 1, 1, resurrect64.Coral)
 		if x%3 == 0 {
@@ -77,7 +82,11 @@ func (r *Renderer) buildWater() {
 	}
 	for _, wx := range []int{18, 74, 150, 233, 297} {
 		for y := sandY - 1; y > sandY-14-wx%9; y-- {
-			fill(b, wx+(y/3)%2, y, 1, 1, resurrect64.Emerald)
+			weed := resurrect64.Emerald
+			if (y/3)%2 == 1 { // the leaning-back stretches in shade
+				weed = resurrect64.Forest
+			}
+			fill(b, wx+(y/3)%2, y, 1, 1, weed)
 		}
 	}
 	for y := 16; y < gfx.ScreenHeight-4; y += rippleCell {
