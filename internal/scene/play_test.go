@@ -4,8 +4,6 @@ import (
 	"math/rand/v2"
 	"testing"
 
-	"github.com/hajimehoshi/ebiten/v2"
-
 	"github.com/comprofix/alleycat/internal/alley"
 	"github.com/comprofix/alleycat/internal/config"
 	"github.com/comprofix/alleycat/internal/input"
@@ -13,13 +11,9 @@ import (
 	"github.com/comprofix/alleycat/internal/session"
 )
 
-type noKeys struct{}
-
-func (noKeys) AppendPressedKeys(k []ebiten.Key) []ebiten.Key { return k }
-
 func playContext() *Context {
 	return &Context{
-		Input:   input.New(noKeys{}),
+		Input:   input.New(&input.Script{}),
 		RNG:     rand.New(rand.NewPCG(1, 2)),
 		Session: session.New(config.Kitten),
 	}

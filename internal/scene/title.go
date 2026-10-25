@@ -46,9 +46,9 @@ func (t *Title) Update(ctx *Context) error {
 	t.cat.update(ctx.Ticks, ctx.RNG)
 	t.ticks += ctx.Ticks
 	switch {
-	case ctx.Input.AnyKeyJustPressed() && ctx.Played:
+	case ctx.Input.AnyJustPressed() && ctx.Played:
 		startGame(ctx, ctx.LastSkill)
-	case ctx.Input.AnyKeyJustPressed():
+	case ctx.Input.AnyJustPressed():
 		ctx.Switch(NewSkillSelect())
 	case t.ticks >= titleRepeatTicks:
 		// The tune starts again on the next update.

@@ -41,10 +41,14 @@ func TestTitleCatWanders(t *testing.T) {
 	}
 }
 
-// heldKeys is a key source whose held keys a test sets.
+// heldKeys is an input source whose held keys a test sets.
 type heldKeys struct{ keys []ebiten.Key }
 
-func (h *heldKeys) AppendPressedKeys(k []ebiten.Key) []ebiten.Key { return append(k, h.keys...) }
+func (h *heldKeys) Read(f *input.Frame) {
+	for _, k := range h.keys {
+		f.Keys[k] = true
+	}
+}
 
 func titleContext() (*Context, *heldKeys) {
 	keys := &heldKeys{}

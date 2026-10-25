@@ -93,7 +93,7 @@ func New(seed uint64, saved Saved) (*Game, error) {
 		settings:  set,
 		savedHigh: saved.High,
 		ctx: &scene.Context{
-			Input: input.New(input.Ebiten{}),
+			Input: input.New(&input.Ebiten{}),
 			RNG:   rand.New(rand.NewPCG(seed, seed^0x9e3779b97f4a7c15)),
 			Font:  gfx.NewFont(glyphs),
 			UI:    ui,
@@ -117,6 +117,11 @@ func New(seed uint64, saved Saved) (*Game, error) {
 // and runs the current scene.
 func (g *Game) Update() error {
 	in := g.ctx.Input
+	// The pointer is turned into screen pixels through where present will
+	// show the screen.
+	sw, sh := g.preset.ScreenWidth, g.preset.ScreenHeight
+	r := gfx.Fit(g.settings.ScaleMode, sw, sh, g.outW, g.outH)
+	in.SetView(input.View{X: r.X, Y: r.Y, W: r.W, H: r.H, Width: sw, Height: sh})
 	in.Update()
 
 	if in.JustPressed(input.Quit) || ebiten.IsWindowBeingClosed() {
@@ -127,7 +132,7 @@ func (g *Game) Update() error {
 		ebiten.SetFullscreen(!ebiten.IsFullscreen())
 		g.saveSettings()
 	}
-	if in.JustPressed(input.Aspect) {
+	if in.JustPressed(input.ScaleMode) {
 		g.settings.ScaleMode = g.preset.NextMode(g.settings.ScaleMode)
 		g.saveSettings()
 	}

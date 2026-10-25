@@ -28,7 +28,7 @@ var skillKeys = map[ebiten.Key]config.Skill{
 
 // Update implements Scene.
 func (s *SkillSelect) Update(ctx *Context) error {
-	if ctx.Input.JustPressed(input.Pause) {
+	if ctx.Input.JustPressed(input.Back) {
 		ctx.Switch(NewTitle())
 		return nil
 	}
