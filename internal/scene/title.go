@@ -17,8 +17,8 @@ import (
 
 // Title is the title screen (M8g): a night sky over the town, Freddy
 // wandering the fence, and the name. Its tune plays, then again after each
-// minute of quiet. Before the first game a key goes to skill select; after
-// a game a key replays at the same skill (DESIGN §4, "No attract mode").
+// minute of quiet. A key goes to the main menu (DESIGN §4, "No attract
+// mode").
 type Title struct {
 	blink  gfx.Animator
 	played bool // the title theme has started
@@ -46,10 +46,8 @@ func (t *Title) Update(ctx *Context) error {
 	t.cat.update(ctx.Ticks, ctx.RNG)
 	t.ticks += ctx.Ticks
 	switch {
-	case ctx.Input.AnyJustPressed() && ctx.Played:
-		startGame(ctx, ctx.LastSkill)
 	case ctx.Input.AnyJustPressed():
-		ctx.Switch(NewSkillSelect())
+		ctx.Switch(NewMainMenu())
 	case t.ticks >= titleRepeatTicks:
 		// The tune starts again on the next update.
 		t.played, t.ticks = false, 0

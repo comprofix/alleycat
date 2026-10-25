@@ -77,7 +77,6 @@ func New(seed uint64, saved Saved) (*Game, error) {
 		return nil, fmt.Errorf("audio: %w", err)
 	}
 
-	set := saved.Settings
 	p := config.Project
 	g := &Game{
 		preset:    p,
@@ -85,7 +84,7 @@ func New(seed uint64, saved Saved) (*Game, error) {
 		clock:     clock.New(config.TPS),
 		speaker:   speaker,
 		dir:       saved.Dir,
-		settings:  set,
+		settings:  saved.Settings,
 		savedHigh: saved.High,
 		ctx: &scene.Context{
 			Input:     input.New(&input.Ebiten{}),
@@ -100,10 +99,11 @@ func New(seed uint64, saved Saved) (*Game, error) {
 			// shifts the game's random sequence (DESIGN §7.2).
 			Patter:    audio.NewPatter(rand.New(rand.NewPCG(seed^0x5eed0a0d10, seed))),
 			FX:        audio.NewFX(rand.New(rand.NewPCG(seed^0xeffec75, seed+1))),
-			Sound:     scene.SoundSettings{On: set.SoundOn, Muted: set.Muted, Volume: set.Volume, Soften: set.Soften},
+			Scheme:    gfx.MenuScheme,
 			HighScore: saved.High,
 		},
 	}
+	g.ctx.Settings = &g.settings
 	g.ctx.ApplySound()
 	g.scenes = scene.NewManager(scene.NewTitle())
 	return g, nil
@@ -120,28 +120,41 @@ func (g *Game) Update() error {
 	in.SetView(input.View{X: r.X, Y: r.Y, W: r.W, H: r.H, Width: sw, Height: sh})
 	in.Update()
 
+	s := &g.settings
 	if in.JustPressed(input.Quit) || ebiten.IsWindowBeingClosed() {
 		g.saveSettings() // keeps the window size
 		return ebiten.Termination
 	}
 	if in.JustPressed(input.Fullscreen) {
-		ebiten.SetFullscreen(!ebiten.IsFullscreen())
-		g.saveSettings()
+		s.Fullscreen = !s.Fullscreen
+		g.ctx.SettingsChanged()
 	}
 	if in.JustPressed(input.ScaleMode) {
-		g.settings.ScaleMode = g.preset.NextMode(g.settings.ScaleMode)
-		g.saveSettings()
+		s.ScaleMode = g.preset.NextMode(s.ScaleMode)
+		g.ctx.SettingsChanged()
 	}
 	if in.JustPressed(input.Sound) {
-		g.ctx.Sound.On = !g.ctx.Sound.On
-		g.ctx.ApplySound()
-		g.saveSettings()
+		s.SoundOn = !s.SoundOn
+		g.ctx.SettingsChanged()
 	}
 
 	g.ctx.Ticks, g.ctx.FreddySteps = g.clock.Advance()
 	g.ctx.TickCount = g.clock.Total()
 	g.ctx.Audio.Now(g.clock.Time())
-	err := g.scenes.Update(g.ctx)
+	if err := g.scenes.Update(g.ctx); err != nil {
+		return err
+	}
+	if g.ctx.Quitting() {
+		g.saveSettings()
+		return ebiten.Termination
+	}
+	if g.ctx.TakeSettingsChanged() {
+		g.ctx.ApplySound()
+		if ebiten.IsFullscreen() != s.Fullscreen {
+			ebiten.SetFullscreen(s.Fullscreen)
+		}
+		g.saveSettings()
+	}
 	if g.ctx.HighScore > g.savedHigh {
 		g.savedHigh = g.ctx.HighScore
 		if g.dir != "" {
@@ -150,19 +163,18 @@ func (g *Game) Update() error {
 			}
 		}
 	}
-	return err
+	return nil
 }
 
 // saveSettings writes the current settings (DESIGN §9). A failure is
 // logged, never fatal.
 func (g *Game) saveSettings() {
 	s := &g.settings
-	s.Fullscreen = ebiten.IsFullscreen()
-	if w, h := ebiten.WindowSize(); w > 0 && h > 0 {
-		s.WindowW, s.WindowH = w, h
+	if !ebiten.IsFullscreen() {
+		if w, h := ebiten.WindowSize(); w > 0 && h > 0 {
+			s.WindowW, s.WindowH = w, h
+		}
 	}
-	snd := g.ctx.Sound
-	s.SoundOn, s.Muted, s.Volume, s.Soften = snd.On, snd.Muted, snd.Volume, snd.Soften
 	if g.dir == "" {
 		return
 	}

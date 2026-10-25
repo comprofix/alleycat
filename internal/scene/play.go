@@ -2,14 +2,12 @@ package scene
 
 import (
 	"fmt"
-	"image"
 
 	"github.com/hajimehoshi/ebiten/v2"
 
 	"github.com/comprofix/alleycat/internal/alley"
 	"github.com/comprofix/alleycat/internal/debug"
 	"github.com/comprofix/alleycat/internal/entity"
-	"github.com/comprofix/alleycat/internal/gfx"
 	"github.com/comprofix/alleycat/internal/gfx/palettes/resurrect64"
 	"github.com/comprofix/alleycat/internal/input"
 	"github.com/comprofix/alleycat/internal/rooms"
@@ -20,9 +18,8 @@ import (
 // he goes in through a window, and ends the game when the lives run out. It
 // also handles paws mode, restart and menu.
 type Play struct {
-	paused bool
-	alley  *alley.Alley
-	view   *alley.Renderer
+	alley *alley.Alley
+	view  *alley.Renderer
 
 	fighting bool // the dog-fight sound is playing
 	shake    shaker
@@ -47,7 +44,7 @@ func newReturnPlay(ctx *Context, x, y int) *Play {
 
 // Update implements Scene.
 func (p *Play) Update(ctx *Context) error {
-	if handleGameKeys(ctx, &p.paused) || p.paused {
+	if handleGameKeys(ctx, p) {
 		return nil
 	}
 	a := p.alley
@@ -107,37 +104,23 @@ func (p *Play) Draw(ctx *Context, dst *ebiten.Image) {
 		p.view.DrawDebug(dst, p.alley)
 		ctx.PixelFont.Draw(dst, fmt.Sprintf("TPS %.1f FPS %.1f", ebiten.ActualTPS(), ebiten.ActualFPS()), 4, 190, resurrect64.White, 1)
 	}
-
-	if p.paused {
-		drawPaws(ctx, dst)
-	}
 }
 
 // handleGameKeys handles the in-game keys: Ctrl+M (menu), Ctrl+R (restart)
-// and Esc (paws). It reports whether the scene is being switched.
-func handleGameKeys(ctx *Context, paused *bool) bool {
+// and Esc or P (paws mode over the game scene s). It reports whether the
+// scene is being left.
+func handleGameKeys(ctx *Context, s Scene) bool {
 	in := ctx.Input
 	switch {
 	case in.JustPressed(input.Menu):
-		ctx.Switch(NewSkillSelect())
-		return true
+		ctx.Switch(NewMainMenu())
 	case in.JustPressed(input.Restart):
 		ctx.Session = session.New(ctx.Session.Skill)
 		ctx.Switch(NewPlay(ctx))
-		return true
 	case in.JustPressed(input.Pause):
-		*paused = !*paused
-		ctx.Audio.SetPaused(*paused)
+		pause(ctx, s)
+	default:
+		return false
 	}
-	return false
-}
-
-// drawPaws: the scene stays in view, frozen, under a small banner (owner
-// request, DESIGN §4).
-func drawPaws(ctx *Context, dst *ebiten.Image) {
-	const msg = "PAWS MODE - Esc to continue"
-	w := gfx.Width(msg)
-	x := (gfx.ScreenWidth - w) / 2
-	dst.SubImage(image.Rect(x-4, 0, x+w+4, 12)).(*ebiten.Image).Fill(gfx.Palette[resurrect64.Ink])
-	ctx.PixelFont.Draw(dst, msg, x, 2, resurrect64.Honey, 1)
+	return true
 }

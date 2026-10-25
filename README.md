@@ -24,14 +24,18 @@ The remake keeps the original's 320×200 screen and a PC-speaker-style sound mad
 |---|---|
 | Arrow keys | Move, jump (Up) and drop (Down) |
 | Alt | Special action: go through a cheese hole, eat or drink, put down a gift |
-| K, H, T, A (or 1–4) | Choose a skill on the menu: Kitten, House Cat, Tomcat, Alley Cat |
-| Esc | Paws mode (pause) |
+| K, H, T, A (or 1–4) | Choose a skill on the skill menu: Kitten, House Cat, Tomcat, Alley Cat |
+| Esc or P | Paws mode (pause), with a menu to resume, change the options or quit |
 | Ctrl+S | Sound on and off |
 | Ctrl+R | Restart the game |
-| Ctrl+M | Back to the skill menu |
+| Ctrl+M | Back to the main menu |
 | F9 | Square pixels or a 4:3 CRT shape |
 | F11 or Alt+Enter | Fullscreen |
 | F10 | Quit |
+
+The menus work with the arrow keys and Enter, Esc to go back, or the mouse.
+A gamepad works too: the stick or pad to move, X for the special action and
+Start for paws mode.
 
 ## Download
 
@@ -75,7 +79,7 @@ sudo apt install libc6-dev libgl1-mesa-dev libxcursor-dev libxi-dev libxinerama-
 
 The game keeps two small files in the folder it runs from:
 
-- `settings.json`: the screen shape, fullscreen, window size and sound;
+- `settings.json`: the scale, fullscreen, window size and sound;
 - `scores.json`: the high score.
 
 Delete either one to go back to the defaults.

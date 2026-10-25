@@ -17,10 +17,9 @@ import (
 // RoomScene runs a room (DESIGN §3.4) and sends Freddy on according to how
 // it ends: the tally, "OOPS!", or a lost life.
 type RoomScene struct {
-	paused bool
-	room   rooms.Room
-	view   *rooms.Renderer
-	x, y   int // where Freddy went in, in the alley
+	room rooms.Room
+	view *rooms.Renderer
+	x, y int // where Freddy went in, in the alley
 
 	fighting bool // the dog-fight sound is playing
 	shake    shaker
@@ -32,7 +31,7 @@ func newRoomScene(ctx *Context, room rooms.Room, x, y int) *RoomScene {
 
 // Update implements Scene.
 func (r *RoomScene) Update(ctx *Context) error {
-	if handleGameKeys(ctx, &r.paused) || r.paused {
+	if handleGameKeys(ctx, r) {
 		return nil
 	}
 	s := ctx.Session
@@ -84,9 +83,6 @@ func (r *RoomScene) Draw(ctx *Context, dst *ebiten.Image) {
 	if debug.Enabled {
 		r.view.DrawDebug(dst, r.room)
 		ctx.PixelFont.Draw(dst, fmt.Sprintf("TPS %.1f FPS %.1f", ebiten.ActualTPS(), ebiten.ActualFPS()), 4, 190, resurrect64.White, 1)
-	}
-	if r.paused {
-		drawPaws(ctx, dst)
 	}
 }
 

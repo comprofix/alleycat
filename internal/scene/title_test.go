@@ -55,9 +55,9 @@ func titleContext() (*Context, *heldKeys) {
 	return &Context{Input: input.New(keys), RNG: rand.New(rand.NewPCG(1, 2))}, keys
 }
 
-// Before the first game the title waits for a key, however long it is
-// left, then goes to the skill menu (DESIGN §4, "No attract mode").
-func TestTitleWaitsForKeyBeforeFirstGame(t *testing.T) {
+// The title waits for a key, however long it is left, then goes to the
+// main menu (DESIGN §4, "No attract mode").
+func TestTitleWaitsForKey(t *testing.T) {
 	ctx, keys := titleContext()
 	ti := NewTitle()
 	for range 2 * titleRepeatTicks {
@@ -66,29 +66,8 @@ func TestTitleWaitsForKeyBeforeFirstGame(t *testing.T) {
 		}
 	}
 	keys.keys = []ebiten.Key{ebiten.KeySpace}
-	if _, ok := step(ctx, ti).(*SkillSelect); !ok {
-		t.Fatal("key did not go to the skill menu")
-	}
-}
-
-// After a game the title stays, restarting its tune, and a key replays at
-// the same skill.
-func TestTitleAfterGame(t *testing.T) {
-	ctx, keys := titleContext()
-	ctx.Played, ctx.LastSkill = true, config.Tomcat
-	ti := NewTitle()
-	for range 3 * titleRepeatTicks {
-		if next := step(ctx, ti); next != nil {
-			t.Fatalf("title switched to %T with no key", next)
-		}
-	}
-	keys.keys = []ebiten.Key{ebiten.KeySpace}
-	next := step(ctx, ti)
-	if _, ok := next.(*Play); !ok {
-		t.Fatalf("key went to %T, want a new game", next)
-	}
-	if ctx.Session == nil || ctx.Session.Skill != config.Tomcat {
-		t.Errorf("new game not at the same skill")
+	if _, ok := step(ctx, ti).(*MainMenu); !ok {
+		t.Fatal("key did not go to the main menu")
 	}
 }
 
