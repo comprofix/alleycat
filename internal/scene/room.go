@@ -120,6 +120,13 @@ var lostWords = []string{"OUCH!", "ALAS!", "PITY!", "ARGH!"}
 // resultInks are the colours the word may appear in (DESIGN §3.7).
 var resultInks = []int{resurrect64.White, resurrect64.Seafoam, resurrect64.Cerise}
 
+// resultBands are each ink's lit and shaded steps, for the word's bands.
+var resultBands = map[int][2]int{
+	resurrect64.White:   {resurrect64.White, resurrect64.Mist},
+	resurrect64.Seafoam: {resurrect64.White, resurrect64.Aqua},
+	resurrect64.Cerise:  {resurrect64.Flamingo, resurrect64.Mulberry},
+}
+
 // Result shows the result word for 28 ticks, then moves on (DESIGN §3.8,
 // "Returning from a room").
 type Result struct {
@@ -171,12 +178,14 @@ func (r *Result) Draw(ctx *Context, dst *ebiten.Image) {
 	}
 	x := gfx.CentreX(r.text, resultScale)
 	ctx.Font.DrawShadowed(dst, r.text, x, resultY, r.ink, resurrect64.Shadow, resultScale)
+	band := resultBands[r.ink]
+	ctx.Font.DrawBanded(dst, r.text, x, resultY, band[0], r.ink, band[1], resultScale)
 	glyph := gfx.GlyphSize * resultScale
 	for i := range len(r.text) {
 		if i%2 == 0 {
 			continue
 		}
 		dx := x + i*glyph + glyph/2
-		dst.SubImage(image.Rect(dx, resultY+glyph-3, dx+2, resultY+glyph+3+i%3*3)).(*ebiten.Image).Fill(gfx.Palette[r.ink])
+		dst.SubImage(image.Rect(dx, resultY+glyph-3, dx+2, resultY+glyph+3+i%3*3)).(*ebiten.Image).Fill(gfx.Palette[band[1]])
 	}
 }

@@ -194,6 +194,7 @@ func (t *Title) Draw(ctx *Context, dst *ebiten.Image) {
 	x := gfx.CentreX(name, 3)
 	f.Draw(dst, name, x+3, titleLogoY+3, resurrect64.Grape, 3) // a deep drop shadow
 	f.DrawOutlined(dst, name, x, titleLogoY, resurrect64.Coral, resurrect64.Ink, 3)
+	f.DrawBanded(dst, name, x, titleLogoY, resurrect64.Honey, resurrect64.Coral, resurrect64.Copper, 3)
 	f.DrawShadowed(dst, "a faithful remake", gfx.CentreX("a faithful remake", 1), titleLogoY+34, resurrect64.Fog, resurrect64.Ink, 1)
 
 	const prompt = "PRESS ANY KEY"

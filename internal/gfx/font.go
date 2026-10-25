@@ -155,5 +155,19 @@ func (f *Font) DrawOutlined(dst *ebiten.Image, s string, x, y, idx, outline, sca
 	f.Draw(dst, s, x, y, idx, scale)
 }
 
+// DrawBanded renders s in three bands of colour, top to bottom, as painted
+// lettering catches the light: the top quarter in light, the middle in
+// idx and the lower three eighths in dark. Each band is the text drawn
+// again through a clip of its rows.
+func (f *Font) DrawBanded(dst *ebiten.Image, s string, x, y, light, idx, dark, scale int) {
+	h := GlyphSize * max(scale, 1)
+	cuts := [4]int{0, h / 4, h * 5 / 8, h}
+	b := dst.Bounds()
+	for i, ink := range [3]int{light, idx, dark} {
+		clip := dst.SubImage(image.Rect(b.Min.X, y+cuts[i], b.Max.X, y+cuts[i+1])).(*ebiten.Image)
+		f.Draw(clip, s, x, y, ink, scale)
+	}
+}
+
 // CentreX is the X that centres s at scale on the logical screen.
 func CentreX(s string, scale int) int { return (ScreenWidth - Width(s)*max(scale, 1)) / 2 }
