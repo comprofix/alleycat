@@ -84,13 +84,17 @@ func (r *Renderer) buildWalls(y0, y1 int) {
 	for x := wallX0 + 6; x < wallX1; x += 8 { // wallpaper pinstripes
 		fill(b, x, y0+6, 1, y1-y0-9, s.WallShade)
 	}
-	fill(b, wallX0, y0+4, wallX1-wallX0, 1, s.WallShade) // the picture rail
-	fill(b, wallX0, y1-3, wallX1-wallX0, 2, s.Trim)      // the skirting
+	fill(b, wallX0, y0+3, wallX1-wallX0, 1, s.WallLight) // the picture rail, lit on top
+	fill(b, wallX0, y0+4, wallX1-wallX0, 1, s.WallShade)
+	fill(b, wallX0, y1-3, wallX1-wallX0, 2, s.Trim) // the skirting
 	fill(b, wallX0, y1-1, wallX1-wallX0, 1, s.Outline)
 	// Floorboards: rows that widen towards us, and joints that fan out.
 	for y, gap := y1+3, 3; y < gfx.ScreenHeight; y, gap = y+gap, gap+1 {
 		x := edge(y - y1)
 		fill(b, x, y, sw-2*x, 1, s.WallShade)
+		for lx := x + y%2; lx < sw-x; lx += 2 { // the next board's lit edge, dithered
+			fill(b, lx, y+1, 1, 1, s.GroundLight)
+		}
 	}
 	for i := 1; i < 8; i++ {
 		bx := wallX0 + i*(wallX1-wallX0)/8

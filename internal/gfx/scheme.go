@@ -49,56 +49,62 @@ var AlleyScheme = Scheme{
 // BirdcageScheme is the birdcage room: a red room with green furniture,
 // after the original's red/green set (DESIGN §2.3, §3.4).
 var BirdcageScheme = Scheme{
-	Wall:      resurrect64.Cerise,
-	WallShade: resurrect64.Grape,
-	Glass:     resurrect64.Ink,
-	Glint:     resurrect64.Blue,
-	Trim:      resurrect64.Honey,
-	Fence:     resurrect64.Emerald,
-	Gap:       resurrect64.DeepTeal,
-	Ground:    resurrect64.Cerise,
-	Metal:     resurrect64.Fog,
-	Shade:     resurrect64.Grape,
-	Outline:   resurrect64.Ink,
-	Prints:    resurrect64.Grape,
+	Wall:        resurrect64.Cerise,
+	WallShade:   resurrect64.Grape,
+	WallLight:   resurrect64.Cerise, // unlit until the red rooms are shaded
+	Glass:       resurrect64.Ink,
+	Glint:       resurrect64.Blue,
+	Trim:        resurrect64.Honey,
+	Fence:       resurrect64.Emerald,
+	Gap:         resurrect64.DeepTeal,
+	Ground:      resurrect64.Cerise,
+	GroundLight: resurrect64.Cerise,
+	Metal:       resurrect64.Fog,
+	Shade:       resurrect64.Grape,
+	Outline:     resurrect64.Ink,
+	Prints:      resurrect64.Grape,
 }
 
 // CheeseScheme is the cheese room: the birdcage room's red walls and green
 // furniture, with a yellow wedge and orange holes (DESIGN §3.4, "Cheese room
 // layout").
 var CheeseScheme = Scheme{
-	Wall:      resurrect64.Cerise,
-	WallShade: resurrect64.Grape,
-	Glass:     resurrect64.Ink,
-	Glint:     resurrect64.Blue,
-	Trim:      resurrect64.Honey,
-	Fence:     resurrect64.Emerald,
-	Gap:       resurrect64.DeepTeal,
-	Ground:    resurrect64.Cerise,
-	Metal:     resurrect64.Fog,
-	Shade:     resurrect64.Grape,
-	Outline:   resurrect64.Ink,
-	Prints:    resurrect64.Grape,
-	Cheese:    resurrect64.Honey,
-	Hole:      resurrect64.Coral,
+	Wall:        resurrect64.Cerise,
+	WallShade:   resurrect64.Grape,
+	WallLight:   resurrect64.Cerise, // unlit until the red rooms are shaded
+	Glass:       resurrect64.Ink,
+	Glint:       resurrect64.Blue,
+	Trim:        resurrect64.Honey,
+	Fence:       resurrect64.Emerald,
+	Gap:         resurrect64.DeepTeal,
+	Ground:      resurrect64.Cerise,
+	GroundLight: resurrect64.Cerise,
+	Metal:       resurrect64.Fog,
+	Shade:       resurrect64.Grape,
+	Outline:     resurrect64.Ink,
+	Prints:      resurrect64.Grape,
+	Cheese:      resurrect64.Honey,
+	Hole:        resurrect64.Coral,
 }
 
 // FishbowlScheme is the fishbowl room: a plum room with teal and cyan
 // furniture, after the original's magenta/cyan set (DESIGN §3.4,
 // "Fishbowl room layout").
 var FishbowlScheme = Scheme{
-	Wall:      resurrect64.Grape,
-	WallShade: resurrect64.Shadow,
-	Glass:     resurrect64.Ink,
-	Glint:     resurrect64.Blue,
-	Trim:      resurrect64.Seafoam,
-	Fence:     resurrect64.DeepTeal,
-	Gap:       resurrect64.Seafoam,
-	Ground:    resurrect64.Grape,
-	Metal:     resurrect64.Fog,
-	Shade:     resurrect64.Shadow,
-	Outline:   resurrect64.Ink,
-	Prints:    resurrect64.Ink, // Grape prints vanished on the Grape floor
+	Wall:        resurrect64.Grape,
+	WallShade:   resurrect64.Plum,
+	WallLight:   resurrect64.Violet,
+	Glass:       resurrect64.Ink,
+	Glint:       resurrect64.Blue,
+	Trim:        resurrect64.Seafoam,
+	Fence:       resurrect64.DeepTeal,
+	Gap:         resurrect64.Seafoam,
+	Ground:      resurrect64.Grape,
+	GroundLight: resurrect64.Violet,
+	Metal:       resurrect64.Fog,
+	Shade:       resurrect64.Shadow,
+	Outline:     resurrect64.Ink,
+	Prints:      resurrect64.Ink, // Grape prints vanished on the Grape floor
 }
 
 // UnderwaterScheme is the underwater scene: teal water under a plum
