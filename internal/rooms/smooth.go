@@ -50,7 +50,7 @@ func NewSmoothRenderer() *SmoothRenderer {
 // Drawn reports whether room has its new look yet.
 func (r *SmoothRenderer) Drawn(room Room) bool {
 	switch room.(type) {
-	case *BirdcageRoom, *BookshelfRoom:
+	case *BirdcageRoom, *BookshelfRoom, *CheeseRoom:
 		return true
 	}
 	return false
@@ -60,10 +60,14 @@ func (r *SmoothRenderer) Drawn(room Room) bool {
 func (r *SmoothRenderer) Draw(dst *ebiten.Image, room Room) {
 	if r.back == nil {
 		r.back = ebiten.NewImage(gfx.ScreenWidth*entity.K, gfx.ScreenHeight*entity.K)
-		if bs, ok := room.(*BookshelfRoom); ok {
+		switch rm := room.(type) {
+		case *BookshelfRoom:
 			r.scheme, r.fur = gfx.BookshelfScheme, tealFurnish
-			r.buildBookshelf(bs)
-		} else {
+			r.buildBookshelf(rm)
+		case *CheeseRoom:
+			r.scheme = gfx.CheeseScheme
+			r.buildCheese()
+		default:
 			r.buildBirdcage()
 		}
 	}
@@ -77,6 +81,8 @@ func (r *SmoothRenderer) Draw(dst *ebiten.Image, room Room) {
 		r.drawBirdcage(dst, rm)
 	case *BookshelfRoom:
 		r.drawBookshelf(dst, rm)
+	case *CheeseRoom:
+		r.drawCheese(dst, rm)
 	}
 	r.dog.Draw(dst, &b.Dog, entity.OrangeDog)
 	r.drawBroom(dst, &b.Broom)
@@ -99,6 +105,16 @@ func fadePoly(dst *ebiten.Image, c int, a float64, pts ...float64) {
 	op.ColorScale.ScaleWithColor(gfx.RGBA(c))
 	op.ColorScale.Scale(float32(a), float32(a), float32(a), float32(a))
 	vector.FillPath(dst, &p, nil, op)
+}
+
+// polyline is the line through the x, y pairs, for shapes.StrokePath.
+func polyline(pts []float64) *vector.Path {
+	var p vector.Path
+	p.MoveTo(float32(pts[0]), float32(pts[1]))
+	for i := 2; i+1 < len(pts); i += 2 {
+		p.LineTo(float32(pts[i]), float32(pts[i+1]))
+	}
+	return &p
 }
 
 // fadeRect fills a rectangle with palette colour c at opacity a.
