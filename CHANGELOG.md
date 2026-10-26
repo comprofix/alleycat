@@ -5,6 +5,37 @@ All notable changes to Alley Cat are listed here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0](https://github.com/comprofix/alleycat/compare/v1.2.1...v1.3.0) - 2026-10-26
+
+### Added
+
+- A new look, smooth art at 1280×800 drawn in code, and the one every
+  player now starts on. The game underneath is unchanged: the same
+  layout, timings, rules and sound. The pixel art of 1.2.1 is still
+  there as the classic look, chosen under Options, Look.
+- The alley: night sky, moon and skyline, lit windows behind curtains,
+  laundry, trash cans and the fence. Freddy walks with a bob, flicking
+  ears and a swinging tail; the dogs run on jointed legs with a wagging
+  tail.
+- The rooms: walls in perspective with wallpaper, windows, lamps and
+  chairs, and each room's own things: the birdcage and canary, the
+  bookcase and spider, the cheese and its mice, the sleeping dogs and
+  their milk, the fishbowl and the water below. Things on the floor are
+  drawn in the order they stand, so Freddy passes in front of or behind
+  them.
+- The heart room and the kiss, the title, and the tally, HERE KITTY,
+  rejection, dancing cats and result words.
+- Menus: a main menu (Play, Options, Help, Quit), a skill menu, options,
+  a help screen listing the keys, and paws mode as a menu over the
+  game, all with sounds. They work by keyboard, gamepad or mouse, and P
+  pauses too.
+
+### Changed
+
+- The title now calls the game "reimagined".
+- After a game, a key goes to the main menu rather than straight into
+  another game.
+
 ## [1.2.1](https://github.com/comprofix/alleycat/compare/v1.2.0...v1.2.1) - 2026-10-25
 
 ### Fixed
