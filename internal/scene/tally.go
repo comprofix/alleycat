@@ -31,6 +31,8 @@ type Tally struct {
 	ticks int
 	held  int
 	x, y  int // where Freddy went in, in the alley
+
+	art *tallyArt // the new look's pictures; a render cache
 }
 
 func newTally(bonus, timeBonus, x, y int) *Tally {
@@ -63,8 +65,12 @@ func (t *Tally) Update(ctx *Context) error {
 	return nil
 }
 
-// Draw implements Scene.
+// Draw implements Scene: in the look dst is the size of.
 func (t *Tally) Draw(ctx *Context, dst *ebiten.Image) {
+	if smoothScreen(dst) {
+		t.drawSmooth(dst)
+		return
+	}
 	bg := resurrect64.Ink
 	if t.lit >= t.rows() && t.held/4%2 == 1 {
 		bg = resurrect64.Navy // the flashing at the end
@@ -94,6 +100,8 @@ type HereKitty struct {
 	ticks  int
 	played bool
 	next   func(*Context) Scene
+
+	art *kittyArt // the new look's pictures; a render cache
 }
 
 func newHereKitty(next func(*Context) Scene) *HereKitty { return &HereKitty{next: next} }
@@ -110,8 +118,12 @@ func (h *HereKitty) Update(ctx *Context) error {
 	return nil
 }
 
-// Draw implements Scene.
+// Draw implements Scene: in the look dst is the size of.
 func (h *HereKitty) Draw(ctx *Context, dst *ebiten.Image) {
+	if smoothScreen(dst) {
+		h.drawSmooth(dst)
+		return
+	}
 	dst.Fill(gfx.Palette[resurrect64.Ink])
 	frame := h.ticks / 4 // 8 frames of 4 ticks
 	entity.DrawAt(dst, ctx.Rooms.Sprite("kitty_dog").Frame(frame%2), kittyDogX, kittyDogY, false)

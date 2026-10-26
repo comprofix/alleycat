@@ -18,6 +18,8 @@ type Dance struct {
 	ticks   int
 	played  bool
 	next    func(*Context) Scene
+
+	art [2]*ebiten.Image // the new look's two steps; a render cache
 }
 
 // newDance returns the interlude for the new difficulty, or nil below 2.
@@ -41,8 +43,12 @@ func (d *Dance) Update(ctx *Context) error {
 	return nil
 }
 
-// Draw implements Scene.
+// Draw implements Scene: in the look dst is the size of.
 func (d *Dance) Draw(ctx *Context, dst *ebiten.Image) {
+	if smoothScreen(dst) {
+		d.drawSmooth(dst)
+		return
+	}
 	dst.Fill(gfx.Palette[resurrect64.Ink])
 	cat := ctx.Rooms.Sprite("dance_cat")
 	step := (d.ticks / config.DanceFrameTicks) % 2

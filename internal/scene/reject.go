@@ -20,6 +20,8 @@ type Reject struct {
 	landed  bool
 	sounded bool // the falling tone has started
 	next    func(*Context) Scene
+
+	art *rejectArt // the new look's pictures; a render cache
 }
 
 func newReject(next func(*Context) Scene) *Reject {
@@ -54,8 +56,12 @@ func (r *Reject) Update(ctx *Context) error {
 	return nil
 }
 
-// Draw implements Scene.
+// Draw implements Scene: in the look dst is the size of.
 func (r *Reject) Draw(ctx *Context, dst *ebiten.Image) {
+	if smoothScreen(dst) {
+		r.drawSmooth(dst)
+		return
+	}
 	dst.Fill(gfx.Palette[resurrect64.Ink])
 	if r.landed {
 		entity.DrawAt(dst, ctx.Rooms.Sprite("reject_face").Frame(0), config.RejectX, config.RejectLandY, false)

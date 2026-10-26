@@ -143,6 +143,9 @@ type Result struct {
 	ink   int
 	next  func(*Context) Scene
 	ticks int
+
+	font *gfx.VectorFont // the new look's lettering; a render cache
+	big  banner
 }
 
 func newResult(word resultWord, next func(*Context) Scene) *Result {
@@ -180,6 +183,10 @@ const (
 )
 
 func (r *Result) Draw(ctx *Context, dst *ebiten.Image) {
+	if smoothScreen(dst) {
+		r.drawSmooth(dst)
+		return
+	}
 	dst.Fill(gfx.Palette[resurrect64.Ink])
 	if r.ink < 0 {
 		return
