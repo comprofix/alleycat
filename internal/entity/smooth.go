@@ -26,8 +26,20 @@ type Coat struct {
 	Fur, Shade, Light, Ear, Eye int
 }
 
-// FreddyCoat is Freddy's: a black cat with honey eyes.
-var FreddyCoat = Coat{resurrect64.Ink, resurrect64.Shadow, resurrect64.Lilac, resurrect64.Mauve, resurrect64.Honey}
+// The coats of the cats drawn from Freddy's pieces, as the classic look
+// recolours his frames (DESIGN §8).
+var (
+	// FreddyCoat is Freddy's: a black cat with honey eyes.
+	FreddyCoat = Coat{resurrect64.Ink, resurrect64.Shadow, resurrect64.Lilac, resurrect64.Mauve, resurrect64.Honey}
+	// FeliciaCoat is Felicia's: a white cat with blue eyes.
+	FeliciaCoat = Coat{Fur: resurrect64.White, Shade: resurrect64.Mist, Light: resurrect64.Mist, Ear: resurrect64.Pink, Eye: resurrect64.Cobalt}
+	// GiftCoat is Freddy carrying a gift: blue, lit sky blue.
+	GiftCoat = Coat{resurrect64.Cobalt, resurrect64.Indigo, resurrect64.Blue, resurrect64.Mauve, resurrect64.Honey}
+	// RivalCoat is the heart room's rival cats: orange, lit honey.
+	RivalCoat = Coat{resurrect64.Coral, resurrect64.Copper, resurrect64.Honey, resurrect64.Cerise, resurrect64.Ink}
+	// SilverCoat is the rivals at the kiss: silver, lit white.
+	SilverCoat = Coat{resurrect64.Fog, resurrect64.Lilac, resurrect64.White, resurrect64.Mauve, resurrect64.Ink}
+)
 
 // SmoothFreddy draws Freddy in the new look. It holds only the canvas he
 // is drawn on, a render cache.
@@ -43,10 +55,11 @@ type leg struct {
 }
 
 // draw draws the leg in two parts, bending at the knee: forwards for a
-// front leg, back at the hock for a hind one. A far leg is a little
-// thinner; it stays black, as shadow would vanish into the cobbles.
-func (l leg) draw(p Pen) {
-	c, w := resurrect64.Ink, 6.0
+// front leg, back at the hock for a hind one, in fur colour c. A far leg is
+// a little thinner; it stays the fur's colour, as shadow would vanish into
+// the cobbles.
+func (l leg) draw(p Pen, c int) {
+	w := 6.0
 	if l.far {
 		w = 5
 	}
@@ -93,65 +106,104 @@ func tailUp(sway float64) []float64 {
 func freddyPose(f *Freddy) pose {
 	switch {
 	case f.Arc.Dir == physics.Rising:
-		return pose{
-			angle: -0.3,
-			legs:  legsAt([4][2]float64{{-13, -5}, {-8, -3}, {11, -11}, {13, -13}}),
-			tail:  []float64{26, 21, 16, 23, 8, 22, 3, 18},
-		}
+		return risingPose()
 	case f.Arc.Dir == physics.Falling:
 		return pose{
 			legs: legsAt([4][2]float64{{-10, 0}, {-4, -1}, {8, -1}, {12, 0}}),
 			tail: tailUp(0),
 		}
 	case f.Dir != 0:
-		// The walk: each leg swings in turn, hind then front, near then
-		// far, a quarter of a stride apart, its paw lifted as it swings
-		// forward.
-		// His body bobs as the dog's does, highest as a leg passes under,
-		// his ears flick and his tail swings, all with the stride; his
-		// paws stay on the ground.
-		phi := 2 * math.Pi * float64(f.WalkFrame) / 6 // six walk frames
-		bob := -1.2 * math.Cos(2*phi)
-		var off [4][2]float64
-		for i, ph := range [4]float64{0, math.Pi, math.Pi / 2, 3 * math.Pi / 2} {
-			off[i] = [2]float64{7 * math.Sin(phi+ph), -4*max(0, math.Cos(phi+ph)) - bob}
-		}
-		legs := legsAt(off)
-		for i := range legs {
-			legs[i].jy += bob
-			legs[i].fy += bob
-		}
-		return pose{legs: legs, tail: tailUp(4 * math.Sin(phi)), bob: bob, ear: 1.5 * math.Sin(phi)}
+		return walkPose(f.WalkFrame)
 	}
+	return standPose()
+}
+
+// risingPose is his leap, nose up, legs stretched out.
+func risingPose() pose {
+	return pose{
+		angle: -0.3,
+		legs:  legsAt([4][2]float64{{-13, -5}, {-8, -3}, {11, -11}, {13, -13}}),
+		tail:  []float64{26, 21, 16, 23, 8, 22, 3, 18},
+	}
+}
+
+// standPose is him standing still.
+func standPose() pose {
 	return pose{legs: legsAt([4][2]float64{{-2, 0}, {0, 0}, {0, 0}, {2, 0}}), tail: tailUp(0)}
 }
 
+// walkPose is his walk in walk frame frame, of six.
+func walkPose(frame int) pose {
+	// Each leg swings in turn, hind then front, near then far, a quarter
+	// of a stride apart, its paw lifted as it swings forward.
+	// His body bobs as the dog's does, highest as a leg passes under, his
+	// ears flick and his tail swings, all with the stride; his paws stay
+	// on the ground.
+	phi := 2 * math.Pi * float64(frame) / 6 // six walk frames
+	bob := -1.2 * math.Cos(2*phi)
+	var off [4][2]float64
+	for i, ph := range [4]float64{0, math.Pi, math.Pi / 2, 3 * math.Pi / 2} {
+		off[i] = [2]float64{7 * math.Sin(phi+ph), -4*max(0, math.Cos(phi+ph)) - bob}
+	}
+	legs := legsAt(off)
+	for i := range legs {
+		legs[i].jy += bob
+		legs[i].fy += bob
+	}
+	return pose{legs: legs, tail: tailUp(4 * math.Sin(phi)), bob: bob, ear: 1.5 * math.Sin(phi)}
+}
+
 // drawCat draws Freddy standing, walking or in the air, facing right in a
-// 96×44 box.
-func drawCat(dst *ebiten.Image, ps pose) {
+// 96×44 box, in coat co.
+func drawCat(dst *ebiten.Image, ps pose, co Coat) {
 	legs := NewPen(dst, 52, 30, ps.angle)
 	for _, l := range ps.legs {
 		if l.far {
-			l.draw(legs)
+			l.draw(legs, co.Fur)
 		}
 	}
 	p := legs.At(0, ps.bob, 1) // the body, bobbing over the legs
 	// The tail, then the body: haunch and chest joined along the back.
-	p.Stroke(resurrect64.Ink, 5.5, true, ps.tail...)
+	p.Stroke(co.Fur, 5.5, true, ps.tail...)
 	tx, ty := ps.tail[len(ps.tail)-4], ps.tail[len(ps.tail)-3]
-	p.Circle(tx, ty, 1.8, resurrect64.Lilac)
-	p.Poly(resurrect64.Ink, 32, 13, 56, 14, 72, 12, 74, 31, 34, 32)
-	p.Circle(33, 23, 9.5, resurrect64.Ink)
-	p.Circle(71, 22, 10, resurrect64.Ink)
-	p.Ellipse(32, 24, 8, 7, 0, resurrect64.Shadow)
-	p.Ellipse(33, 25, 6.5, 5.5, 0, resurrect64.Ink)
-	p.Stroke(resurrect64.Lilac, 2.5, true, 30, 14.5, 44, 13.8, 58, 14, 66, 12.8)
+	p.Circle(tx, ty, 1.8, co.Light)
+	p.Poly(co.Fur, 32, 13, 56, 14, 72, 12, 74, 31, 34, 32)
+	p.Circle(33, 23, 9.5, co.Fur)
+	p.Circle(71, 22, 10, co.Fur)
+	p.Ellipse(32, 24, 8, 7, 0, co.Shade)
+	p.Ellipse(33, 25, 6.5, 5.5, 0, co.Fur)
+	p.Stroke(co.Light, 2.5, true, 30, 14.5, 44, 13.8, 58, 14, 66, 12.8)
 	for _, l := range ps.legs {
 		if !l.far {
-			l.draw(legs)
+			l.draw(legs, co.Fur)
 		}
 	}
-	drawHead(p, 78, 10, ps.ear, FreddyCoat)
+	drawHead(p, 78, 10, ps.ear, co)
+}
+
+// CatPose is how a cat drawn by DrawCat stands.
+type CatPose int
+
+const (
+	CatStanding CatPose = iota
+	CatWalking
+	CatLeaping
+)
+
+// DrawCat draws a cat from Freddy's pieces in coat co, in his box with its
+// top-left at (x, y) on the layout, facing left when flip is set: standing,
+// walking in walk frame frame, or leaping, as the heart room's cats are
+// his frames recoloured in the classic look (DESIGN §8).
+func (s *SmoothFreddy) DrawCat(dst *ebiten.Image, x, y int, flip bool, ps CatPose, frame int, co Coat) {
+	pose := standPose()
+	switch ps {
+	case CatWalking:
+		pose = walkPose(frame)
+	case CatLeaping:
+		pose = risingPose()
+	}
+	pic := Picture{X: x, Y: y, W: freddyW, H: config.FreddyH, Flip: flip, Outline: NoOutline}
+	s.canvas.Draw(dst, pic, func(p Pen) { drawCat(p.dst, pose, co) })
 }
 
 // drawHead draws Freddy's head in profile, facing right, round (x, y), in
@@ -207,7 +259,10 @@ func drawFace(p Pen, x, y float64, co Coat) {
 
 // Draw draws Freddy as DrawFreddy does, onto the new look's screen. He has
 // no rim in the new look: a black cat, as the owner chose.
-func (s *SmoothFreddy) Draw(dst *ebiten.Image, f *Freddy) {
+func (s *SmoothFreddy) Draw(dst *ebiten.Image, f *Freddy) { s.DrawIn(dst, f, FreddyCoat) }
+
+// DrawIn draws Freddy as Draw does, in coat co.
+func (s *SmoothFreddy) DrawIn(dst *ebiten.Image, f *Freddy, co Coat) {
 	if f.Hidden() || f.Gone {
 		return
 	}
@@ -229,9 +284,9 @@ func (s *SmoothFreddy) Draw(dst *ebiten.Image, f *Freddy) {
 	}
 	s.canvas.Draw(dst, pic, func(p Pen) {
 		if f.Seat != NotSeated {
-			DrawSitting(p, FreddyCoat)
+			DrawSitting(p, co)
 		} else {
-			drawCat(p.dst, freddyPose(f))
+			drawCat(p.dst, freddyPose(f), co)
 		}
 	})
 	DrawSmoothDust(dst, f)

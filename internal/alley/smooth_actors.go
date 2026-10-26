@@ -20,9 +20,6 @@ import (
 // phone, bottle, pot (all 16 wide).
 var thrownH = [...]int{9, 6, 12, 12}
 
-// FeliciaCoat is Felicia's: a white cat with blue eyes.
-var FeliciaCoat = entity.Coat{Fur: resurrect64.White, Shade: resurrect64.Mist, Light: resurrect64.Mist, Ear: resurrect64.Pink, Eye: resurrect64.Cobalt}
-
 // drawLineS draws a clothesline and its laundry: a rope, and each piece
 // pegged on by its top.
 func (r *SmoothRenderer) drawLineS(dst *ebiten.Image, l *Line) {
@@ -291,7 +288,7 @@ func (r *SmoothRenderer) drawWindowS(dst *ebiten.Image, w *Window) {
 // drawFelicia draws Felicia sitting in her window, 128×56, in the middle
 // of "ME OW!", its letters staggered.
 func (r *SmoothRenderer) drawFelicia(p entity.Pen) {
-	entity.DrawSitting(p.At(18, 9, 0.8), FeliciaCoat)
+	entity.DrawSitting(p.At(18, 9, 0.8), entity.FeliciaCoat)
 	for _, l := range []struct {
 		s    string
 		x, y float64
