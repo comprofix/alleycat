@@ -112,8 +112,17 @@ func (c *titleCat) draw(dst *ebiten.Image, sheet *gfx.Sheet) {
 
 // The title card's layout (our own art).
 const (
-	titleFenceY = 176 // the fence top
-	titleLogoY  = 36
+	titleFenceY  = 176 // the fence top
+	titleLogoY   = 36
+	titlePromptY = 104
+)
+
+// The title's words: the name, the line under it (owner, 2026-10-26: a
+// reinterpretation, no longer "a faithful remake") and the prompt.
+const (
+	titleName   = "ALLEY CAT"
+	titleLine   = "reimagined"
+	titlePrompt = "PRESS ANY KEY"
 )
 
 // titleRoofs are the town's rooftops: left edge, width and top.
@@ -189,18 +198,16 @@ func (t *Title) Draw(ctx *Context, dst *ebiten.Image) {
 	dst.DrawImage(t.back, nil)
 	t.cat.draw(dst, ctx.Alley)
 	f := ctx.PixelFont
-	const name = "ALLEY CAT"
-	x := gfx.CentreX(name, 3)
-	f.Draw(dst, name, x+3, titleLogoY+3, resurrect64.Grape, 3) // a deep drop shadow
-	f.DrawOutlined(dst, name, x, titleLogoY, resurrect64.Coral, resurrect64.Ink, 3)
-	f.DrawBanded(dst, name, x, titleLogoY, resurrect64.Honey, resurrect64.Coral, resurrect64.Copper, 3)
-	f.DrawShadowed(dst, "a faithful remake", gfx.CentreX("a faithful remake", 1), titleLogoY+34, resurrect64.Fog, resurrect64.Ink, 1)
+	x := gfx.CentreX(titleName, 3)
+	f.Draw(dst, titleName, x+3, titleLogoY+3, resurrect64.Grape, 3) // a deep drop shadow
+	f.DrawOutlined(dst, titleName, x, titleLogoY, resurrect64.Coral, resurrect64.Ink, 3)
+	f.DrawBanded(dst, titleName, x, titleLogoY, resurrect64.Honey, resurrect64.Coral, resurrect64.Copper, 3)
+	f.DrawShadowed(dst, titleLine, gfx.CentreX(titleLine, 1), titleLogoY+34, resurrect64.Fog, resurrect64.Ink, 1)
 
-	const prompt = "PRESS ANY KEY"
-	y := 104
-	f.DrawShadowed(dst, prompt, gfx.CentreX(prompt, 1), y, resurrect64.White, resurrect64.Ink, 1)
+	y := titlePromptY
+	f.DrawShadowed(dst, titlePrompt, gfx.CentreX(titlePrompt, 1), y, resurrect64.White, resurrect64.Ink, 1)
 	ptr := ctx.UI.Sprite("pointer")
 	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(float64(gfx.CentreX(prompt, 1)-ptr.W-4), float64(y))
+	op.GeoM.Translate(float64(gfx.CentreX(titlePrompt, 1)-ptr.W-4), float64(y))
 	dst.DrawImage(ptr.Frame(t.blink.Frame()), op)
 }
