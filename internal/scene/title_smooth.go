@@ -1,7 +1,6 @@
 package scene
 
 import (
-	"image"
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -30,47 +29,20 @@ const (
 
 // titleSmooth is what the title draws with in the new look, render caches.
 type titleSmooth struct {
-	back         *ebiten.Image
-	name         *ebiten.Image // the name in white, to be laid in its bands
-	line         *gfx.VectorFont
-	freddy       entity.SmoothFreddy
-	canvas       entity.Canvas
-	nameX        int
-	nameW, nameH int
-	// nameTop and nameBottom are the first and last rows the letters fill.
-	nameTop, nameBottom int
+	back   *ebiten.Image
+	name   banner
+	nameX  int
+	line   *gfx.VectorFont
+	freddy entity.SmoothFreddy
+	canvas entity.Canvas
 }
 
 func newTitleSmooth() *titleSmooth {
 	t := &titleSmooth{line: gfx.NewVectorFont(titleLineSize)}
 	t.buildBack()
 	big := gfx.NewVectorFont(titleNameSize)
-	t.nameW, t.nameH = big.Width(titleName), big.LineHeight()
-	t.nameX = big.CentreX(titleName)
-	t.name = ebiten.NewImage(t.nameW, t.nameH)
-	big.Draw(t.name, titleName, 0, 0, resurrect64.White)
-	t.nameTop, t.nameBottom = inkRows(t.name)
+	t.name, t.nameX = newBanner(big, titleName), big.CentreX(titleName)
 	return t
-}
-
-// inkRows are the first and last rows of img with anything drawn in them.
-func inkRows(img *ebiten.Image) (top, bottom int) {
-	b := img.Bounds()
-	px := make([]byte, 4*b.Dx()*b.Dy())
-	img.ReadPixels(px)
-	top = -1
-	for y := range b.Dy() {
-		for x := range b.Dx() {
-			if px[4*(y*b.Dx()+x)+3] > 0 {
-				if top < 0 {
-					top = y
-				}
-				bottom = y
-				break
-			}
-		}
-	}
-	return max(top, 0), bottom
 }
 
 // fadeRectS fills a rectangle with palette colour c at opacity a.
@@ -162,22 +134,10 @@ func (t *titleSmooth) draw(dst *ebiten.Image, ti *Title) {
 
 	// The name: a deep drop shadow, an ink outline, then the letters in
 	// three bands, light at the top, as the classic look's logo.
-	x, y := float64(t.nameX), tk(titleLogoY)-float64(t.nameTop)
-	lay := func(dx, dy float64, c, from, to int) {
-		op := &ebiten.DrawImageOptions{}
-		op.GeoM.Translate(x+dx, y+dy+float64(from))
-		op.ColorScale.ScaleWithColor(gfx.RGBA(c))
-		dst.DrawImage(t.name.SubImage(image.Rect(0, from, t.nameW, to)).(*ebiten.Image), op)
-	}
-	lay(12, 12, resurrect64.Grape, 0, t.nameH)
-	for _, d := range [12][2]float64{{-5, 0}, {5, 0}, {0, -5}, {0, 5}, {-4, -3}, {4, -3}, {-4, 3}, {4, 3}, {-3, -4}, {3, -4}, {-3, 4}, {3, 4}} {
-		lay(d[0], d[1], resurrect64.Ink, 0, t.nameH)
-	}
-	h := t.nameBottom - t.nameTop + 1
-	b1, b2 := t.nameTop+h*3/10, t.nameTop+h*7/10
-	lay(0, 0, resurrect64.Honey, 0, b1)
-	lay(0, 0, resurrect64.Coral, b1, b2)
-	lay(0, 0, resurrect64.Copper, b2, t.nameH)
+	x, y := float64(t.nameX), tk(titleLogoY)
+	t.name.layAll(dst, x+12, y+12, resurrect64.Grape)
+	t.name.outline(dst, x, y, 5, resurrect64.Ink)
+	t.name.banded(dst, x, y, resurrect64.Honey, resurrect64.Coral, resurrect64.Copper)
 
 	f := t.line
 	f.DrawShadowed(dst, titleLine, f.CentreX(titleLine), int(tk(titleLogoY+34)), resurrect64.Fog, resurrect64.Ink)
