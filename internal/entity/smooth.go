@@ -193,8 +193,9 @@ const (
 // DrawCat draws a cat from Freddy's pieces in coat co, in his box with its
 // top-left at (x, y) on the layout, facing left when flip is set: standing,
 // walking in walk frame frame, or leaping, as the heart room's cats are
-// his frames recoloured in the classic look (DESIGN §8).
-func (s *SmoothFreddy) DrawCat(dst *ebiten.Image, x, y int, flip bool, ps CatPose, frame int, co Coat) {
+// his frames recoloured in the classic look (DESIGN §8). Outline, unless
+// NoOutline, rims it in that palette colour.
+func (s *SmoothFreddy) DrawCat(dst *ebiten.Image, x, y int, flip bool, ps CatPose, frame int, co Coat, outline int) {
 	pose := standPose()
 	switch ps {
 	case CatWalking:
@@ -202,7 +203,7 @@ func (s *SmoothFreddy) DrawCat(dst *ebiten.Image, x, y int, flip bool, ps CatPos
 	case CatLeaping:
 		pose = risingPose()
 	}
-	pic := Picture{X: x, Y: y, W: freddyW, H: config.FreddyH, Flip: flip, Outline: NoOutline}
+	pic := Picture{X: x, Y: y, W: freddyW, H: config.FreddyH, Flip: flip, Outline: outline}
 	s.canvas.Draw(dst, pic, func(p Pen) { drawCat(p.dst, pose, co) })
 }
 

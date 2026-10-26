@@ -253,7 +253,7 @@ func (r *SmoothRenderer) drawHeartCat(dst *ebiten.Image, c *HeartCat, co entity.
 		ps = entity.CatStanding
 	}
 	y := c.Y + config.HeartStandDY - config.HeartCatDY
-	r.freddy.DrawCat(dst, c.X, y, c.Dir < 0, ps, c.Frame, co)
+	r.freddy.DrawCat(dst, c.X, y, c.Dir < 0, ps, c.Frame, co, entity.NoOutline)
 }
 
 // DrawHeartKiss draws the heart room as it stands at the kiss, as the

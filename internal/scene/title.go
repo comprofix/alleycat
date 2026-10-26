@@ -25,7 +25,8 @@ type Title struct {
 	ticks  int  // master ticks since the theme started
 	cat    titleCat
 
-	back *ebiten.Image // the night scene, drawn once; a render cache
+	back   *ebiten.Image // the night scene, drawn once; a render cache
+	smooth *titleSmooth  // the same for the new look
 }
 
 // NewTitle returns the title scene.
@@ -190,8 +191,17 @@ func (t *Title) buildBack(ctx *Context) {
 	t.back = b
 }
 
-// Draw implements Scene.
+func (*Title) native() {}
+
+// Draw implements Scene: in the look dst is the size of.
 func (t *Title) Draw(ctx *Context, dst *ebiten.Image) {
+	if dst.Bounds().Dx() != gfx.ScreenWidth {
+		if t.smooth == nil {
+			t.smooth = newTitleSmooth()
+		}
+		t.smooth.draw(dst, t)
+		return
+	}
 	if t.back == nil {
 		t.buildBack(ctx)
 	}

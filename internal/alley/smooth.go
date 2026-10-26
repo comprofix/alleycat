@@ -163,7 +163,7 @@ func (r *SmoothRenderer) buildBack() {
 			shapes.FillCircle(b, x, y, 1.5, resurrect64.Fog)
 		}
 	}
-	r.drawMoon(b, k(268)+20, k(1)+20)
+	DrawMoon(b, k(268)+20, k(1)+20)
 
 	// The far rooftops: chimneys, a ledge on some, an aerial on others,
 	// and a lamp or two in their windows.
@@ -247,9 +247,9 @@ func (r *SmoothRenderer) buildBack() {
 	}
 }
 
-// drawMoon draws the moon round (cx, cy): a faint glow, the lit face
-// shaded off to the right, and two craters.
-func (r *SmoothRenderer) drawMoon(dst *ebiten.Image, cx, cy float64) {
+// DrawMoon draws the moon in the new look round (cx, cy) on the screen: a
+// faint glow, the lit face shaded off to the right, and two craters.
+func DrawMoon(dst *ebiten.Image, cx, cy float64) {
 	vector.FillCircle(dst, float32(cx), float32(cy), 34, faded(resurrect64.Fog, 0.08), true)
 	vector.FillCircle(dst, float32(cx), float32(cy), 26, faded(resurrect64.Fog, 0.1), true)
 	shapes.FillCircle(dst, cx, cy, 20, resurrect64.Fog)
