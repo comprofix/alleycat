@@ -21,9 +21,6 @@ type Synth struct {
 	mu sync.Mutex
 
 	music, sfx track
-	// menu plays the menus' sounds (DESIGN §7.4). It sounds over the others
-	// and through paws mode, while they stand still.
-	menu track
 
 	// Scheduling (see Now): commands wait in queue until the sample count
 	// pos reaches their time. offset maps game time onto samples.
@@ -35,7 +32,6 @@ type Synth struct {
 	offset  int64
 
 	enabled bool
-	paused  bool // paws mode: silent, and the tracks stand still
 	volume  float64
 	soften  bool
 
@@ -72,14 +68,9 @@ func (s *Synth) PlaySFX(notes []Note) { s.send(command{kind: playSFX, notes: not
 // StopSFX ends the effect early, letting the music resume.
 func (s *Synth) StopSFX() { s.send(command{kind: stopSFX}) }
 
-// PlayMenu starts a menu sound, replacing any playing. It sounds over the
-// tune and the effect, and in paws mode too.
-func (s *Synth) PlayMenu(notes []Note) { s.send(command{kind: playMenu, notes: notes}) }
-
 // Stop ends the tune and the effect at once, and drops anything still
 // queued. The game calls it at every scene change, as the original silences
-// the speaker at each transition (DESIGN §7.1). A menu sound plays on, so
-// the item chosen is heard as the screen changes.
+// the speaker at each transition (DESIGN §7.1).
 func (s *Synth) Stop() {
 	if s == nil {
 		return
@@ -158,8 +149,6 @@ func (s *Synth) apply(c command) {
 		s.sfx.start(c.notes, false)
 	case stopSFX:
 		s.sfx.stop()
-	case playMenu:
-		s.menu.start(c.notes, false)
 	}
 }
 
@@ -178,20 +167,7 @@ const (
 	stopMusic
 	playSFX
 	stopSFX
-	playMenu
 )
-
-// SetPaused holds every sound in paws mode: silence, with the tune and the
-// effect standing still until play resumes, so they carry on where they
-// were (DESIGN §7). It takes effect at once.
-func (s *Synth) SetPaused(on bool) {
-	if s == nil {
-		return
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.paused = on
-}
 
 // SetEnabled turns sound on or off (Ctrl+S). Tracks keep their timing while
 // sound is off, as in the original (DESIGN §7.1).
@@ -251,10 +227,6 @@ func (s *Synth) Read(p []byte) (int, error) {
 		var length int // samples in the sounding note
 		var fresh bool // the note starts on this sample
 		switch {
-		case s.menu.active():
-			hz, length, fresh = s.menu.hz(), s.menu.length(), s.menu.take()
-			s.menu.step()
-		case s.paused:
 		case s.sfx.active():
 			hz, length, fresh = s.sfx.hz(), s.sfx.length(), s.sfx.take()
 			s.sfx.step()

@@ -106,6 +106,27 @@ func TestManagerCut(t *testing.T) {
 	}
 }
 
+// Paws mode leaves the game's sounds playing, as the Game Skeleton's pause
+// does (DESIGN §7).
+func TestPawsLeavesSoundPlaying(t *testing.T) {
+	under := &stub{}
+	m := NewManager(under)
+	ctx := &Context{Audio: audio.NewSynth()}
+	for range FadeTicks {
+		m.Update(ctx)
+	}
+	ctx.Audio.PlayMusic([]audio.Note{{Hz: 500, Dur: 10 * time.Second}}, false)
+	pause(ctx, under)
+	if _, ok := ctx.next.(*Pause); !ok {
+		t.Fatalf("pause asked for %T, want paws mode", ctx.next)
+	}
+	buf := make([]byte, 4*4410)
+	ctx.Audio.Read(buf)
+	if maxJump(buf) < 1000 {
+		t.Error("paws mode silenced the music")
+	}
+}
+
 // A scene change silences every sound, so nothing carries over, such as a
 // dog fight into the title after the last life (DESIGN §7.1). Only the
 // screen-change figure plays through the fade, then all is quiet (§7.4).

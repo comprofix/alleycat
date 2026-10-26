@@ -56,8 +56,8 @@ func updateMenu(ctx *Context, m *ui.Menu, y func(*Context) int) {
 
 // menuSounds gives m the menus' sounds, as Night Crossing's (DESIGN §7.4).
 func menuSounds(ctx *Context, m *ui.Menu) {
-	m.OnMove = func() { ctx.Audio.PlayMenu(audio.MenuMove()) }
-	m.OnConfirm = func() { ctx.Audio.PlayMenu(audio.MenuConfirm()) }
+	m.OnMove = func() { ctx.Audio.PlaySFX(audio.MenuMove()) }
+	m.OnConfirm = func() { ctx.Audio.PlaySFX(audio.MenuConfirm()) }
 }
 
 // drawMenuPanel draws m in a panel centred across the screen, its top at y.
@@ -138,7 +138,6 @@ func (s *SkillSelect) Update(ctx *Context) error {
 	}
 	for k, skill := range skillKeys {
 		if ctx.Input.KeyJustPressed(k) {
-			ctx.Audio.PlayMenu(audio.MenuConfirm())
 			startGame(ctx, skill)
 			return nil
 		}
@@ -308,7 +307,6 @@ const helpKeyCells = 12
 // Update implements Scene.
 func (h *Help) Update(ctx *Context) error {
 	if ctx.Input.AnyJustPressed() {
-		ctx.Audio.PlayMenu(audio.MenuConfirm())
 		ctx.Switch(NewMainMenu())
 	}
 	return nil
@@ -337,7 +335,7 @@ func (h *Help) Draw(ctx *Context, dst *ebiten.Image) {
 }
 
 // Pause is paws mode (DESIGN §4): the game stands still, dimmed, under a
-// menu. Esc or P again resumes it.
+// menu, while its sounds play on. Esc or P again resumes it.
 type Pause struct {
 	under Scene
 	menu  ui.Menu
@@ -348,14 +346,12 @@ func NewPause(under Scene) *Pause { return &Pause{under: under} }
 
 // pause stops the game under and opens paws mode over it.
 func pause(ctx *Context, under Scene) {
-	ctx.Audio.SetPaused(true)
 	ctx.Cut(NewPause(under))
 }
 
 // Update implements Scene.
 func (p *Pause) Update(ctx *Context) error {
 	resume := func() {
-		ctx.Audio.SetPaused(false)
 		ctx.Cut(p.under)
 	}
 	if p.menu.Items == nil {

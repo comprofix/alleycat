@@ -58,7 +58,6 @@ func (m *Manager) Update(ctx *Context) error {
 			// Every sound ends with its scene, as the original silences
 			// the speaker at each transition (DESIGN §7.1).
 			ctx.Audio.Stop()
-			ctx.Audio.SetPaused(false)
 			// The rising figure plays through the fade out and back in.
 			ctx.Audio.PlaySFX(audio.Wipe(2 * FadeTicks * time.Second / config.TPS))
 		}

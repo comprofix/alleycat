@@ -48,7 +48,6 @@ func (t *Title) Update(ctx *Context) error {
 	t.ticks += ctx.Ticks
 	switch {
 	case ctx.Input.AnyJustPressed():
-		ctx.Audio.PlayMenu(audio.MenuConfirm())
 		ctx.Switch(NewMainMenu())
 	case t.ticks >= titleRepeatTicks:
 		// The tune starts again on the next update.

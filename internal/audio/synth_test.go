@@ -320,28 +320,6 @@ func TestNoNoteRateBuzz(t *testing.T) {
 	}
 }
 
-// Paws mode holds the sound: silence while paused, then the same note carries
-// on where it was, not from the start.
-func TestPauseHoldsSound(t *testing.T) {
-	s := NewSynth()
-	s.SetSoften(false)
-	s.PlaySFX([]Note{{800, ms(100)}, {1600, ms(500)}})
-	render(t, s, ms(60))
-	s.SetPaused(true)
-	if !toneless(render(t, s, ms(500))[samples(ms(5)):]) {
-		t.Error("tone while paused")
-	}
-	s.SetPaused(false)
-	// 40 ms of the first note were left when it paused.
-	if got := pitch(render(t, s, ms(35))[samples(ms(5)):]); !near(got, 800, 30) {
-		t.Errorf("after resuming pitch = %.0f, want the paused note at 800", got)
-	}
-	render(t, s, ms(15))
-	if got := pitch(render(t, s, ms(100))); !near(got, 1600, 30) {
-		t.Errorf("then pitch = %.0f, want the next note at 1600", got)
-	}
-}
-
 // Stop acts at once, dropping queued commands.
 func TestStopIsImmediate(t *testing.T) {
 	s := NewSynth()
@@ -354,41 +332,6 @@ func TestStopIsImmediate(t *testing.T) {
 	s.Stop()
 	if !toneless(render(t, s, ms(300))[samples(ms(5)):]) {
 		t.Error("sound after Stop: the effect went on, or the queued tune still played")
-	}
-}
-
-// A menu sound plays over the effect and through paws mode, while the
-// paused effect stands still and carries on after it (DESIGN §7.4).
-func TestMenuSoundsThroughPaws(t *testing.T) {
-	s := NewSynth()
-	s.SetSoften(false)
-	s.PlaySFX([]Note{{800, ms(100)}})
-	render(t, s, ms(60))
-	s.SetPaused(true)
-	s.PlayMenu([]Note{{2000, ms(100)}})
-	if got := pitch(render(t, s, ms(100))[100:]); !near(got, 2000, 20) {
-		t.Errorf("menu sound in paws mode pitch = %.0f, want 2000", got)
-	}
-	if !toneless(render(t, s, ms(200))[samples(ms(5)):]) {
-		t.Error("tone after the menu sound while still paused")
-	}
-	s.SetPaused(false)
-	// 40 ms of the effect were left when it paused.
-	if got := pitch(render(t, s, ms(35))[samples(ms(5)):]); !near(got, 800, 30) {
-		t.Errorf("after resuming pitch = %.0f, want the paused effect at 800", got)
-	}
-}
-
-// A scene change's Stop leaves a menu sound to finish, so the item chosen is
-// heard as the screen changes.
-func TestStopLeavesMenuSound(t *testing.T) {
-	s := NewSynth()
-	s.SetSoften(false)
-	s.PlayMenu([]Note{{2000, ms(200)}})
-	render(t, s, ms(20))
-	s.Stop()
-	if got := pitch(render(t, s, ms(100))); !near(got, 2000, 20) {
-		t.Errorf("after Stop pitch = %.0f, want the menu sound at 2000", got)
 	}
 }
 

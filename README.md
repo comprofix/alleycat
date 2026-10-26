@@ -25,7 +25,7 @@ The remake keeps a PC-speaker-style sound made in code, with art in a 64-colour 
 | Arrow keys | Move, jump (Up) and drop (Down) |
 | Alt | Special action: go through a cheese hole, eat or drink, put down a gift |
 | K, H, T, A (or 1–4) | Choose a skill on the skill menu: Kitten, House Cat, Tomcat, Alley Cat |
-| Esc or P | Paws mode (pause), with a menu to resume, change the options or quit |
+| Esc or P | Paws mode (pause), with a menu to resume, change the options or quit. The game's tune and sound effects play on underneath. |
 | Ctrl+S | Sound on and off |
 | Ctrl+R | Restart the game |
 | Ctrl+M | Back to the main menu |
