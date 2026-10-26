@@ -25,7 +25,7 @@ func drawMenuScreen(ctx *Context, dst *ebiten.Image, heading string, m *ui.Menu,
 	sc, f := ctx.Scheme, ctx.Fonts
 	dst.Fill(gfx.RGBA(sc.Backdrop))
 	ui.TextCentred(dst, f.Large, heading, f.Large.LineHeight(), sc.Title, sc.Shadow)
-	drawMenuPanel(ctx, dst, m, menuTop(f))
+	drawMenuPanel(ctx, dst, m, menuTop(ctx))
 	drawHelpLine(ctx, dst, help)
 }
 
@@ -35,18 +35,21 @@ func drawHelpLine(ctx *Context, dst *ebiten.Image, help string) {
 		return
 	}
 	sc, f := ctx.Scheme, ctx.Fonts
-	ui.TextCentred(dst, f.Small, help, config.Project.ScreenHeight-2*f.Small.LineHeight(), sc.Dim, sc.Shadow)
+	ui.TextCentred(dst, f.Small, help, ctx.Preset.ScreenHeight-2*f.Small.LineHeight(), sc.Dim, sc.Shadow)
 }
 
 // menuTop is the top of a menu screen's menu: the panel's border sits a
 // line gap below the heading.
-func menuTop(f gfx.Fonts) int { return 2*f.Large.LineHeight() + ui.LineGap + menuPad(f) }
+func menuTop(ctx *Context) int {
+	f := ctx.Fonts
+	return 2*f.Large.LineHeight() + ui.LineGap + menuPad(f)
+}
 
 // updateMenu runs m for one tick, placed as drawMenuPanel draws it with its
 // top at y, so the mouse works. Headless tests have no fonts and no mouse.
-func updateMenu(ctx *Context, m *ui.Menu, y func(gfx.Fonts) int) {
+func updateMenu(ctx *Context, m *ui.Menu, y func(*Context) int) {
 	if f := ctx.Fonts; f.Small != nil && f.Large != nil {
-		m.PlaceCentred(f.Small, y(f))
+		m.PlaceCentred(f.Small, ctx.Preset.ScreenWidth, y(ctx))
 	}
 	m.Update(ctx.Input)
 }
@@ -61,7 +64,7 @@ func menuSounds(ctx *Context, m *ui.Menu) {
 func drawMenuPanel(ctx *Context, dst *ebiten.Image, m *ui.Menu, y int) {
 	sc, f := ctx.Scheme, ctx.Fonts
 	w, h := m.Size(f.Small)
-	ui.Panel(dst, ui.PanelAround(w, h, y, menuPad(f)), sc.Panel, sc.Border)
+	ui.Panel(dst, ui.PanelAround(ctx.Preset.ScreenWidth, w, h, y, menuPad(f)), sc.Panel, sc.Border)
 	m.DrawCentred(dst, f.Small, y, sc)
 }
 
@@ -304,9 +307,9 @@ func (h *Help) Draw(ctx *Context, dst *ebiten.Image) {
 	for _, l := range lines {
 		w = max(w, (helpKeyCells+len(l[1]))*cell)
 	}
-	y := menuTop(f)
-	ui.Panel(dst, ui.PanelAround(w, len(lines)*line-ui.LineGap, y, menuPad(f)), sc.Panel, sc.Border)
-	x := (config.Project.ScreenWidth - w) / 2
+	y, sw := menuTop(ctx), ctx.Preset.ScreenWidth
+	ui.Panel(dst, ui.PanelAround(sw, w, len(lines)*line-ui.LineGap, y, menuPad(f)), sc.Panel, sc.Border)
+	x := (sw - w) / 2
 	for i, l := range lines {
 		f.Small.DrawShadowed(dst, l[0], x, y+i*line, sc.Highlight, sc.Shadow)
 		f.Small.DrawShadowed(dst, l[1], x+helpKeyCells*cell, y+i*line, sc.Text, sc.Shadow)
@@ -357,14 +360,16 @@ const PauseDim = 0.6
 
 // pauseTop is the top of the pause screen's heading, and pauseMenuTop the
 // top of its menu, under the heading: the two sit around the middle.
-func pauseTop(f gfx.Fonts) int     { return config.Project.ScreenHeight/2 - 3*f.Large.LineHeight()/2 }
-func pauseMenuTop(f gfx.Fonts) int { return pauseTop(f) + 2*f.Large.LineHeight() }
+func pauseTop(ctx *Context) int {
+	return ctx.Preset.ScreenHeight/2 - 3*ctx.Fonts.Large.LineHeight()/2
+}
+func pauseMenuTop(ctx *Context) int { return pauseTop(ctx) + 2*ctx.Fonts.Large.LineHeight() }
 
 // Draw implements Scene.
 func (p *Pause) Draw(ctx *Context, dst *ebiten.Image) {
 	sc, f := ctx.Scheme, ctx.Fonts
 	drawScene(ctx, p.under, dst)
 	Dim(dst, sc.Shadow, PauseDim)
-	ui.TextCentred(dst, f.Large, "PAWS", pauseTop(f), sc.Title, sc.Shadow)
-	drawMenuPanel(ctx, dst, &p.menu, pauseMenuTop(f))
+	ui.TextCentred(dst, f.Large, "PAWS", pauseTop(ctx), sc.Title, sc.Shadow)
+	drawMenuPanel(ctx, dst, &p.menu, pauseMenuTop(ctx))
 }

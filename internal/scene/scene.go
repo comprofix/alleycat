@@ -40,6 +40,9 @@ type Context struct {
 	// saves them.
 	Settings *config.Settings
 	Scheme   gfx.Scheme // the menus' colours
+	// Preset is the look being shown (DESIGN §2.1): its screen size, scale
+	// modes and art. The game sets it at start and when the look changes.
+	Preset config.Preset
 
 	// HighScore is the best score this run; it updates when a game ends
 	// (DESIGN §3.8, "Lives and game over"). Saving it is M9 work.

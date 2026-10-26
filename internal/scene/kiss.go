@@ -214,7 +214,7 @@ func (k *Kiss) Draw(ctx *Context, dst *ebiten.Image) {
 	}
 	f := k.text
 	score := fmt.Sprint(k.bonus)
-	f.DrawShadowed(dst, score, f.CentreX(score), config.KissScoreY*entity.K, resurrect64.White, resurrect64.Ink)
+	f.DrawShadowed(dst, score, f.CentreX(dst, score), config.KissScoreY*entity.K, resurrect64.White, resurrect64.Ink)
 	text := fmt.Sprintf("BONUS MULTIPLIER: %02d", k.multiplier)
 	bar := resurrect64.Ink
 	if (k.ticks/config.KissFlashTicks)%2 == 1 {
@@ -223,7 +223,7 @@ func (k *Kiss) Draw(ctx *Context, dst *ebiten.Image) {
 	w, h := float64(f.Width(text)+48), float64(f.LineHeight()+12)
 	y := float64(config.KissBarY * entity.K)
 	shapes.FillRoundRect(dst, shapes.R((float64(dst.Bounds().Dx())-w)/2, y-6, w, h), 8, bar)
-	f.DrawShadowed(dst, text, f.CentreX(text), int(y), resurrect64.White, resurrect64.Ink)
+	f.DrawShadowed(dst, text, f.CentreX(dst, text), int(y), resurrect64.White, resurrect64.Ink)
 }
 
 // drawPixels draws the kiss in the classic look.

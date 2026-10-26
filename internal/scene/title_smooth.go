@@ -31,7 +31,6 @@ const (
 type titleSmooth struct {
 	back   *ebiten.Image
 	name   banner
-	nameX  int
 	line   *gfx.VectorFont
 	freddy entity.SmoothFreddy
 	canvas entity.Canvas
@@ -41,7 +40,7 @@ func newTitleSmooth() *titleSmooth {
 	t := &titleSmooth{line: gfx.NewVectorFont(titleLineSize)}
 	t.buildBack()
 	big := gfx.NewVectorFont(titleNameSize)
-	t.name, t.nameX = newBanner(big, titleName), big.CentreX(titleName)
+	t.name = newBanner(big, titleName)
 	return t
 }
 
@@ -134,14 +133,14 @@ func (t *titleSmooth) draw(dst *ebiten.Image, ti *Title) {
 
 	// The name: a deep drop shadow, an ink outline, then the letters in
 	// three bands, light at the top, as the classic look's logo.
-	x, y := float64(t.nameX), tk(titleLogoY)
+	x, y := float64(dst.Bounds().Dx()-t.name.w)/2, tk(titleLogoY)
 	t.name.layAll(dst, x+12, y+12, resurrect64.Grape)
 	t.name.outline(dst, x, y, 5, resurrect64.Ink)
 	t.name.banded(dst, x, y, resurrect64.Honey, resurrect64.Coral, resurrect64.Copper)
 
 	f := t.line
-	f.DrawShadowed(dst, titleLine, f.CentreX(titleLine), int(tk(titleLogoY+34)), resurrect64.Fog, resurrect64.Ink)
-	py, px := int(tk(titlePromptY)), f.CentreX(titlePrompt)
+	f.DrawShadowed(dst, titleLine, f.CentreX(dst, titleLine), int(tk(titleLogoY+34)), resurrect64.Fog, resurrect64.Ink)
+	py, px := int(tk(titlePromptY)), f.CentreX(dst, titlePrompt)
 	f.DrawShadowed(dst, titlePrompt, px, py, resurrect64.White, resurrect64.Ink)
 	if ti.blink.Frame() == 0 { // the pointer, blinking
 		cx, cy := float64(px-28), float64(py+f.LineHeight()/2)

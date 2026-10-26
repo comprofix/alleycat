@@ -97,12 +97,12 @@ func (m *Manager) Draw(ctx *Context, dst *ebiten.Image) {
 	}
 }
 
-// Dim covers the screen with palette colour c at the given opacity (0–1).
+// Dim covers dst with palette colour c at the given opacity (0–1).
 func Dim(dst *ebiten.Image, c int, opacity float32) {
 	col := gfx.RGBA(c)
 	col.R = uint8(float32(col.R) * opacity)
 	col.G = uint8(float32(col.G) * opacity)
 	col.B = uint8(float32(col.B) * opacity)
 	col.A = uint8(255 * opacity)
-	vector.FillRect(dst, 0, 0, float32(config.Project.ScreenWidth), float32(config.Project.ScreenHeight), col, false)
+	vector.FillRect(dst, 0, 0, float32(dst.Bounds().Dx()), float32(dst.Bounds().Dy()), col, false)
 }

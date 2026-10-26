@@ -26,8 +26,7 @@ import (
 
 // Game is the top-level ebiten.Game.
 type Game struct {
-	preset   config.Preset // the look's: Project, kept to see it change
-	screen   *ebiten.Image // the internal screen, the preset's size
+	screen   *ebiten.Image // the internal screen, the look's preset's size
 	prescale *ebiten.Image // whole-number upscale used for CRT presentation
 	outW     int
 	outH     int
@@ -115,7 +114,8 @@ func (g *Game) Update() error {
 	in := g.ctx.Input
 	// The pointer is turned into screen pixels through where present will
 	// show the screen.
-	sw, sh := g.preset.ScreenWidth, g.preset.ScreenHeight
+	p := g.ctx.Preset
+	sw, sh := p.ScreenWidth, p.ScreenHeight
 	r := gfx.Fit(g.settings.Mode(), sw, sh, g.outW, g.outH)
 	in.SetView(input.View{X: r.X, Y: r.Y, W: r.W, H: r.H, Width: sw, Height: sh})
 	in.Update()
@@ -129,8 +129,8 @@ func (g *Game) Update() error {
 		s.Fullscreen = !s.Fullscreen
 		g.ctx.SettingsChanged()
 	}
-	if in.JustPressed(input.ScaleMode) && len(g.preset.ScaleModes) > 1 {
-		s.ScaleMode = g.preset.NextMode(s.ScaleMode)
+	if in.JustPressed(input.ScaleMode) && len(p.ScaleModes) > 1 {
+		s.ScaleMode = p.NextMode(s.ScaleMode)
 		g.ctx.SettingsChanged()
 	}
 	if in.JustPressed(input.Sound) {
@@ -172,10 +172,10 @@ func (g *Game) Update() error {
 // look and Go Mono Bold for the new. Nothing changes if the look has not.
 func (g *Game) applyLook() {
 	p := g.settings.Look.Preset()
-	if g.screen != nil && p.Name == g.preset.Name {
+	if g.screen != nil && p.Name == g.ctx.Preset.Name {
 		return
 	}
-	config.Project, g.preset = p, p
+	g.ctx.Preset = p
 	if g.screen != nil {
 		g.screen.Deallocate()
 	}
@@ -212,7 +212,7 @@ func (g *Game) Draw(out *ebiten.Image) {
 // present scales the internal screen onto the output surface in the
 // current scale mode (DESIGN §2.1).
 func (g *Game) present(out *ebiten.Image) {
-	sw, sh := g.preset.ScreenWidth, g.preset.ScreenHeight
+	sw, sh := g.ctx.Preset.ScreenWidth, g.ctx.Preset.ScreenHeight
 	out.Fill(color.Black)
 	mode := g.settings.Mode()
 	r := gfx.Fit(mode, sw, sh, g.outW, g.outH)

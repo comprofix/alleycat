@@ -93,7 +93,7 @@ func (t *Tally) drawSmooth(dst *ebiten.Image) {
 	if t.lit >= t.rows() {
 		f := t.art.text
 		text := fmt.Sprintf("%04d", t.bonus%10000)
-		f.DrawShadowed(dst, text, f.CentreX(text), int(tk(t.stopY)), resurrect64.Honey, resurrect64.Ink)
+		f.DrawShadowed(dst, text, f.CentreX(dst, text), int(tk(t.stopY)), resurrect64.Honey, resurrect64.Ink)
 	}
 }
 

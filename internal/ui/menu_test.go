@@ -174,7 +174,7 @@ func (f cellFont) LineHeight() int                                        { retu
 func (f cellFont) Width(s string) int                                     { return utf8.RuneCountInString(s) * f.cell }
 func (f cellFont) Draw(*ebiten.Image, string, int, int, int)              {}
 func (f cellFont) DrawShadowed(*ebiten.Image, string, int, int, int, int) {}
-func (f cellFont) CentreX(s string) int                                   { return 0 }
+func (f cellFont) CentreX(*ebiten.Image, string) int                      { return 0 }
 
 // mouseFont is the font the mouse tests place menus in: cells 6 wide, lines
 // 12 tall, so rows are 16 apart.

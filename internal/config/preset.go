@@ -100,11 +100,6 @@ func (l Look) Name() string {
 	return "New"
 }
 
-// Project is the preset of the look being shown: its resolution, scale
-// modes and palette. The game sets it from the settings at start and when
-// the look changes, and nothing else does.
-var Project = Classic
-
 // HasMode reports whether the preset offers mode m.
 func (p Preset) HasMode(m ScaleMode) bool {
 	for _, x := range p.ScaleModes {
