@@ -31,6 +31,12 @@ type SmoothRenderer struct {
 	fur    furnish
 	back   *ebiten.Image
 	water  *ebiten.Image // the underwater scene's backdrop
+	heart  *heartArt     // the heart room's backdrop and hearts
+	kiss   *heartArt     // the same at the kiss
+	gift   *ebiten.Image
+	// kissArt are the kiss's hearts, by their classic sprites' names, and
+	// the kissing cats.
+	kissArt map[string]*ebiten.Image
 }
 
 // furnish is a room's furniture colours, as its sprites are recoloured:
@@ -53,7 +59,7 @@ func NewSmoothRenderer() *SmoothRenderer {
 // Drawn reports whether room has its new look yet.
 func (r *SmoothRenderer) Drawn(room Room) bool {
 	switch room.(type) {
-	case *BirdcageRoom, *BookshelfRoom, *CheeseRoom, *DogsRoom, *FishbowlRoom:
+	case *BirdcageRoom, *BookshelfRoom, *CheeseRoom, *DogsRoom, *FishbowlRoom, *HeartRoom:
 		return true
 	}
 	return false
@@ -61,6 +67,10 @@ func (r *SmoothRenderer) Drawn(room Room) bool {
 
 // Draw renders the room, as Renderer.Draw does, onto a 1280×800 dst.
 func (r *SmoothRenderer) Draw(dst *ebiten.Image, room Room) {
+	if h, ok := room.(*HeartRoom); ok {
+		r.drawHeart(dst, h)
+		return
+	}
 	if fb, ok := room.(*FishbowlRoom); ok && fb.Phase != InRoom {
 		r.drawUnderwater(dst, fb)
 		return

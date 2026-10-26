@@ -206,6 +206,46 @@ func (s *SmoothFreddy) DrawCat(dst *ebiten.Image, x, y int, flip bool, ps CatPos
 	s.canvas.Draw(dst, pic, func(p Pen) { drawCat(p.dst, pose, co) })
 }
 
+// DrawKissCats draws Freddy and Felicia nose to nose in a 128×52 box, as
+// they are in the big heart at the kiss, a little heart over them.
+func DrawKissCats(p Pen) {
+	for i, co := range []Coat{FreddyCoat, FeliciaCoat} {
+		q := p
+		if i == 1 {
+			q = p.Mirror(64)
+		}
+		q.Stroke(co.Fur, 5, true, 30, 46, 18, 44, 12, 36, 14, 28)
+		q.Circle(14, 28, 1.8, co.Light)
+		q.Ellipse(38, 38, 17, 10, 0, co.Fur)
+		q.Ellipse(30, 38, 7, 6, 0, co.Shade)
+		q.Ellipse(31, 39, 5.5, 4.5, 0, co.Fur)
+		q.Poly(co.Fur, 38, 30, 52, 22, 58, 30, 54, 44, 40, 44)
+		q.Stroke(co.Light, 2, true, 26, 30, 38, 28, 48, 24)
+		for _, x := range []float64{46, 54} {
+			q.Ellipse(x, 48, 4.5, 2.6, 0, co.Fur)
+		}
+		drawHead(q, 52, 20, 0, co)
+	}
+	p.Poly(resurrect64.Cerise, HeartPts(56, 0, 16, 11)...)
+	p.Circle(60, 3, 1.5, resurrect64.Flamingo)
+}
+
+// HeartPts are the points round a heart in the box w wide and h tall with
+// its top-left at (x, y): the tops of its lobes along the top, its point at
+// the bottom.
+func HeartPts(x, y, w, h float64) []float64 {
+	const n = 40
+	pts := make([]float64, 0, 2*n)
+	for i := range n {
+		t := 2 * math.Pi * float64(i) / n
+		s := math.Sin(t)
+		hx := 16 * s * s * s
+		hy := -(13*math.Cos(t) - 5*math.Cos(2*t) - 2*math.Cos(3*t) - math.Cos(4*t))
+		pts = append(pts, x+w/2+hx*w/32, y+(hy+12)*h/29)
+	}
+	return pts
+}
+
 // drawHead draws Freddy's head in profile, facing right, round (x, y), in
 // coat co: his ears, flicked by ear, his eye and his muzzle, with whiskers.
 func drawHead(p Pen, x, y, ear float64, co Coat) {

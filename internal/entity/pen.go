@@ -31,6 +31,8 @@ type Pen struct {
 	dst              *ebiten.Image
 	ox, oy, s        float64
 	cx, cy, sin, cos float64
+	mirror           bool
+	axis             float64
 }
 
 // NewPen is a pen on dst turned by angle about (cx, cy) in the box.
@@ -44,8 +46,18 @@ func (p Pen) At(ox, oy, s float64) Pen {
 	return p
 }
 
+// Mirror is the pen drawing its points mirrored about the upright line at
+// x in the box, so a picture drawn facing right faces left.
+func (p Pen) Mirror(x float64) Pen {
+	p.mirror, p.axis = true, x
+	return p
+}
+
 // Pt is the canvas position of box point (x, y).
 func (p Pen) Pt(x, y float64) (float64, float64) {
+	if p.mirror {
+		x = 2*p.axis - x
+	}
 	x, y = p.ox+x*p.s, p.oy+y*p.s
 	dx, dy := x-p.cx, y-p.cy
 	return margin + p.cx + dx*p.cos - dy*p.sin, margin + p.cy + dx*p.sin + dy*p.cos
@@ -147,6 +159,22 @@ type Picture struct {
 	Flip       bool
 	From, To   int
 	Outline    int
+}
+
+// Bake draws a picture once, as Canvas.Draw would, onto an image of its
+// own, for a picture laid on the screen many times; DrawBaked lays it.
+func Bake(w, h, outline int, draw func(Pen)) *ebiten.Image {
+	img := ebiten.NewImage(w*K+2*margin, h*K+2*margin)
+	var c Canvas
+	c.Draw(img, Picture{X: margin / K, Y: margin / K, W: w, H: h, Outline: outline}, draw)
+	c.img.Deallocate()
+	return img
+}
+
+// DrawBaked lays a picture made by Bake with its box's top-left at (x, y)
+// on the layout, mirrored when flip is set.
+func DrawBaked(dst, img *ebiten.Image, x, y int, flip bool) {
+	DrawAt(dst, img, x*K-margin, y*K-margin, flip)
 }
 
 // Canvas is the image a picture is drawn on before it is laid on the

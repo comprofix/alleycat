@@ -12,6 +12,7 @@ import (
 	"github.com/comprofix/alleycat/internal/gfx"
 	"github.com/comprofix/alleycat/internal/gfx/palettes/resurrect64"
 	"github.com/comprofix/alleycat/internal/rooms"
+	"github.com/comprofix/alleycat/internal/shapes"
 )
 
 // kissStage is where the kiss sequence is.
@@ -39,8 +40,10 @@ type stamp struct {
 // screen. Then Freddy levels up and, after the dancing cats at difficulty
 // 2 and up, goes back to the alley.
 type Kiss struct {
-	room *rooms.HeartRoom
-	view *rooms.Renderer
+	room   *rooms.HeartRoom
+	view   *rooms.Renderer
+	smooth *rooms.SmoothRenderer
+	text   *gfx.VectorFont // the new look's lettering
 
 	stage  kissStage
 	wait   int
@@ -58,11 +61,11 @@ type Kiss struct {
 	smooched          bool
 }
 
-func newKiss(ctx *Context, room *rooms.HeartRoom, view *rooms.Renderer, next func(*Context) Scene) *Kiss {
+func newKiss(ctx *Context, room *rooms.HeartRoom, view *rooms.Renderer, smooth *rooms.SmoothRenderer, next func(*Context) Scene) *Kiss {
 	f := room.Freddy
 	x := max(min(f.X, config.KissMaxX)-config.KissStartDX, 0) &^ 15
 	k := &Kiss{
-		room: room, view: view, next: next,
+		room: room, view: view, smooth: smooth, next: next, text: gfx.NewVectorFont(kissTextSize),
 		x: x, y: config.KissHeartY,
 		slide: min(abs(x-config.KissCentreX)/8, config.KissSlideMax) + config.KissSlideAdd,
 		wait:  config.KissOpenTicks,
@@ -191,8 +194,40 @@ func burstMove(v, step, limit int, done bool) (int, bool) {
 	return v, done
 }
 
-// Draw implements Scene.
+func (*Kiss) native() {}
+
+// kissTextSize is the new look's lettering for the bonus and multiplier.
+const kissTextSize = 40
+
+// Draw implements Scene: in the look dst is the size of.
 func (k *Kiss) Draw(ctx *Context, dst *ebiten.Image) {
+	if dst.Bounds().Dx() == gfx.ScreenWidth {
+		k.drawPixels(ctx, dst)
+		return
+	}
+	k.smooth.DrawHeartKiss(dst, k.room)
+	for _, s := range k.stamps {
+		k.smooth.DrawKissHeart(dst, s.sprite, s.x, s.y, s.cats)
+	}
+	if k.stage != kissText {
+		return
+	}
+	f := k.text
+	score := fmt.Sprint(k.bonus)
+	f.DrawShadowed(dst, score, f.CentreX(score), config.KissScoreY*entity.K, resurrect64.White, resurrect64.Ink)
+	text := fmt.Sprintf("BONUS MULTIPLIER: %02d", k.multiplier)
+	bar := resurrect64.Ink
+	if (k.ticks/config.KissFlashTicks)%2 == 1 {
+		bar = resurrect64.Cobalt
+	}
+	w, h := float64(f.Width(text)+48), float64(f.LineHeight()+12)
+	y := float64(config.KissBarY * entity.K)
+	shapes.FillRoundRect(dst, shapes.R((float64(dst.Bounds().Dx())-w)/2, y-6, w, h), 8, bar)
+	f.DrawShadowed(dst, text, f.CentreX(text), int(y), resurrect64.White, resurrect64.Ink)
+}
+
+// drawPixels draws the kiss in the classic look.
+func (k *Kiss) drawPixels(ctx *Context, dst *ebiten.Image) {
 	k.view.DrawHeartKiss(dst, k.room)
 	sheet := ctx.Rooms
 	for _, s := range k.stamps {

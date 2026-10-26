@@ -72,7 +72,7 @@ func (r *RoomScene) Update(ctx *Context) error {
 func (r *RoomScene) heartEnds(ctx *Context, hr *rooms.HeartRoom) {
 	switch hr.Out {
 	case rooms.Cleared:
-		ctx.Switch(newKiss(ctx, hr, r.view, returnTo(r.x, r.y)))
+		ctx.Switch(newKiss(ctx, hr, r.view, r.smooth, returnTo(r.x, r.y)))
 	case rooms.Failed:
 		ctx.Switch(newReject(returnTo(r.x, r.y)))
 	}
