@@ -261,7 +261,25 @@ func (s *Options) Draw(ctx *Context, dst *ebiten.Image) {
 }
 
 // Help lists the keys (DESIGN §5). Any key or a click goes back.
-type Help struct{}
+type Help struct {
+	big *gfx.VectorFont // the new look's lettering; a render cache
+}
+
+// helpTextSize is the new look's help lettering: half as large again as
+// the menus', which would leave the keys small on the 1280×800 screen.
+const helpTextSize = 35
+
+// font is what the keys are listed in: the menus' small font in the
+// classic look, larger in the new.
+func (h *Help) font(ctx *Context) gfx.Font {
+	if ctx.Preset.Art != config.ArtSmooth {
+		return ctx.Fonts.Small
+	}
+	if h.big == nil {
+		h.big = gfx.NewVectorFont(helpTextSize)
+	}
+	return h.big
+}
 
 // NewHelp returns the help screen.
 func NewHelp() *Help { return &Help{} }
@@ -301,7 +319,8 @@ func (h *Help) Draw(ctx *Context, dst *ebiten.Image) {
 	sc, f := ctx.Scheme, ctx.Fonts
 	dst.Fill(gfx.RGBA(sc.Backdrop))
 	ui.TextCentred(dst, f.Large, "HELP", f.Large.LineHeight(), sc.Title, sc.Shadow)
-	cell, line := f.Small.CellWidth(), f.Small.LineHeight()+ui.LineGap
+	keys := h.font(ctx)
+	cell, line := keys.CellWidth(), keys.LineHeight()+ui.LineGap
 	lines := helpLines(ctx.Settings)
 	w := 0
 	for _, l := range lines {
@@ -311,8 +330,8 @@ func (h *Help) Draw(ctx *Context, dst *ebiten.Image) {
 	ui.Panel(dst, ui.PanelAround(sw, w, len(lines)*line-ui.LineGap, y, menuPad(f)), sc.Panel, sc.Border)
 	x := (sw - w) / 2
 	for i, l := range lines {
-		f.Small.DrawShadowed(dst, l[0], x, y+i*line, sc.Highlight, sc.Shadow)
-		f.Small.DrawShadowed(dst, l[1], x+helpKeyCells*cell, y+i*line, sc.Text, sc.Shadow)
+		keys.DrawShadowed(dst, l[0], x, y+i*line, sc.Highlight, sc.Shadow)
+		keys.DrawShadowed(dst, l[1], x+helpKeyCells*cell, y+i*line, sc.Text, sc.Shadow)
 	}
 	drawHelpLine(ctx, dst, "Press any key")
 }
